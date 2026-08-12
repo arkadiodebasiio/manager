@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Żywy Ruch AI</title>
+    <title>Championship Manager 2D - Pozycje Taktyczne</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -10,7 +10,7 @@
 </head>
 <body>
 
-    <div id="commentary">> Rozgrzewka zakończona. 22 zawodników rozpoczyna walkę na żywo...</div>
+    <div id="commentary">> Formacje rozstawione taktycznie. Sędzia rozpoczyna grę...</div>
     <canvas id="matchCanvas" width="600" height="400"></canvas>
 
     <script>
@@ -24,25 +24,23 @@
         let stanMeczu = "srodek"; 
         let timerStanu = 0;
 
-        // Baza pozycji taktycznych
+        // Baza idealnych pozycji taktycznych 4-4-2
         const basePositions = [
-            { team: "A", nr: 1, x: 40, y: 200 }, { team: "A", nr: 2, x: 120, y: 80 }, { team: "A", nr: 3, x: 110, y: 160 }, { team: "A", nr: 4, x: 110, y: 240 }, { team: "A", nr: 5, x: 120, y: 320 }, { team: "A", nr: 6, x: 220, y: 90 }, { team: "A", nr: 7, x: 200, y: 160 }, { team: "A", nr: 8, x: 200, y: 240 }, { team: "A", nr: 10, x: 220, y: 310 }, { team: "A", nr: 11, x: 280, y: 150 }, { team: "A", nr: 9, x: 280, y: 250 },
-            { team: "B", nr: 1, x: 560, y: 200 }, { team: "B", nr: 2, x: 480, y: 80 }, { team: "B", nr: 3, x: 490, y: 160 }, { team: "B", nr: 4, x: 490, y: 240 }, { team: "B", nr: 5, x: 480, y: 320 }, { team: "B", nr: 6, x: 380, y: 90 }, { team: "B", nr: 7, x: 400, y: 160 }, { team: "B", nr: 8, x: 400, y: 240 }, { team: "B", nr: 10, x: 380, y: 310 }, { team: "B", nr: 9, x: 320, y: 150 }, { team: "B", nr: 11, x: 320, y: 250 }
+            { team: "A", nr: 1, x: 40, y: 200, role: "GK" }, { team: "A", nr: 2, x: 120, y: 80, role: "DEF" }, { team: "A", nr: 3, x: 110, y: 160, role: "DEF" }, { team: "A", nr: 4, x: 110, y: 240, role: "DEF" }, { team: "A", nr: 5, x: 120, y: 320, role: "DEF" }, { team: "A", nr: 6, x: 220, y: 90, role: "MID" }, { team: "A", nr: 7, x: 200, y: 160, role: "MID" }, { team: "A", nr: 8, x: 200, y: 240, role: "MID" }, { team: "A", nr: 10, x: 220, y: 310, role: "MID" }, { team: "A", nr: 11, x: 280, y: 150, role: "ATT" }, { team: "A", nr: 9, x: 280, y: 250, role: "ATT" },
+            { team: "B", nr: 1, x: 560, y: 200, role: "GK" }, { team: "B", nr: 2, x: 480, y: 80, role: "DEF" }, { team: "B", nr: 3, x: 490, y: 160, role: "DEF" }, { team: "B", nr: 4, x: 490, y: 240, role: "DEF" }, { team: "B", nr: 5, x: 480, y: 320, role: "DEF" }, { team: "B", nr: 6, x: 380, y: 90, role: "MID" }, { team: "B", nr: 7, x: 400, y: 160, role: "MID" }, { team: "B", nr: 8, x: 400, y: 240, role: "MID" }, { team: "B", nr: 10, x: 380, y: 310, role: "MID" }, { team: "B", nr: 9, x: 320, y: 150, role: "ATT" }, { team: "B", nr: 11, x: 320, y: 250, role: "ATT" }
         ];
 
-        // POPRAWKA: Każdy gracz dostaje unikalne cechy, osobistą prędkość i własny zegar (offset)
         basePositions.forEach(p => {
             players.push({
-                team: p.team, nr: p.nr,
+                team: p.team, nr: p.nr, role: p.role,
                 homeX: p.x, homeY: p.y,
                 x: p.x, y: p.y,
                 targetX: p.x, targetY: p.y,
-                speed: 0.03 + Math.random() * 0.04, // Indywidualna prędkość bota
-                randomOffset: Math.random() * 100    // Rozbija synchronizację dreptania w miejscu
+                speed: 0.05 + Math.random() * 0.02,
+                randomOffset: Math.random() * 100
             });
         });
 
-        // --- PĘTLA GRAFICZNA 60 FPS ---
         function updateGame() {
             // Rysowanie boiska
             ctx.fillStyle = "#236926"; ctx.fillRect(0, 0, 600, 400);
@@ -52,28 +50,36 @@
             ctx.beginPath(); ctx.arc(300, 200, 45, 0, Math.PI * 2); ctx.stroke();
             ctx.strokeRect(0, 110, 70, 180); ctx.strokeRect(530, 110, 70, 180);
 
-            // Tablica wyników
+            // Wynik
             ctx.fillStyle = "rgba(255,255,255,0.8)"; ctx.font = "bold 16px Arial";
             ctx.fillText("FC KULECZKI " + scoreA + " : " + scoreB + " NIEBIESKIE ASY", 190, 30);
 
-            // POPRAWKA: Ciągła, niesynchroniczna sztuczna inteligencja dla każdego bota z osobna
             let czas = Date.now();
+
+            // POPRAWKA: Zaawansowane trzymanie stref taktycznych
             players.forEach(p => {
-                // Jeśli nie ma ostrej akcji, zawodnicy cały czas krążą i żyją wokół swoich pozycji taktycznych
                 if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
-                    p.targetX = p.homeX + Math.sin((czas / 300) + p.randomOffset) * 12;
-                    p.targetY = p.homeY + Math.cos((czas / 400) + p.randomOffset) * 12;
+                    // Dreptanie w miejscu na swoich domowych pozycjach
+                    p.targetX = p.homeX + Math.sin((czas / 300) + p.randomOffset) * 6;
+                    p.targetY = p.homeY + Math.cos((czas / 400) + p.randomOffset) * 6;
                 } else {
-                    // W trakcie akcji zawodnicy przyciągają się w stronę piłki pod różnymi kątami skosu
-                    let dystansDoPilki = Math.hypot(ball.x - p.x, ball.y - p.y);
-                    if (dystansDoPilki < 150) {
-                        // Biegną agresywnie na piłkę
-                        p.targetX += (ball.x - p.x) * 0.03;
-                        p.targetY += (ball.y - p.y) * 0.03;
-                    }
+                    // W TRAKCIE AKCJI: Cały zespół przesuwa się lekko o max 40 pikseli w stronę piłki (elastyczny blok)
+                    // Nigdy nie opuszczają swojej formacji, nie ma biegania w jedno miejsce!
+                    let przesuniecieX = (ball.x - 300) * 0.15;
+                    let przesuniecieY = (ball.y - 200) * 0.15;
+                    
+                    // Ograniczamy ruch bramkarzy, żeby nie biegali po boisku
+                    if (p.role === "GK") { przesuniecieX = 0; przesuniecieY = (ball.y - 200) * 0.1; }
+
+                    p.targetX = p.homeX + przesuniecieX + Math.sin((czas / 500) + p.randomOffset) * 4;
+                    p.targetY = p.homeY + przesuniecieY + Math.cos((czas / 500) + p.randomOffset) * 4;
+
+                    // EKSTRA SMACZEK: Tylko zawodnik bezpośrednio przy piłce podbiega do niej blisko
+                    if (p.team === "A" && ball.x > 300 && p.role === "ATT") { p.targetX = ball.x - 15; p.targetY = ball.y; }
+                    if (p.team === "B" && ball.x < 300 && p.role === "ATT") { p.targetX = ball.x + 15; p.targetY = ball.y; }
                 }
 
-                // Płynne, nieliniowe przesuwanie bota do jego celu
+                // Płynny ruch
                 p.x += (p.targetX - p.x) * p.speed;
                 p.y += (p.targetY - p.y) * p.speed;
 
@@ -84,13 +90,12 @@
                 ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
             });
 
-            // Płynny lot piłki
+            // Ruch piłki
             ball.x += (ball.targetX - ball.x) * ball.speed;
             ball.y += (ball.targetY - ball.y) * ball.speed;
             ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = "#000"; ctx.stroke();
 
-            // Sędzia i zarządzanie czasem akcji
             timerStanu++;
             if (timerStanu > 160) {
                 timerStanu = 0;
@@ -107,56 +112,45 @@
             if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
                 stanMeczu = "akcja";
                 if (los < 0.5) {
-                    comment.innerText = "> [Atak] Pomocnicy FC Kuleczki rozciągają grę. Dynamiczne wejście w strefę podbramkową!";
-                    ball.targetX = 420 + Math.random() * 140; ball.targetY = 80 + Math.random() * 240;
-                    // Każda kulka dostaje zupełnie unikalne współrzędne celu - koniec z jazdą sztywnym blokiem!
-                    players.forEach(p => {
-                        if (p.team === "A") { p.targetX = p.homeX + 140 + (Math.random()*45 - 20); p.targetY = p.homeY + (Math.random()*70 - 35); }
-                        else { p.targetX = p.homeX - 40 + (Math.random()*35 - 15); p.targetY = p.homeY + (Math.random()*50 - 25); }
-                    });
+                    comment.innerText = "> [Atak] Pomocnicy FC Kuleczki podaniami po skosie rozciągają obronę rywala...";
+                    ball.targetX = 450 + Math.random() * 100; ball.targetY = 100 + Math.random() * 200;
                 } else {
                     comment.style.color = "#ff5252";
-                    comment.innerText = "> [Zagrożenie] Niebieskie Asy przejmują środek pola i ostrym skosem uderzają skrzydłem!";
-                    ball.targetX = 40 + Math.random() * 140; ball.targetY = 80 + Math.random() * 240;
-                    players.forEach(p => {
-                        if (p.team === "B") { p.targetX = p.homeX - 140 + (Math.random()*45 - 20); p.targetY = p.homeY + (Math.random()*70 - 35); }
-                        else { p.targetX = p.homeX + 40 + (Math.random()*35 - 15); p.targetY = p.homeY + (Math.random()*50 - 25); }
-                    });
+                    comment.innerText = "> [Zagrożenie] Niebieskie Asy wymieniają szybkie podania przed naszym polem karnym...";
+                    ball.targetX = 50 + Math.random() * 100; ball.targetY = 100 + Math.random() * 200;
                 }
             } else {
-                // Rozwiązanie akcji
                 if (los < 0.22) {
                     if (ball.x > 300) {
-                        ball.targetX = 595; ball.targetY = 200 + (Math.random()*30 - 15); scoreA++; comment.style.color = "#ffeb3b";
-                        comment.innerText = "⚽ GOOOOL!! Piękny strzał z ostrego kąta! Bramkarz bez szans!";
+                        ball.targetX = 595; ball.targetY = 200 + (Math.random()*20 - 10); scoreA++; comment.style.color = "#ffeb3b";
+                        comment.innerText = "⚽ GOOOOL!! Piękne uderzenie z woleja! Piłka ląduje w siatce!";
                     } else {
-                        ball.targetX = 5; ball.targetY = 200 + (Math.random()*30 - 15); scoreB++; comment.style.color = "#ff5252";
-                        comment.innerText = "❌ BRAMKA! Fatalny błąd w kryciu i Niebieskie Asy zdobywają punkt!";
+                        ball.targetX = 5; ball.targetY = 200 + (Math.random()*20 - 10); scoreB++; comment.style.color = "#ff5252";
+                        comment.innerText = "❌ BRAMKA! Przeciwnik oddaje czysty strzał po ziemi i zdobywa gola.";
                     }
                     stanMeczu = "srodek";
-                    setTimeout(() => { players.forEach(p => { p.x = p.homeX; p.y = p.homeY; }); }, 1000);
                 } else if (los >= 0.22 && los < 0.48) {
                     stanMeczu = "aut_bramkowy"; comment.style.color = "#aaaaaa";
                     if (ball.x > 300) {
-                        ball.targetX = 595; ball.targetY = Math.random() > 0.5 ? 50 : 350;
-                        comment.innerText = "🥅 [AUT BRAMKOWY] Skrzydłowy przeniósł piłkę wysoko nad poprzeczką.";
+                        ball.targetX = 595; ball.targetY = Math.random() > 0.5 ? 60 : 340;
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Nieudana próba strzału. Piłka przelatuje nad poprzeczką.";
                     } else {
-                        ball.targetX = 5; ball.targetY = Math.random() > 0.5 ? 50 : 350;
-                        comment.innerText = "🥅 [AUT BRAMKOWY] Niecelny strzał gości mija lewy słupek.";
+                        ball.targetX = 5; ball.targetY = Math.random() > 0.5 ? 60 : 340;
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Strzał Niebieskich mija prawy słupek bramki.";
                     }
                 } else if (los >= 0.48 && los < 0.74) {
                     stanMeczu = "rozny"; comment.style.color = "#00e5ff";
                     if (ball.x > 300) {
-                        ball.targetX = 590; ball.targetY = Math.random() > 0.5 ? 10 : 390;
-                        comment.innerText = "📐 [RZUT ROŻNY] Stoper rzuca się pod nogi napastnika! Wybicie na rzut rożny.";
+                        ball.targetX = 590; ball.targetY = Math.random() > 0.5 ? 15 : 385;
+                        comment.innerText = "📐 [RZUT ROŻNY] Obrońca wślizgiem blokuje strzał! Korner dla FC Kuleczki.";
                     } else {
-                        ball.targetX = 10; ball.targetY = Math.random() > 0.5 ? 10 : 390;
-                        comment.innerText = "📐 [RZUT ROŻNY] Ofiarna interwencja naszej obrony ratuje nas przed stratą.";
+                        ball.targetX = 10; ball.targetY = Math.random() > 0.5 ? 15 : 385;
+                        comment.innerText = "📐 [RZUT ROŻNY] Nasz defensor ofiarnie wybija piłkę za linię końcową.";
                     }
                 } else {
                     stanMeczu = "aut"; comment.style.color = "#ffb300";
-                    ball.targetX = 150 + Math.random() * 300; ball.targetY = Math.random() > 0.5 ? -12 : 412;
-                    comment.innerText = "🏳️ [AUT] Piłka wykopana na aut po ostrym starciu bark w bark w środku pola.";
+                    ball.targetX = 200 + Math.random() * 200; ball.targetY = Math.random() > 0.5 ? -12 : 412;
+                    comment.innerText = "🏳️ [AUT] Piłka opuszcza boisko za linią boczną po twardej walce w środku pola.";
                 }
             }
         }
