@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Prawdziwe Podania</title>
+    <title>Championship Manager 2D</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -9,47 +9,37 @@
     </style>
 </head>
 <body>
-    <div id="commentary">> Zawodnicy wychodzą na murawę. Trwa losowanie stron...</div>
     <canvas id="matchCanvas" width="600" height="400"></canvas>
+    <div id="commentary">> Wznawiamy grę od środka boiska...</div>
     <script>
-        const canvas = document.getElementById("matchCanvas");
-        const ctx = canvas.getContext("2d");
+        const canvas = document.getElementById("matchCanvas"); const ctx = canvas.getContext("2d");
         const comment = document.getElementById("commentary");
-        let scoreA = 0; let scoreB = 0;
-        let ball = { x: 300, y: 200 };
-        let players = [];
-        let stanMeczu = "srodek"; let timerStanu = 0;
-        let playerWithBall = null; 
+        let scoreA = 0; let scoreB = 0; let ball = { x: 300, y: 200, targetX: 300, targetY: 200 };
+        let players = []; let stanMeczu = "srodek"; let timerStanu = 0; let playerWithBall = null; 
         const basePositions = [
-            { id: "A1", team: "A", nr: 1, x: 40, y: 200, role: "GK" }, { id: "A2", team: "A", nr: 2, x: 120, y: 80, role: "DEF" }, { id: "A3", team: "A", nr: 3, x: 110, y: 160, role: "DEF" }, { id: "A4", team: "A", nr: 4, x: 110, y: 240, role: "DEF" }, { id: "A5", team: "A", nr: 5, x: 120, y: 320, role: "DEF" }, { id: "A6", team: "A", nr: 6, x: 220, y: 90, role: "MID" }, { id: "A7", team: "A", nr: 7, x: 200, y: 160, role: "MID" }, { id: "A8", team: "A", nr: 8, x: 200, y: 240, role: "MID" }, { team: "A", nr: 10, x: 220, y: 310, role: "MID" }, { id: "A11", team: "A", nr: 11, x: 280, y: 150, role: "ATT" }, { id: "A9", team: "A", nr: 9, x: 280, y: 250, role: "ATT" },
-            { id: "B1", team: "B", nr: 1, x: 560, y: 200, role: "GK" }, { id: "B2", team: "B", nr: 2, x: 480, y: 80, role: "DEF" }, { id: "B3", team: "B", nr: 3, x: 490, y: 160, role: "DEF" }, { id: "B4", team: "B", nr: 4, x: 490, y: 240, role: "DEF" }, { id: "B5", team: "B", nr: 5, x: 480, y: 320, role: "DEF" }, { id: "B6", team: "B", nr: 6, x: 380, y: 90, role: "MID" }, { id: "B7", team: "B", nr: 7, x: 400, y: 160, role: "MID" }, { id: "B8", team: "B", nr: 8, x: 400, y: 240, role: "MID" }, { team: "B", nr: 10, x: 380, y: 310, role: "MID" }, { id: "B9", team: "B", nr: 9, x: 320, y: 150, role: "ATT" }, { id: "B11", team: "B", nr: 11, x: 320, y: 250, role: "ATT" }
+            { id: "A1", team: "A", nr: 1, x: 40, y: 200, r: "GK" }, { id: "A2", team: "A", nr: 2, x: 120, y: 80, r: "DEF" }, { id: "A3", team: "A", nr: 3, x: 110, y: 160, r: "DEF" }, { id: "A4", team: "A", nr: 4, x: 110, y: 240, r: "DEF" }, { id: "A5", team: "A", nr: 5, x: 120, y: 320, r: "DEF" }, { id: "A6", team: "A", nr: 6, x: 220, y: 90, r: "MID" }, { id: "A7", team: "A", nr: 7, x: 200, y: 160, r: "MID" }, { id: "A8", team: "A", nr: 8, x: 200, y: 240, r: "MID" }, { id: "A10", team: "A", nr: 10, x: 220, y: 310, r: "MID" }, { id: "A11", team: "A", nr: 11, x: 280, y: 150, r: "ATT" }, { id: "A9", team: "A", nr: 9, x: 280, y: 250, r: "ATT" },
+            { id: "B1", team: "B", nr: 1, x: 560, y: 200, r: "GK" }, { id: "B2", team: "B", nr: 2, x: 480, y: 80, r: "DEF" }, { id: "B3", team: "B", nr: 3, x: 490, y: 160, r: "DEF" }, { id: "B4", team: "B", nr: 4, x: 490, y: 240, r: "DEF" }, { id: "B5", team: "B", nr: 5, x: 480, y: 320, r: "DEF" }, { id: "B6", team: "B", nr: 6, x: 380, y: 90, r: "MID" }, { id: "B7", team: "B", nr: 7, x: 400, y: 160, r: "MID" }, { id: "B8", team: "B", nr: 8, x: 400, y: 240, r: "MID" }, { id: "B10", team: "B", nr: 10, x: 380, y: 310, r: "MID" }, { id: "B9", team: "B", nr: 9, x: 320, y: 150, r: "ATT" }, { id: "B11", team: "B", nr: 11, x: 320, y: 250, r: "ATT" }
         ];
         basePositions.forEach(p => {
-            players.push({
-                id: p.id, team: p.team, nr: p.nr, role: p.role, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y,
-                speed: 0.02 + Math.random() * 0.01, randomOffset: Math.random() * 100
-            });
+            players.push({ id: p.id, team: p.team, nr: p.nr, role: p.r, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, speed: 0.02 + Math.random() * 0.01, offset: Math.random() * 100 });
         });
         function updateGame() {
-            ctx.fillStyle = "#236926"; ctx.fillRect(0, 0, 600, 400);
-            ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 2; ctx.strokeRect(0, 0, 600, 400);
-            ctx.moveTo(300, 0); ctx.lineTo(300, 400); ctx.stroke();
-            ctx.beginPath(); ctx.arc(300, 200, 45, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#236926"; ctx.fillRect(0, 0, 600, 400); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 2; ctx.strokeRect(0, 0, 600, 400);
+            ctx.beginPath(); ctx.moveTo(300, 0); ctx.lineTo(300, 400); ctx.stroke(); ctx.beginPath(); ctx.arc(300, 200, 45, 0, Math.PI * 2); ctx.stroke();
             ctx.strokeRect(0, 110, 70, 180); ctx.strokeRect(530, 110, 70, 180);
-            ctx.fillStyle = "rgba(255,255,255,0.8)"; ctx.font = "bold 16px Arial";
-            ctx.fillText("FC KULECZKI " + scoreA + " : " + scoreB + " NIEBIESKIE ASY", 190, 30);
+            ctx.fillStyle = "rgba(255,255,255,0.8)"; ctx.font = "bold 16px Arial"; ctx.fillText("FC KULECZKI " + scoreA + " : " + scoreB + " NIEBIESKIE ASY", 190, 30);
             let czas = Date.now();
             players.forEach(p => {
                 if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
-                    p.targetX = p.homeX + Math.sin((czas / 500) + p.randomOffset) * 4; p.targetY = p.homeY + Math.cos((czas / 600) + p.randomOffset) * 4;
+                    p.targetX = p.homeX + Math.sin((czas / 500) + p.offset) * 4; p.targetY = p.homeY + Math.cos((czas / 600) + p.offset) * 4;
                 } else {
-                    let przesuniecieX = (ball.x - 300) * 0.12; let przesuniecieY = (ball.y - 200) * 0.12;
-                    if (p.role === "GK") { przesuniecieX = 0; przesuniecieY = (ball.y - 200) * 0.08; }
-                    p.targetX = p.homeX + przesuniecieX + Math.sin((czas / 700) + p.randomOffset) * 2; p.targetY = p.homeY + przesuniecieY + Math.cos((czas / 700) + p.randomOffset) * 2;
+                    let px = (ball.x - 300) * 0.12; let py = (ball.y - 200) * 0.12;
+                    if (p.role === "GK") { px = 0; py = (ball.y - 200) * 0.08; }
+                    p.targetX = p.homeX + px + Math.sin((czas / 700) + p.offset) * 2; p.targetY = p.homeY + py + Math.cos((czas / 700) + p.offset) * 2;
                 }
                 p.x += (p.targetX - p.x) * p.speed; p.y += (p.targetY - p.y) * p.speed;
                 ctx.fillStyle = p.team === "A" ? "#e53935" : "#1e88e5"; ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
+                ctx.strokeStyle = "#fff"; ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
             });
             if (playerWithBall) { ball.x += (playerWithBall.x - ball.x) * 0.3; ball.y += (playerWithBall.y - ball.y) * 0.3; }
             else { ball.x += (ball.targetX - ball.x) * 0.03; ball.y += (ball.targetY - ball.y) * 0.03; }
@@ -60,29 +50,29 @@
             comment.style.color = "#00ff00"; let los = Math.random();
             if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
                 stanMeczu = "akcja";
-                if (los < 0.5) { playerWithBall = players.find(p => p.id === "A7"); comment.innerText = "> [Podanie] Obrońcy FC Kuleczki wybijają piłkę. Trafia ona idealnie pod nogi pomocnika nr 7!"; }
-                else { comment.style.color = "#ff5252"; playerWithBall = players.find(p => p.id === "B7"); comment.innerText = "> [Strata] Niebieskie Asy przejmują piłkę w środku pola. Rozgrywa pomocnik nr 7..."; }
+                if (los < 0.5) { playerWithBall = players.find(p => p.id === "A7"); comment.innerText = "> [Podanie] Obrońcy FC Kuleczki wybijają piłkę do pomocnika nr 7!"; }
+                else { comment.style.color = "#ff5252"; playerWithBall = players.find(p => p.id === "B7"); comment.innerText = "> [Strata] Niebieskie Asy przejmują piłkę. Rozgrywa pomocnik nr 7..."; }
             } else {
                 if (los < 0.25) {
                     if (playerWithBall && playerWithBall.team === "A") {
-                        let a9 = players.find(p => p.id === "A9"); playerWithBall = a9; comment.innerText = "> [Akcja] Pomocnik podaje prostopadle! Napastnik nr 9 przyjmuje i STRZELA...";
-                        setTimeout(() => { playerWithBall = null; ball.targetX = 595; ball.targetY = 200; scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna, płynna wymiana podań zakończona bramką napastnika nr 9!"; }, 1200);
+                        playerWithBall = players.find(p => p.id === "A9"); comment.innerText = "> [Akcja] Pomocnik podaje! Napastnik nr 9 przyjmuje i STRZELA...";
+                        setTimeout(() => { playerWithBall = null; ball.targetX = 595; ball.targetY = 200; scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna akcja zakończona bramką napastnika nr 9!"; }, 1200);
                     } else {
-                        let b9 = players.find(p => p.id === "B9"); playerWithBall = b9; comment.innerText = "> [Zagrożenie] Niebiescy wchodzą w pole karne! Napastnik nr 9 składa się do strzału...";
+                        playerWithBall = players.find(p => p.id === "B9"); comment.innerText = "> [Zagrożenie] Niebiescy wchodzą w pole karne! Strzał napastnika...";
                         setTimeout(() => { playerWithBall = null; ball.targetX = 5; ball.targetY = 200; scoreB++; comment.style.color = "#ff5252"; comment.innerText = "❌ BRAMKA! Koronkowa akcja rywali. Piłka ląduje w siatce."; }, 1200);
                     }
                     stanMeczu = "srodek";
                 } else if (los >= 0.25 && los < 0.5) {
-                    stanMeczu = "aut_bramkowy"; comment.style.color = "#aaaaaa";
-                    if (playerWithBall && playerWithBall.team === "A") { comment.innerText = "> [Strzał] Pomocnik zgrywa do skrzydłowego, ten uderza bez przyjęcia..."; playerWithBall = null; ball.targetX = 595; ball.targetY = 60; setTimeout(() => { comment.innerText = "🥅 [AUT BRAMKOWY] Piłka po mocnym uderzeniu przelatuje obok słupka."; }, 1200); }
-                    else { comment.innerText = "> [Strzał] Rywale oddają strzał z dystansu..."; playerWithBall = null; ball.targetX = 5; ball.targetY = 340; setTimeout(() => { comment.innerText = "🥅 [AUT BRAMKOWY] Piłka uderza w reklamę za bramką. Grę wznowią Kuleczki."; }, 1200); }
-                } else if (los >= 0.48 && los < 0.74) {
-                    stanMeczu = "rozny"; comment.style.color = "#00e5ff";
-                    if (playerWithBall && playerWithBall.team === "A") { comment.innerText = "> [Atak] Dośrodkowanie w pole karne, stoper rywali blokuje głową!"; playerWithBall = null; ball.targetX = 590; ball.targetY = 385; setTimeout(() => { comment.innerText = "📐 [RZUT ROŻNY] Piłka wybita za linię końcową. Rzut rożny dla FC Kuleczki."; }, 1200); }
-                    else { comment.innerText = "> [Obrona] Groźne uderzenie Niebieskich parowane przez naszego defensora!"; playerWithBall = null; ball.targetX = 10; ball.targetY = 15; setTimeout(() => { comment.innerText = "📐 [RZUT ROŻNY] Piłka rykoszetem ucieka na rzut rożny dla gości."; }, 1200); }
+                    stanMeczu = "aut_bramkowy"; comment.style.color = "#aaaaaa"; playerWithBall = null;
+                    if (ball.x > 300) { ball.targetX = 595; ball.targetY = 60; comment.innerText = "🥅 [AUT BRAMKOWY] Piłka po mocnym uderzeniu przelatuje obok słupka."; }
+                    else { ball.targetX = 5; ball.targetY = 340; comment.innerText = "🥅 [AUT BRAMKOWY] Niecelny strzał rywali. Grę wznowi nasz bramkarz."; }
+                } else if (los >= 0.5 && los < 0.75) {
+                    stanMeczu = "rozny"; comment.style.color = "#00e5ff"; playerWithBall = null;
+                    if (ball.x > 300) { ball.targetX = 590; ball.targetY = 385; comment.innerText = "📐 [RZUT ROŻNY] Stoper rywali blokuje strzał! Rzut rożny dla nas."; }
+                    else { ball.targetX = 10; ball.targetY = 15; comment.innerText = "📐 [RZUT ROŻNY] Piłka rykoszetem ucieka na rzut rożny dla gości."; }
                 } else {
-                    stanMeczu = "aut"; comment.style.color = "#ffb300"; comment.innerText = "> [Pojedynek] Walka na skrzydle! Zawodnik próbuje minąć obrońcę przy linii...";
-                    playerWithBall = null; ball.targetX = 300; ball.targetY = -12; setTimeout(() => { comment.innerText = "🏳️ [AUT] Piłka wykopana w trybuny. Wznowienie z autu bocznego."; }, 1200);
+                    stanMeczu = "aut"; comment.style.color = "#ffb300"; playerWithBall = null; ball.targetX = 300; ball.targetY = -12;
+                    comment.innerText = "🏳️ [AUT] Piłka wykopana w trybuny po twardej walce. Wznowienie z autu.";
                 }
             }
         }
