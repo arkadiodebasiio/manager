@@ -23,10 +23,10 @@
         <div class="line" id="half-line"></div>
         <div class="line" id="center-circle"></div>
         
-        <!-- Nasza gwiazda: Kulka przypisana do Awatara -->
+        <!-- Kulka przypisana do Awatara -->
         <div id="player1" class="dot teamA" style="left: 150px; top: 200px;">
             9
-            <div class="name-tag" id="player1-name">Gracz SL (SZY: 50)</div>
+            <div class="name-tag" id="player1-name">Ładowanie zawodnika...</div>
         </div>
         
         <!-- Przeciwnik -->
@@ -36,17 +36,20 @@
         <div id="ball" style="left: 300px; top: 200px;"></div>
     </div>
     
-    <div id="commentary">Kliknij przycisk poniżej, aby odpalić symulację akcji!</div>
-    <button onclick="executeAction()" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">Symuluj Akcję kulek</button>
+    <div id="commentary">Przygotowanie do rozpoczęcia meczu...</div>
 
     <script>
-        // --- EMULACJA DANYCH Z SECOND LIFE ---
-        // Te zmienne docelowo będzie zmieniał Twój skrypt w SL, kiedy gracz pobiega na bieżni!
-        var avatarName = "Jan Kowalski";
-        var avatarSpeed = 85; // Wysoka szybkość z treningu!
+        // Automatyczny silnik meczowy - pobiera dane z linku URL z Second Life
+        const urlParams = new URLSearchParams(window.location.search);
+        var avatarName = urlParams.get('name') || "Arkadiodebasiio";
+        var avatarSpeed = parseInt(urlParams.get('speed')) || 85;
 
-        // Ustawiamy dane na start
-        document.getElementById("player1-name").innerText = avatarName + " (SZY: " + avatarSpeed + ")";
+        // Ta funkcja włącza się sama, gdy Second Life załaduje ekran
+        window.onload = function() {
+            document.getElementById("player1-name").innerText = avatarName + " (SZY: " + avatarSpeed + ")";
+            // Odczekaj 2 sekundy na pełne załadowanie i zacznij akcję
+            setTimeout(executeAction, 2000); 
+        };
 
         function executeAction() {
             var player = document.getElementById("player1");
@@ -54,37 +57,37 @@
             var ball = document.getElementById("ball");
             var comment = document.getElementById("commentary");
 
-            if (avatarSpeed > 60) {
-                // Akcja sukcesu dzięki statystykom z bieżni!
-                comment.innerText = "⚡ AKCJA: " + avatarName + " wykorzystuje swoją SZYBKOŚĆ (" + avatarSpeed + ")! Ucieka obrońcy!";
+            comment.innerText = "⚡ AKCJA: " + avatarName + " wykorzystuje szybkość " + avatarSpeed + " i rusza skrzydłem!";
+            player.style.left = "420px"; player.style.top = "150px";
+            ball.style.left = "440px"; ball.style.top = "140px";
+
+            setTimeout(function() { enemy.style.left = "380px"; enemy.style.top = "190px"; }, 200);
+            
+            setTimeout(function() {
+                ball.style.left = "595px"; ball.style.top = "200px";
+                comment.innerText = "⚽ GOOOOL!!! " + avatarName + " zdobywa piękną bramkę!";
                 
-                // Kulka napastnika i piłka lecą do przodu pod bramkę
-                player.style.left = "420px";
-                player.style.top = "150px";
-                ball.style.left = "440px";
-                ball.style.top = "140px";
+                // PĘTLA: Po strzeleniu gola odczekaj 5 sekund, zresetuj pozycje i zacznij nową akcję!
+                setTimeout(resetAndRestart, 5000);
+            }, 800);
+        }
 
-                // Obrońca (kulka niebieska) próbuje gonić, ale zostaje w tyle
-                setTimeout(function() {
-                    enemy.style.left = "380px";
-                    enemy.style.top = "190px";
-                }, 200);
+        function resetAndRestart() {
+            var player = document.getElementById("player1");
+            var enemy = document.getElementById("enemy1");
+            var ball = document.getElementById("ball");
+            var comment = document.getElementById("commentary");
 
-                // Strzał i Gol!
-                setTimeout(function() {
-                    ball.style.left = "595px"; // Piłka w siatce (prawa krawędź)
-                    ball.style.top = "200px";
-                    comment.innerText = "⚽ GOOOOL!!! Piękny rajd i bezwzględne wykończenie! Bramkarz bez szans!";
-                }, 800);
+            // Powrót na pozycje startowe
+            player.style.left = "150px"; player.style.top = "200px";
+            enemy.style.left = "450px"; enemy.style.top = "200px";
+            ball.style.left = "300px"; ball.style.top = "200px";
+            comment.innerText = "Trwa przygotowanie do kolejnej akcji meczowej...";
 
-            } else {
-                // Akcja porażki, jeśli gracz za mało trenował
-                comment.innerText = "❌ AKCJA: " + avatarName + " próbował minąć rywala, ale jego szybkość (" + avatarSpeed + ") była zbyt niska. Strata piłki.";
-                player.style.left = "250px";
-                enemy.style.left = "260px";
-                ball.style.left = "280px";
-            }
+            // Odpal nową akcję automatycznie za 2 sekundy
+            setTimeout(executeAction, 2000);
         }
     </script>
 </body>
 </html>
+
