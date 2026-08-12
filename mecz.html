@@ -28,7 +28,7 @@
             druzynaAtakujaca = Math.random() > 0.5 ? "A" : "B"; stanMeczu = "srodek"; timerAkcji = 0;
             let p9 = players.find(p => p.id === (druzynaAtakujaca + "9")); let p11 = players.find(p => p.id === (druzynaAtakujaca + "11"));
             p9.targetX = druzynaAtakujaca === "A" ? 295 : 305; p9.targetY = 190; p11.targetX = druzynaAtakujaca === "A" ? 295 : 305; p11.targetY = 210;
-            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Dwóch napastników przy środkowym punkcie. Rozpoczynamy mecz...";
+            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Dwóch napastników gotowych do gry. Czekamy na pierwszy gwizdek...";
             setTimeout(odpalRozegranieOdSrodka, 1500);
         }
         function odpalRozegranieOdSrodka() {
@@ -40,7 +40,7 @@
                     ball.owner = null;
                     let wolni = players.filter(mate => mate.team === druzynaAtakujaca && mate.id !== n9.id);
                     let odbiorca = wolni[Math.floor(Math.random() * wolni.length)];
-                    ball.targetX = odbiorca.x; ball.targetY = odbiorca.y;
+                    odbiorca.targetX = odbiorca.homeX + (druzynaAtakujaca === "A" ? 35 : -35); ball.targetX = odbiorca.targetX; ball.targetY = odbiorca.targetY;
                     comment.style.color = "#ffeb3b"; comment.innerText = "↩️ [WYCOFANIE] Piłka wycofana do tyłu pod nogi zawodnika nr " + odbiorca.nr + "!";
                     setTimeout(() => { ball.owner = odbiorca; stanMeczu = "gra"; }, 1000);
                 }, 1000);
@@ -63,22 +63,22 @@
                         if (timerAkcji > 35) {
                             timerAkcji = 0;
                             
-                            // POPRAWKA: UDOSTĘPNIENIE PODANIA (Bez obowiązku!). Gracz decyduje w locie 50/50.
-                            let rzutKoscią = Math.random();
+                            // POPRAWKA: CZYSZCZENIE LOGIKI - SYSTEM PREFERENCJI (BEZ NAKAZÓW)
+                            let wagaPreferencji = Math.random();
                             
                             if ((p.team === "A" && p.x > 450) || (p.team === "B" && p.x < 160)) {
                                 ball.targetX = p.team === "A" ? 595 : 5; ball.targetY = 175 + Math.random()*50; ball.owner = null;
                                 comment.style.color = "#ffeb3b"; comment.innerText = "🚀 [STRZAŁ] Wypracowana pozycja strzałowa! Strzał na bramkę!";
-                            } else if (rzutKoscią < 0.50) {
-                                // GRACZ WYBIERA PODANIE (Udostępnione)
+                            } else if (wagaPreferencji < 0.70) {
+                                // TENDENCJA ZESPOŁOWA (70% SZANS) - Gracz woli podać i szuka kolegi
                                 let koledzy = players.filter(mate => mate.team === p.team && mate.id !== p.id);
                                 let odbiorca = koledzy[Math.floor(Math.random() * koledzy.length)];
                                 ball.targetX = odbiorca.x; ball.targetY = odbiorca.y;
-                                ball.owner = null; // Piłka uwolniona od stopy, leci wolno
-                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Zawodnik nr " + p.nr + " rozgląda się i podaje do partnera nr " + odbiorca.nr + "!";
+                                ball.owner = null; // Piłka odkleja się od nogi i leci wolno do celu podania
+                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Zawodnik nr " + p.nr + " wybiera grę zespołową i podaje do partnera nr " + odbiorca.nr + "!";
                             } else {
-                                // GRACZ ODMAWIA PODANIA I BIEGNIE DALEJ (Drybling)
-                                comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Zawodnik nr " + p.nr + " decyduje się na dalszy, samodzielny rajd z piłką!";
+                                // SWOBODNY WYBÓR (30% SZANS) - Gracz decyduje się na holowanie piłki i drybling
+                                comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Zawodnik nr " + p.nr + " decyduje się pociągnąć akcję samodzielnie!";
                             }
                         }
                     } else { p.targetX = p.homeX + progresX + (kierunek * 25); if (frameCounter % 60 === 0) p.targetY = p.homeY + (Math.random()*20 - 10); }
@@ -93,13 +93,11 @@
                     } else { p.targetX = celCofaniaX; p.targetY = p.homeY; }
                 }
             });
-            // POPRAWKA DLA PRZECHWYTÓW RYWALA: Dowolna wolna piłka na linii lotu może być przejęta przez przeciwnika!
+            // Łapanie piłki z tolerancją przeglądarki w Second Life (Zabezpieczenie przed ucięciem wektora)
             if (!ball.owner) {
                 players.forEach(p => {
-                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < 14 && p.role !== "GK" && p.cooldown === 0) { 
+                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < 15 && p.role !== "GK" && p.cooldown === 0) { 
                         ball.owner = p; timerAkcji = 0; 
-                        comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252";
-                        comment.innerText = "🧲 [PRZECHWYT] Zawodnik nr " + p.nr + " świetnie wyczuł intencje i przechwycił piłkę!";
                     }
                 });
             }
@@ -120,7 +118,7 @@
             else { ball.x += (ball.targetX - ball.x) * 0.05; ball.y += (ball.targetY - ball.y) * 0.05; }
             if (stanMeczu === "gra" && (ball.x > 595 || ball.x < 5 || ball.y < 5 || ball.y > 395)) {
                 stanMeczu = "stop";
-                if (ball.x > 595 && ball.y > 170 && ball.y < 230) { scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna akcja zakończona bramką!"; }
+                if (ball.x > 595 && ball.y > 170 && ball.y < 230) { scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna zespołowa akcja zakończona bramką!"; }
                 else if (ball.x < 5 && ball.y > 170 && ball.y < 230) { scoreB++; comment.style.color = "#ff5252"; comment.innerText = "❌ BRAMKA dla przeciwników po mocnym strzale!"; }
                 else if (ball.x > 595 || ball.x < 5) { comment.style.color = "#aaaaaa"; comment.innerText = "🥅 [AUT BRAMKOWY] Piłka opuszcza boisko za linią końcową."; }
                 else { comment.style.color = "#ffb300"; comment.innerText = "🏳️ [AUT] Gra przerwana, piłka poza linią boczną."; }
