@@ -1,178 +1,154 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D</title>
+    <title>Championship Manager 2D - Canvas 60 FPS</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
-        #board { background: #236926; border: 4px solid #fff; width: 600px; height: 400px; position: relative; margin: 10px auto; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); }
-        .line { position: absolute; border: 1px solid rgba(255,255,255,0.4); }
-        #half-line { width: 1px; height: 100%; left: 50%; top: 0; }
-        #center-circle { width: 90px; height: 90px; border-radius: 50%; left: 255px; top: 155px; }
-        .penalty-box { position: absolute; border: 2px solid rgba(255,255,255,0.6); height: 180px; width: 70px; top: 110px; }
-        #box-left { left: 0; border-left: none; }
-        #box-right { right: 0; border-right: none; }
-        .goal { position: absolute; width: 12px; height: 60px; border: 3px solid #fff; top: 170px; background: rgba(255,255,255,0.2); }
-        #goal-left { left: -15px; border-right: none; }
-        #goal-right { right: -15px; border-left: none; }
-        .dot { position: absolute; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: bold; line-height: 20px; text-align: center; color: white; transition: all 0.9s ease-in-out; transform: translate(-50%, -50%); }
-        .teamA { background: #e53935; border: 1px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .teamB { background: #1e88e5; border: 1px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        #ball { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; border: 1px solid #000; transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translate(-50%, -50%); }
-        #commentary { background: #000; border: 2px solid #333; width: 580px; min-height: 55px; margin: 10px auto; padding: 10px; font-size: 14px; color: #00ff00; border-radius: 4px; text-align: left; }
-        #score-board { font-size: 20px; margin: 5px; font-weight: bold; letter-spacing: 2px; }
+        /* Jedno płótno zamiast wielu kulek - klucz do płynności w SL */
+        canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
+        #commentary { background: #000; border: 2px solid #333; width: 580px; min-height: 45px; margin: 10px auto; padding: 10px; font-size: 14px; color: #00ff00; border-radius: 4px; text-align: left; }
     </style>
 </head>
 <body>
-    <div id="score-board">🔴 FC KULECZKI <span id="scoreA">0</span> : <span id="scoreB">0</span> NIEBIESKIE ASY 🔵</div>
-    <div id="board">
-        <div class="line" id="half-line"></div>
-        <div class="line" id="center-circle"></div>
-        <div class="penalty-box" id="box-left"></div>
-        <div class="penalty-box" id="box-right"></div>
-        <div class="goal" id="goal-left"></div>
-        <div class="goal" id="goal-right"></div>
-        <div id="ball" style="left: 300px; top: 200px;"></div>
-    </div>
-    <div id="commentary">> Zawodnicy ruszają na swoje pozycje taktyczne...</div>
+
+    <div id="commentary">> Sędzia główny dmucha w gwizdek. Zaczynamy płynną symulację 60 FPS...</div>
+    <canvas id="matchCanvas" width="600" height="400"></canvas>
+
     <script>
-        var goalsA = 0; var goalsB = 0;
-        var board = document.getElementById("board");
-        var playersData = [
-            { id: "A1", team: "A", nr: 1, x: 30, y: 200 }, { id: "A2", team: "A", nr: 2, x: 100, y: 70 },
-            { id: "A3", team: "A", nr: 3, x: 90, y: 150 }, { id: "A4", team: "A", nr: 4, x: 90, y: 250 },
-            { id: "A5", team: "A", nr: 5, x: 100, y: 330 }, { id: "A6", team: "A", nr: 6, x: 200, y: 80 },
-            { id: "A7", team: "A", nr: 7, x: 180, y: 160 }, { id: "A8", team: "A", nr: 8, x: 180, y: 240 },
-            { id: "A10", team: "A", nr: 10, x: 200, y: 320 }, { id: "A11", team: "A", nr: 11, x: 270, y: 140 },
-            { id: "A9", team: "A", nr: 9, x: 270, y: 260 },
-            { id: "B1", team: "B", nr: 1, x: 570, y: 200 }, { id: "B2", team: "B", nr: 2, x: 500, y: 70 },
-            { id: "B3", team: "B", nr: 3, x: 510, y: 150 }, { id: "B4", team: "B", nr: 4, x: 510, y: 250 },
-            { id: "B5", team: "B", nr: 5, x: 500, y: 330 }, { id: "B6", team: "B", nr: 6, x: 400, y: 80 },
-            { id: "B7", team: "B", nr: 7, x: 420, y: 160 }, { id: "B8", team: "B", nr: 8, x: 420, y: 240 },
-            { id: "B10", team: "B", nr: 10, x: 400, y: 320 }, { id: "B9", team: "B", nr: 9, x: 330, y: 140 },
-            { id: "B11", team: "B", nr: 11, x: 330, y: 260 }
+        const canvas = document.getElementById("matchCanvas");
+        const ctx = canvas.getContext("2d");
+        const comment = document.getElementById("commentary");
+
+        let scoreA = 0; let scoreB = 0;
+        let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.1 };
+        let players = [];
+        let stanMeczu = "srodek"; // srodek, akcja, aut, rozny, aut_bramkowy
+        let timerStanu = 0;
+
+        // Baza pozycji startowych (Taktyka 4-4-2)
+        const startPositions = [
+            { team: "A", nr: 1, x: 40, y: 200 }, { team: "A", nr: 2, x: 120, y: 80 }, { team: "A", nr: 3, x: 110, y: 160 }, { team: "A", nr: 4, x: 110, y: 240 }, { team: "A", nr: 5, x: 120, y: 320 }, { team: "A", nr: 6, x: 220, y: 90 }, { team: "A", nr: 7, x: 200, y: 160 }, { team: "A", nr: 8, x: 200, y: 240 }, { team: "A", nr: 10, x: 220, y: 310 }, { team: "A", nr: 11, x: 280, y: 150 }, { team: "A", nr: 9, x: 280, y: 250 },
+            { team: "B", nr: 1, x: 560, y: 200 }, { team: "B", nr: 2, x: 480, y: 80 }, { team: "B", nr: 3, x: 490, y: 160 }, { team: "B", nr: 4, x: 490, y: 240 }, { team: "B", nr: 5, x: 480, y: 320 }, { team: "B", nr: 6, x: 380, y: 90 }, { team: "B", nr: 7, x: 400, y: 160 }, { team: "B", nr: 8, x: 400, y: 240 }, { team: "B", nr: 10, x: 380, y: 310 }, { team: "B", nr: 9, x: 320, y: 150 }, { team: "B", nr: 11, x: 320, y: 250 }
         ];
-        playersData.forEach(function(p) {
-            var dot = document.createElement("div");
-            dot.id = p.id; dot.className = "dot " + (p.team === "A" ? "teamA" : "teamB");
-            dot.style.left = p.x + "px"; dot.style.top = p.y + "px"; dot.innerText = p.nr;
-            board.appendChild(dot);
+
+        // Tworzenie obiektów zawodników z losowym przesunięciem (każdy biegnie inaczej!)
+        startPositions.forEach(p => {
+            players.push({ team: p.team, nr: p.nr, startX: p.x, startY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, speed: 0.05 + Math.random() * 0.03 });
         });
-        window.onload = function() { setTimeout(wznowienieOdSrodka, 2000); };
-        function przesunFormacjeNaStart() {
-            playersData.forEach(function(p) {
-                var el = document.getElementById(p.id); el.style.left = p.x + "px"; el.style.top = p.y + "px";
+
+        function ustawCeleNaStart() {
+            players.forEach(p => { p.targetX = p.startX; p.targetY = p.startY; });
+            ball.targetX = 300; ball.targetY = 200;
+        }
+
+        // --- GŁÓWNA PĘTLA GRAFICZNA (60 KLATEK NA SEKUNDĘ) ---
+        function updateGame() {
+            // 1. Czyszczenie i rysowanie boiska
+            ctx.fillStyle = "#236926"; ctx.fillRect(0, 0, 600, 400);
+            ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, 600, 400);
+            ctx.beginPath(); ctx.moveTo(300, 0); ctx.lineTo(300, 400); ctx.stroke();
+            ctx.beginPath(); ctx.arc(300, 200, 45, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeRect(0, 110, 70, 180); ctx.strokeRect(530, 110, 70, 180);
+
+            // Rysowanie wyniku meczu bezpośrednio na murawie
+            ctx.fillStyle = "rgba(255,255,255,0.8)"; ctx.font = "bold 16px Arial";
+            ctx.fillText("FC KULECZKI " + scoreA + " : " + scoreB + " NIEBIESKIE ASY", 190, 30);
+
+            // 2. Płynne przesuwanie zawodników po skosach za pomocą matematycznej interpolacji (LERP)
+            players.forEach(p => {
+                p.x += (p.targetX - p.x) * p.speed; p.y += (p.targetY - p.y) * p.speed;
+                // Rysowanie kulek
+                ctx.fillStyle = p.team === "A" ? "#e53935" : "#1e88e5";
+                ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke();
+                // Numery na koszulkach
+                ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
             });
+
+            // 3. Płynny lot piłki
+            ball.x += (ball.targetX - ball.x) * ball.speed; ball.y += (ball.targetY - ball.y) * ball.speed;
+            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#000"; ctx.stroke();
+
+            // 4. Logika sędziowska i zmiana akcji
+            timerStanu++;
+            if (timerStanu > 180) { // Zmiana akcji co około 3 sekundy
+                timerStanu = 0;
+                logikaSędziowska();
+            }
+
+            requestAnimationFrame(updateGame); // Wymuszenie 60 FPS
         }
-        function wznowienieOdSrodka() {
-            var comment = document.getElementById("commentary"); var ball = document.getElementById("ball");
-            comment.style.color = "#00ff00"; przesunFormacjeNaStart();
-            ball.style.left = "300px"; ball.style.top = "200px";
-            comment.innerText = "⚽ [ŚRODEK] Rozpoczęcie od środka boiska! Krótkie rozegranie...";
-            setTimeout(losujAkcjeMeczowa, 2500);
-        }
-        function losujAkcjeMeczowa() {
-            var comment = document.getElementById("commentary"); var ball = document.getElementById("ball");
-            var los = Math.random();
-            if (los < 0.4) {
-                comment.innerText = "> [Atak] FC Kuleczki ruszają całą linią naprzód! Przeciwnik cofa się do obrony...";
-                document.getElementById("A1").style.left = "60px";
-                document.getElementById("A2").style.left = "180px"; document.getElementById("A5").style.left = "180px";
-                document.getElementById("A3").style.left = "150px"; document.getElementById("A4").style.left = "150px";
-                document.getElementById("A6").style.left = "330px"; document.getElementById("A10").style.left = "330px";
-                document.getElementById("A7").style.left = "380px"; document.getElementById("A7").style.top = "120px";
-                document.getElementById("A8").style.left = "380px"; document.getElementById("A8").style.top = "280px";
-                document.getElementById("A11").style.left = "460px"; document.getElementById("A11").style.top = "130px";
-                document.getElementById("A9").style.left = "470px"; document.getElementById("A9").style.top = "230px";
-                document.getElementById("B1").style.left = "550px";
-                document.getElementById("B2").style.left = "470px"; document.getElementById("B2").style.top = "90px";
-                document.getElementById("B3").style.left = "450px"; document.getElementById("B3").style.top = "170px";
-                document.getElementById("B4").style.left = "450px"; document.getElementById("B4").style.top = "240px";
-                document.getElementById("B5").style.left = "470px"; document.getElementById("B5").style.top = "310px";
-                document.getElementById("B6").style.left = "350px"; document.getElementById("B10").style.left = "350px";
-                document.getElementById("B7").style.left = "370px"; document.getElementById("B8").style.left = "370px";
-                document.getElementById("B9").style.left = "290px"; document.getElementById("B11").style.left = "290px";
-                ball.style.left = "450px"; ball.style.top = "220px";
-                setTimeout(function() {
-                    var losWyjscia = Math.random();
-                    if (losWyjscia < 0.4) {
-                        comment.innerText = "> [Szansa] Napastnik nr 9 gubi krycie! Strzał po skosie...";
-                        document.getElementById("A9").style.left = "510px"; document.getElementById("A9").style.top = "190px";
-                        ball.style.left = "595px"; ball.style.top = "200px"; goalsA++; document.getElementById("scoreA").innerText = goalsA;
-                        setTimeout(function() { comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna akcja zespołowa zwieńczona bramką!"; setTimeout(wznowienieOdSrodka, 4000); }, 500);
-                    } else if (losWyjscia >= 0.4 && losWyjscia < 0.7) {
-                        comment.innerText = "> [Strzał] Potężne uderzenie głową... ale niecelne!";
-                        document.getElementById("A9").style.left = "480px"; document.getElementById("A9").style.top = "210px";
-                        ball.style.left = "595px"; ball.style.top = "50px";
-                        setTimeout(function() { comment.style.color = "#aaaaaa"; comment.innerText = "🥅 [AUT BRAMKOWY] Piłka przelatuje nad poprzeczką. Grę wznowią Niebiescy."; setTimeout(autBramkowyRywala, 3000); }, 500);
-                    } else {
-                        comment.innerText = "> [Blok] Strzał zablokowany w gąszczu nóg! Piłka ucieka za linię...";
-                        document.getElementById("B3").style.left = "460px"; document.getElementById("B3").style.top = "210px";
-                        ball.style.left = "595px"; ball.style.top = "385px";
-                        setTimeout(function() { comment.style.color = "#00e5ff"; comment.innerText = "📐 [RZUT ROŻNY] Ofiarny wślizg stoperów ratuje zespół przed stratą bramki."; setTimeout(rzutRoznyDlaNas, 3000); }, 500);
-                    }
-                }, 1500);
-            } else if (los >= 0.4 && los < 0.8) {
-                comment.style.color = "#ff5252"; comment.innerText = "> [Zagrożenie] Niebieskie Asy ruszają zmasowanym atakiem! Nasi się cofają...";
-                document.getElementById("B1").style.left = "540px";
-                document.getElementById("B2").style.left = "420px"; document.getElementById("B5").style.left = "420px";
-                document.getElementById("B3").style.left = "450px"; document.getElementById("B4").style.left = "450px";
-                document.getElementById("B6").style.left = "270px"; document.getElementById("B10").style.left = "270px";
-                document.getElementById("B7").style.left = "220px"; document.getElementById("B8").style.left = "220px";
-                document.getElementById("B9").style.left = "140px"; document.getElementById("B9").style.top = "130px";
-                document.getElementById("B11").style.left = "140px"; document.getElementById("B11").style.top = "270px";
-                document.getElementById("A1").style.left = "40px";
-                document.getElementById("A2").style.left = "130px"; document.getElementById("A2").style.top = "90px";
-                document.getElementById("A3").style.left = "150px"; document.getElementById("A3").style.top = "170px";
-                document.getElementById("A4").style.left = "150px"; document.getElementById("A4").style.top = "240px";
-                document.getElementById("A5").style.left = "130px"; document.getElementById("A5").style.top = "310px";
-                document.getElementById("A6").style.left = "250px"; document.getElementById("A10").style.left = "250px";
-                document.getElementById("A7").style.left = "230px"; document.getElementById("A8").style.left = "230px";
-                document.getElementById("A11").style.left = "310px"; document.getElementById("A9").style.left = "310px";
-                ball.style.left = "150px"; ball.style.top = "140px";
-                setTimeout(function() {
-                    comment.innerText = "> [Strzał] Skrzydłowy gości uderza mocno po ziemi!";
-                    if (Math.random() > 0.5) {
-                        ball.style.left = "5px"; ball.style.top = "200px"; goalsB++; document.getElementById("scoreB").innerText = goalsB;
-                        setTimeout(function() { comment.innerText = "❌ BRAMKA! Precyzyjny strzał obok bramkarza. Gol dla rywali."; setTimeout(wznowienieOdSrodka, 4000); }, 500);
-                    } else {
-                        document.getElementById("A1").style.left = "35px"; document.getElementById("A1").style.top = "230px";
-                        ball.style.left = "5px"; ball.style.top = "340px";
-                        setTimeout(function() { comment.style.color = "#aaaaaa"; comment.innerText = "🥅 [AUT BRAMKOWY] Piłka trafia w boczną siatkę. Zaczynamy od bramki."; setTimeout(autBramkowyNasz, 3000); }, 500);
-                    }
-                }, 1500);
+
+        function logikaSędziowska() {
+            comment.style.color = "#00ff00";
+            let los = Math.random();
+
+            if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
+                stanMeczu = "akcja";
+                // Losujemy stronę ataku
+                if (los < 0.5) {
+                    comment.innerText = "> [Atak] Atak pozycyjny FC Kuleczki. Zawodnicy dynamicznie rozbiegają się po skrzydłach!";
+                    let bx = 400 + Math.random() * 150; let by = 50 + Math.random() * 300;
+                    ball.targetX = bx; ball.targetY = by;
+                    // Każdy biegnie w inne losowe miejsce w strefie ataku! Brak sztywnej linii!
+                    players.forEach(p => {
+                        if (p.team === "A") { p.targetX = p.startX + 150 + Math.random()*40; p.targetY = p.startY + (Math.random()*60 - 30); }
+                        else { p.targetX = p.startX - 50 + Math.random()*30; p.targetY = p.startY + (Math.random()*40 - 20); }
+                    });
+                } else {
+                    comment.style.color = "#ff5252";
+                    comment.innerText = "> [Zagrożenie] Niebieskie Asy przejmują inicjatywę i groźnie ścinają w pole karne!";
+                    let bx = 50 + Math.random() * 150; let by = 50 + Math.random() * 300;
+                    ball.targetX = bx; ball.targetY = by;
+                    players.forEach(p => {
+                        if (p.team === "B") { p.targetX = p.startX - 150 - Math.random()*40; p.targetY = p.startY + (Math.random()*60 - 30); }
+                        else { p.targetX = p.startX + 50 - Math.random()*30; p.targetY = p.startY + (Math.random()*40 - 20); }
+                    });
+                }
             } else {
-                comment.style.color = "#ffb300"; comment.innerText = "> [Pressing] Walka obu drużyn o piłkę w środkowej strefie...";
-                playersData.forEach(function(p) {
-                    var el = document.getElementById(p.id);
-                    if (p.team === "A" && p.id !== "A1") el.style.left = (p.x + 40) + "px";
-                    if (p.team === "B" && p.id !== "B1") el.style.left = (p.x - 40) + "px";
-                });
-                setTimeout(function() {
-                    ball.style.left = "290px"; ball.style.top = "415px";
-                    setTimeout(function() { comment.innerText = "🏳️ [AUT] Piłka po zaciętym starciu opuszcza boczną linię."; setTimeout(wznowienieZAutu, 3000); }, 500);
-                }, 1500);
+                // Finał akcji: Gol, Aut, Rożny czy Aut bramkowy
+                if (los < 0.25) {
+                    if (ball.x > 300) {
+                        ball.targetX = 595; ball.targetY = 200; scoreA++; comment.style.color = "#ffeb3b";
+                        comment.innerText = "⚽ GOOOOL!! Piękny, nieliniowy rajd zakończony potężnym strzałem w siatkę!";
+                    } else {
+                        ball.targetX = 5; ball.targetY = 200; scoreB++; comment.style.color = "#ff5252";
+                        comment.innerText = "❌ BRAMKA! Przeciwnicy rozmontowali naszą defensywę i strzelają gola!";
+                    }
+                    stanMeczu = "srodek";
+                } else if (los >= 0.25 && los < 0.5) {
+                    stanMeczu = "aut_bramkowy"; comment.style.color = "#aaaaaa";
+                    if (ball.x > 300) {
+                        ball.targetX = 595; ball.targetY = Math.random() > 0.5 ? 40 : 360;
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Strzał z dystansu przechodzi daleko obok słupka.";
+                    } else {
+                        ball.targetX = 5; ball.targetY = Math.random() > 0.5 ? 40 : 360;
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Niecelne uderzenie Niebieskich. Piłka poza polem bramki.";
+                    }
+                    setTimeout(ustawCeleNaStart, 1000);
+                } else if (los >= 0.5 && los < 0.75) {
+                    stanMeczu = "rozny"; comment.style.color = "#00e5ff";
+                    if (ball.x > 300) {
+                        ball.targetX = 590; ball.targetY = 390;
+                        comment.innerText = "📐 [RZUT ROŻNY] Obrońca ofiarnym skosem blokuje podanie! Korner dla nas.";
+                    } else {
+                        ball.targetX = 10; ball.targetY = 10;
+                        comment.innerText = "📐 [RZUT ROŻNY] Rywale wywalczyli rzut rożny po zablokowanym strzale.";
+                    }
+                    setTimeout(ustawCeleNaStart, 1000);
+                } else {
+                    stanMeczu = "aut"; comment.style.color = "#ffb300";
+                    ball.targetX = 300 + (Math.random()*100 - 50); ball.targetY = Math.random() > 0.5 ? -10 : 410;
+                    comment.innerText = "🏳️ [AUT] Piłka ucieka za boczną linię po chaotycznej walce ramie w ramię.";
+                    setTimeout(ustawCeleNaStart, 1000);
+                }
             }
         }
-        function autBramkowyRywala() {
-            przesunFormacjeNaStart(); document.getElementById("commentary").innerText = "> Rzut od bramki wykonuje bramkarz rywali...";
-            document.getElementById("ball").style.left = "440px"; document.getElementById("ball").style.top = "150px";
-            setTimeout(losujAkcjeMeczowa, 2500);
-        }
-        function autBramkowyNasz() {
-            przesunFormacjeNaStart(); document.getElementById("commentary").innerText = "> Nasz bramkarz podaje krótko do obrońcy...";
-            document.getElementById("ball").style.left = "120px"; document.getElementById("ball").style.top = "100px";
-            setTimeout(losujAkcjeMeczowa, 2500);
-        }
-        function rzutRoznyDlaNas() {
-            document.getElementById("commentary").innerText = "📐 [Dośrodkowanie] Rzut rożny! Dośrodkowanie w pole karne!";
-            document.getElementById("ball").style.left = "490px"; document.getElementById("ball").style.top = "200px";
-            setTimeout(losujAkcjeMeczowa, 2500);
-        }
-        function wznowienieZAutu() {
-            document.getElementById("commentary").innerText = "🏳️ [Wrzut] Wznowienie gry z autu bocznego...";
-            document.getElementById("ball").style.left = "300px"; document.getElementById("ball").style.top = "240px";
-            setTimeout(losujAkcjeMeczowa, 2500);
-        }
+
+        // Start silnika graficznego
+        updateGame();
     </script>
 </body>
 </html>
