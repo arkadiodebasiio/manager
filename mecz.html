@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SM Match Engine 2D</title>
+    <style>
+        body { background: #222; color: white; font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
+        #board { background: #2e7d32; border: 4px solid #fff; width: 600px; height: 400px; position: relative; margin: 10px auto; box-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
+        .line { position: absolute; border: 1px solid rgba(255,255,255,0.5); }
+        #half-line { width: 1px; height: 100%; left: 50%; top: 0; }
+        #center-circle { width: 80px; height: 80px; border-radius: 50%; left: 260px; top: 160px; }
+        .dot { position: absolute; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: bold; line-height: 20px; text-align: center; color: white; transition: all 0.6s linear; transform: translate(-50%, -50%); }
+        .teamA { background: #d32f2f; border: 2px solid #fff; box-shadow: 0 0 5px #000; }
+        .teamB { background: #1976d2; border: 2px solid #fff; box-shadow: 0 0 5px #000; }
+        #ball { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; border: 1px solid #000; transition: all 0.5s ease-out; transform: translate(-50%, -50%); }
+        .name-tag { position: absolute; font-size: 9px; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 3px; top: -15px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; }
+        #commentary { background: #111; border: 2px solid #444; width: 580px; min-height: 50px; margin: 10px auto; padding: 10px; font-size: 14px; color: #ffeb3b; border-radius: 50px; }
+    </style>
+</head>
+<body>
+
+    <h2>🏆 RETRO MENEDŻER 2D 🏆</h2>
+    <div id="board">
+        <div class="line" id="half-line"></div>
+        <div class="line" id="center-circle"></div>
+        
+        <!-- Nasza gwiazda: Kulka przypisana do Awatara -->
+        <div id="player1" class="dot teamA" style="left: 150px; top: 200px;">
+            9
+            <div class="name-tag" id="player1-name">Gracz SL (SZY: 50)</div>
+        </div>
+        
+        <!-- Przeciwnik -->
+        <div id="enemy1" class="dot teamB" style="left: 450px; top: 200px;">4</div>
+        
+        <!-- Piłka -->
+        <div id="ball" style="left: 300px; top: 200px;"></div>
+    </div>
+    
+    <div id="commentary">Kliknij przycisk poniżej, aby odpalić symulację akcji!</div>
+    <button onclick="executeAction()" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">Symuluj Akcję kulek</button>
+
+    <script>
+        // --- EMULACJA DANYCH Z SECOND LIFE ---
+        // Te zmienne docelowo będzie zmieniał Twój skrypt w SL, kiedy gracz pobiega na bieżni!
+        var avatarName = "Jan Kowalski";
+        var avatarSpeed = 85; // Wysoka szybkość z treningu!
+
+        // Ustawiamy dane na start
+        document.getElementById("player1-name").innerText = avatarName + " (SZY: " + avatarSpeed + ")";
+
+        function executeAction() {
+            var player = document.getElementById("player1");
+            var enemy = document.getElementById("enemy1");
+            var ball = document.getElementById("ball");
+            var comment = document.getElementById("commentary");
+
+            if (avatarSpeed > 60) {
+                // Akcja sukcesu dzięki statystykom z bieżni!
+                comment.innerText = "⚡ AKCJA: " + avatarName + " wykorzystuje swoją SZYBKOŚĆ (" + avatarSpeed + ")! Ucieka obrońcy!";
+                
+                // Kulka napastnika i piłka lecą do przodu pod bramkę
+                player.style.left = "420px";
+                player.style.top = "150px";
+                ball.style.left = "440px";
+                ball.style.top = "140px";
+
+                // Obrońca (kulka niebieska) próbuje gonić, ale zostaje w tyle
+                setTimeout(function() {
+                    enemy.style.left = "380px";
+                    enemy.style.top = "190px";
+                }, 200);
+
+                // Strzał i Gol!
+                setTimeout(function() {
+                    ball.style.left = "595px"; // Piłka w siatce (prawa krawędź)
+                    ball.style.top = "200px";
+                    comment.innerText = "⚽ GOOOOL!!! Piękny rajd i bezwzględne wykończenie! Bramkarz bez szans!";
+                }, 800);
+
+            } else {
+                // Akcja porażki, jeśli gracz za mało trenował
+                comment.innerText = "❌ AKCJA: " + avatarName + " próbował minąć rywala, ale jego szybkość (" + avatarSpeed + ") była zbyt niska. Strata piłki.";
+                player.style.left = "250px";
+                enemy.style.left = "260px";
+                ball.style.left = "280px";
+            }
+        }
+    </script>
+</body>
+</html>
