@@ -1,138 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CM 2D - Professional Match Engine</title>
+    <title>CM 2D - Second Life Edition</title>
     <style>
-        body { background: #0c1a10; color: #fff; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 10px; }
-        canvas { background: #134e24; border: 3px solid #fff; box-shadow: 0px 0px 20px #000; display: block; margin: 10px auto; }
-        #commentary { background: #000; border: 2px solid #222; width: 620px; min-height: 45px; margin: 10px auto; padding: 12px; font-size: 14px; color: #00ff00; text-align: left; border-radius: 4px; }
-        #scoreboard { font-size: 22px; font-weight: bold; font-family: Arial, sans-serif; margin: 5px; letter-spacing: 1px; }
+        body { background: #0c1a10; color: #fff; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 5px; overflow: hidden; }
+        canvas { background: #134e24; border: 3px solid #fff; display: block; margin: 5px auto; width: 620px; height: 380px; }
+        #commentary { background: #000; border: 1px solid #333; width: 600px; min-height: 35px; margin: 5px auto; padding: 8px; font-size: 13px; color: #00ff00; text-align: left; }
+        #scoreboard { font-size: 20px; font-weight: bold; font-family: Arial, sans-serif; margin: 3px; }
     </style>
 </head>
 <body>
     <div id="scoreboard">🔴 TEAM A <span id="sa">0</span> - <span id="sb">0</span> TEAM B 🔵</div>
     <canvas id="cmCanvas" width="640" height="400"></canvas>
-    <div id="commentary">> Inicjalizacja bazy danych zawodników w stylu CM...</div>
+    <div id="commentary">> Inicjalizacja ekranu meczowego Second Life...</div>
 
     <script>
         const canvas = document.getElementById("cmCanvas"); const ctx = canvas.getContext("2d");
         const comment = document.getElementById("commentary");
         let scoreA = 0; let scoreB = 0;
 
-        // BAZA DANYCH W STYLU MANAGERÓW (Statystyki od 1 do 20)
+        // Skrócona baza danych (Mniejsza waga = płynniejsze działanie w SL)
         let players = [
-            // TEAM A (Czerwoni) - Atakuje w prawo
-            { id: "A1", team: "A", nr: 1,  role: "GK",  bx: 40,  by: 200, pas: 10, sho: 1,  def: 15, name: "Kowalski" },
-            { id: "A2", team: "A", nr: 2,  role: "DEF", bx: 150, by: 100, pas: 12, sho: 5,  def: 16, name: "Zieliński" },
-            { id: "A3", team: "A", nr: 5,  role: "DEF", bx: 150, by: 300, pas: 11, sho: 4,  def: 18, name: "Glik" },
-            { id: "A4", team: "A", nr: 7,  role: "MID", bx: 280, by: 120, pas: 17, sho: 12, def: 10, name: "Zieliński" },
-            { id: "A5", team: "A", nr: 6,  role: "MID", bx: 280, by: 280, pas: 15, sho: 11, def: 14, name: "Krychowiak" },
-            { id: "A6", team: "A", nr: 10, role: "ATT", bx: 440, by: 130, pas: 14, sho: 18, def: 5,  name: "Lewandowski" },
-            { id: "A7", team: "A", nr: 9,  role: "ATT", bx: 440, by: 270, pas: 11, sho: 17, def: 4,  name: "Milik" },
+            { id: "A1", team: "A", nr: 1,  bx: 40,  by: 200, pas: 10, sho: 1,  def: 15, name: "Kowalski" },
+            { id: "A2", team: "A", nr: 5,  bx: 150, by: 130, pas: 12, sho: 5,  def: 16, name: "Glik" },
+            { id: "A3", team: "A", nr: 4,  bx: 150, by: 270, pas: 11, sho: 4,  def: 18, name: "Pazdan" },
+            { id: "A4", team: "A", nr: 10, bx: 300, by: 200, pas: 17, sho: 12, def: 10, name: "Zieliński" },
+            { id: "A5", team: "A", nr: 9,  role: "ATT", bx: 460, by: 200, pas: 14, sho: 18, def: 5, name: "Lewandowski" },
 
-            // TEAM B (Niebiescy) - Atakuje w lewo
-            { id: "B1", team: "B", nr: 1,  role: "GK",  bx: 600, by: 200, pas: 11, sho: 1,  def: 17, name: "Buffon" },
-            { id: "B2", team: "B", nr: 3,  role: "DEF", bx: 490, by: 100, pas: 10, sho: 3,  def: 16, name: "Chiellini" },
-            { id: "B3", team: "B", nr: 4,  role: "DEF", bx: 490, by: 300, pas: 12, sho: 5,  def: 19, name: "Bonucci" },
-            { id: "B4", team: "B", nr: 8,  role: "MID", bx: 360, by: 120, pas: 16, sho: 13, def: 11, name: "Pirlo" },
-            { id: "B5", team: "B", nr: 5,  role: "MID", bx: 360, by: 280, pas: 14, sho: 10, def: 15, name: "Gattuso" },
-            { id: "B6", team: "B", nr: 11, role: "ATT", bx: 200, by: 130, pas: 13, sho: 16, def: 3,  name: "Del Piero" },
-            { id: "B7", team: "B", nr: 10, role: "ATT", bx: 200, by: 270, pas: 12, sho: 19, def: 2,  name: "Totti" }
+            { id: "B1", team: "B", nr: 1,  bx: 600, by: 200, pas: 11, sho: 1,  def: 17, name: "Buffon" },
+            { id: "B2", team: "B", nr: 3,  bx: 490, by: 130, pas: 10, sho: 3,  def: 16, name: "Chiellini" },
+            { id: "B3", team: "B", nr: 4,  bx: 490, by: 270, pas: 12, sho: 5,  def: 19, name: "Bonucci" },
+            { id: "B4", team: "B", nr: 8,  bx: 340, by: 200, pas: 16, sho: 13, def: 11, name: "Pirlo" },
+            { id: "B5", team: "B", nr: 10, role: "ATT", bx: 180, by: 200, pas: 13, sho: 19, def: 3, name: "Totti" }
         ];
 
-        // Stan początkowy obiektów
         players.forEach(p => { p.x = p.bx; p.y = p.by; });
         let ball = { x: 320, y: 200, tx: 320, ty: 200, owner: null };
         
-        let pPosiadajacy = players.find(p => p.id === "A6"); // Pierwszą akcję zaczyna Lewandowski
+        let pPosiadajacy = players.find(p => p.id === "A5"); 
         ball.owner = pPosiadajacy;
 
-        let fazaMeczu = "DECYZJA"; 
-        let czasTrwaniaAnimacji = 0;
+        let fazaMeczu = "DECYZJA"; let czasTrwaniaAnimacji = 0;
 
         function wypiszKomentarz(tekst, kolor = "#00ff00") {
-            comment.style.color = kolor;
-            comment.innerText = "⚽ " + tekst;
+            comment.style.color = kolor; comment.innerText = "⚽ " + tekst;
         }
-        // 2. MATRYCA LOGICZNA SILNIKA MECZOWEGO
+        // 2. MATRYCA LOGICZNA SILNIKA MECZOWEGO (Zoptymalizowana pod Second Life)
         function silnikMeczowyTick() {
-            
             if (fazaMeczu === "DECYZJA") {
-                czasTrwaniaAnimacji = 50; // Czas trwania jednej sekwencji ruchu (ok. 0.8s)
+                czasTrwaniaAnimacji = 45; // Szybka klatka animacji dla płynności w SL
                 let koledzy = players.filter(p => p.team === pPosiadajacy.team && p.id !== pPosiadajacy.id);
                 let przeciwnicy = players.filter(p => p.team !== pPosiadajacy.team);
-                
                 let losowaKostka = Math.random();
 
-                // DECYZJA A: PRÓBA PODANIA (Test atrybutu 'pas' podającego kontra 'def' losowego obrońcy)
-                if (losowaKostka < 0.60) {
+                // DECYZJA A: PODANIE
+                if (losowaKostka < 0.65) {
                     let odbiorca = koledzy[Math.floor(Math.random() * koledzy.length)];
                     let losowyObronca = przeciwnicy[Math.floor(Math.random() * przeciwnicy.length)];
-                    
                     ball.owner = null;
                     ball.tx = odbiorca.bx; ball.ty = odbiorca.by;
                     
                     let kierunek = pPosiadajacy.team === "A" ? 1 : -1;
                     pPosiadajacy.tx = pPosiadajacy.x + (kierunek * 15);
 
-                    // KALKULACJA MANAGEROWA: podania vs przechwyt
-                    let szansaNaPrzechwyt = (losowyObronca.def / 20) * 0.4; 
+                    let szansaNaPrzechwyt = (losowyObronca.def / 20) * 0.35; 
                     let jakoscPodania = (pPosiadajacy.pas / 20);
 
                     if (jakoscPodania > szansaNaPrzechwyt) {
-                        pPosiadajacy = odbiorca;
-                        fazaMeczu = "ANIMACJA_LOTU";
-                        wypiszKomentarz(`${pPosiadajacy.name} przytomnie rozciąga grę do boku.`, "#00ff00");
+                        pPosiadajacy = odbiorca; fazaMeczu = "ANIMACJA_LOTU";
+                        wypiszKomentarz(`${pPosiadajacy.name} precyzyjnie zagrywa do boku.`, "#00ff00");
                     } else {
-                        pPosiadajacy = losowyObronca;
-                        ball.tx = losowyObronca.bx; ball.ty = losowyObronca.by;
+                        pPosiadajacy = losowyObronca; ball.tx = losowyObronca.bx; ball.ty = losowyObronca.by;
                         fazaMeczu = "ANIMACJA_LOTU";
-                        wypiszKomentarz(`Fatalne zagranie! ${losowyObronca.name} doskonale przecina to podanie!`, "#ff5722");
+                        wypiszKomentarz(`Przechwyt! ${losowyObronca.name} idealnie czyta grę!`, "#ff5722");
                     }
                 } 
-                // DECYZJA B: RAJD / DRYBLING (Kropka przesuwa się w stronę bramki rywala)
-                else if (losowaKostka < 0.85) {
+                // DECYZJA B: RAJD
+                else if (losowaKostka < 0.88) {
                     let kierunek = pPosiadajacy.team === "A" ? 1 : -1;
-                    pPosiadajacy.tx = pPosiadajacy.x + (kierunek * 50);
-                    pPosiadajacy.ty = pPosiadajacy.y + (Math.random() * 60 - 30);
-                    
+                    pPosiadajacy.tx = pPosiadajacy.x + (kierunek * 45);
+                    pPosiadajacy.ty = pPosiadajacy.y + (Math.random() * 40 - 20);
                     ball.tx = pPosiadajacy.tx; ball.ty = pPosiadajacy.ty;
                     fazaMeczu = "ANIMACJA_RAJDU";
-                    wypiszKomentarz(`${pPosiadajacy.name} dynamicznie napędza akcję środkiem pola...`, "#00e5ff");
+                    wypiszKomentarz(`${pPosiadajacy.name} rusza z dynamiczną akcją...`, "#00e5ff");
                 } 
-                // DECYZJA C: STRZAŁ NA BRAMKĘ (Wymaga odpowiedniej strefy na boisku)
+                // DECYZJA C: STRZAŁ
                 else {
-                    let wStrefieAtaku = pPosiadajacy.team === "A" ? pPosiadajacy.x > 300 : pPosiadajacy.x < 340;
-                    
+                    let wStrefieAtaku = pPosiadajacy.team === "A" ? pPosiadajacy.x > 250 : pPosiadajacy.x < 390;
                     if (wStrefieAtaku) {
                         ball.owner = null;
-                        let stronaBramki = pPosiadajacy.team === "A" ? 635 : 5;
+                        let stronaBramki = pPosiadajacy.team === "A" ? 632 : 8;
                         ball.tx = stronaBramki; ball.ty = 175 + Math.random() * 50;
-                        
                         fazaMeczu = "ANIMACJA_STRZALU";
-                        wypiszKomentarz(`Potężne uderzenie! ${pPosiadajacy.name} szuka szczęścia!`, "#ffeb3b");
+                        wypiszKomentarz(`Strzał! ${pPosiadajacy.name} uderza na bramkę!`, "#ffeb3b");
                     } else {
-                        fazaMeczu = "DECYZJA"; // Restart pętli decyzyjnej jeśli za daleko
+                        fazaMeczu = "DECYZJA";
                     }
                 }
             }
 
-            // 3. ODTRZWARZACZ RUCHU 2D (Przesuwanie kropek do wyznaczonych celów)
+            // 3. ODTRZWARZACZ RUCHU 2D (Płynny interpolowany ruch)
             players.forEach(p => {
                 if (p.tx !== undefined && p.ty !== undefined) {
-                    p.x += (p.tx - p.x) * 0.08; p.y += (p.ty - p.y) * 0.08;
+                    p.x += (p.tx - p.x) * 0.1; p.y += (p.ty - p.y) * 0.1;
                 } else {
-                    p.x += (p.bx - p.x) * 0.05; p.y += (p.by - p.y) * 0.05;
+                    p.x += (p.bx - p.x) * 0.06; p.y += (p.by - p.y) * 0.06;
                 }
             });
 
             if (ball.owner) {
                 ball.x = ball.owner.x; ball.y = ball.owner.y;
             } else {
-                ball.x += (ball.tx - ball.x) * 0.12; ball.y += (ball.ty - ball.y) * 0.12;
+                ball.x += (ball.tx - ball.x) * 0.14; ball.y += (ball.ty - ball.y) * 0.14;
             }
 
-            // Obsługa zakończenia stanów i testów bramkowych
             czasTrwaniaAnimacji--;
             if (czasTrwaniaAnimacji <= 0) {
                 if (fazaMeczu === "ANIMACJA_LOTU" || fazaMeczu === "ANIMACJA_RAJDU") {
@@ -142,18 +123,16 @@
                 }
                 else if (fazaMeczu === "ANIMACJA_STRZALU") {
                     let wSiatce = ball.y >= 170 && ball.y <= 230;
-                    let bramkarzRywala = players.find(p => p.team !== pPosiadajacy.team && p.role === "GK");
+                    let bramkarzRywala = players.find(p => p.team !== pPosiadajacy.team && p.bx === (pPosiadajacy.team === "A" ? 600 : 40));
+                    let obronaGK = Math.random() * (bramkarzRywala.def / 20);
+                    let celnoscATT = Math.random() * (pPosiadajacy.sho / 20);
 
-                    // KALKULACJA MANAGEROWA: celność 'sho' vs bramkarz 'def'
-                    let obronaBramkarza = Math.random() * (bramkarzRywala.def / 20);
-                    let celnoscStrzalu = Math.random() * (pPosiadajacy.sho / 20);
-
-                    if (wSiatce && (celnoscStrzalu > obronaBramkarza)) {
+                    if (wSiatce && (celnoscATT > obronaGK)) {
                         if (ball.x > 320) { scoreA++; document.getElementById("sa").innerText = scoreA; }
                         else { scoreB++; document.getElementById("sb").innerText = scoreB; }
-                        wypiszKomentarz(`GOL!!! Niewiarygodne! ${pPosiadajacy.name} umieszcza piłkę w siatce!`, "#4caf50");
+                        wypiszKomentarz(`GOL!!! Niesamowite wykończenie strzału przez ${pPosiadajacy.name}!`, "#4caf50");
                     } else {
-                        wypiszKomentarz(`Fantastyczna parada! ${bramkarzRywala.name} pewnie chwyta piłkę!`, "#2196f3");
+                        wypiszKomentarz(`Parada! ${bramkarzRywala.name} pewnie interweniuje w bramce!`, "#2196f3");
                     }
                     
                     pPosiadajacy = players[Math.floor(Math.random() * players.length)];
@@ -163,7 +142,7 @@
                 }
             }
 
-            // 4. RENDERING GRAFIKI CANVAS (Klasyczny CM4 Retro styl)
+            // 4. RENDERING GRAFIKI (Prosty i ultra-szybki, idealny pod odświeżanie w SL)
             ctx.fillStyle = "#134e24"; ctx.fillRect(0, 0, 640, 400);
             ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1.5;
             
