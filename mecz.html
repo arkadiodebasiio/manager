@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Pozycje Taktyczne</title>
+    <title>Championship Manager 2D - Spokojne Tempo</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -10,7 +10,7 @@
 </head>
 <body>
 
-    <div id="commentary">> Formacje rozstawione taktycznie. Sędzia rozpoczyna grę...</div>
+    <div id="commentary">> Formacje rozstawione taktycznie. Oczekiwanie na pierwszy gwizdek...</div>
     <canvas id="matchCanvas" width="600" height="400"></canvas>
 
     <script>
@@ -19,12 +19,13 @@
         const comment = document.getElementById("commentary");
 
         let scoreA = 0; let scoreB = 0;
-        let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.08 };
+        
+        // POPRAWKA: Prędkość piłki mocno zmniejszona z 0.08 na 0.03 (leci dużo wolniej i dostojniej)
+        let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.03 };
         let players = [];
         let stanMeczu = "srodek"; 
         let timerStanu = 0;
 
-        // Baza idealnych pozycji taktycznych 4-4-2
         const basePositions = [
             { team: "A", nr: 1, x: 40, y: 200, role: "GK" }, { team: "A", nr: 2, x: 120, y: 80, role: "DEF" }, { team: "A", nr: 3, x: 110, y: 160, role: "DEF" }, { team: "A", nr: 4, x: 110, y: 240, role: "DEF" }, { team: "A", nr: 5, x: 120, y: 320, role: "DEF" }, { team: "A", nr: 6, x: 220, y: 90, role: "MID" }, { team: "A", nr: 7, x: 200, y: 160, role: "MID" }, { team: "A", nr: 8, x: 200, y: 240, role: "MID" }, { team: "A", nr: 10, x: 220, y: 310, role: "MID" }, { team: "A", nr: 11, x: 280, y: 150, role: "ATT" }, { team: "A", nr: 9, x: 280, y: 250, role: "ATT" },
             { team: "B", nr: 1, x: 560, y: 200, role: "GK" }, { team: "B", nr: 2, x: 480, y: 80, role: "DEF" }, { team: "B", nr: 3, x: 490, y: 160, role: "DEF" }, { team: "B", nr: 4, x: 490, y: 240, role: "DEF" }, { team: "B", nr: 5, x: 480, y: 320, role: "DEF" }, { team: "B", nr: 6, x: 380, y: 90, role: "MID" }, { team: "B", nr: 7, x: 400, y: 160, role: "MID" }, { team: "B", nr: 8, x: 400, y: 240, role: "MID" }, { team: "B", nr: 10, x: 380, y: 310, role: "MID" }, { team: "B", nr: 9, x: 320, y: 150, role: "ATT" }, { team: "B", nr: 11, x: 320, y: 250, role: "ATT" }
@@ -36,7 +37,8 @@
                 homeX: p.x, homeY: p.y,
                 x: p.x, y: p.y,
                 targetX: p.x, targetY: p.y,
-                speed: 0.05 + Math.random() * 0.02,
+                // POPRAWKA: Prędkość zawodników zmniejszona o połowę (brak nerwowych szarpnięć)
+                speed: 0.02 + Math.random() * 0.01,
                 randomOffset: Math.random() * 100
             });
         });
@@ -56,48 +58,44 @@
 
             let czas = Date.now();
 
-            // POPRAWKA: Zaawansowane trzymanie stref taktycznych
             players.forEach(p => {
                 if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
-                    // Dreptanie w miejscu na swoich domowych pozycjach
-                    p.targetX = p.homeX + Math.sin((czas / 300) + p.randomOffset) * 6;
-                    p.targetY = p.homeY + Math.cos((czas / 400) + p.randomOffset) * 6;
+                    // Spokojne, powolne dreptanie w miejscu
+                    p.targetX = p.homeX + Math.sin((czas / 500) + p.randomOffset) * 4;
+                    p.targetY = p.homeY + Math.cos((czas / 600) + p.randomOffset) * 4;
                 } else {
-                    // W TRAKCIE AKCJI: Cały zespół przesuwa się lekko o max 40 pikseli w stronę piłki (elastyczny blok)
-                    // Nigdy nie opuszczają swojej formacji, nie ma biegania w jedno miejsce!
-                    let przesuniecieX = (ball.x - 300) * 0.15;
-                    let przesuniecieY = (ball.y - 200) * 0.15;
+                    // Delikatne, stonowane przesuwanie się całego bloku taktycznego za wolną piłką
+                    let przesuniecieX = (ball.x - 300) * 0.12;
+                    let przesuniecieY = (ball.y - 200) * 0.12;
                     
-                    // Ograniczamy ruch bramkarzy, żeby nie biegali po boisku
-                    if (p.role === "GK") { przesuniecieX = 0; przesuniecieY = (ball.y - 200) * 0.1; }
+                    if (p.role === "GK") { przesuniecieX = 0; przesuniecieY = (ball.y - 200) * 0.08; }
 
-                    p.targetX = p.homeX + przesuniecieX + Math.sin((czas / 500) + p.randomOffset) * 4;
-                    p.targetY = p.homeY + przesuniecieY + Math.cos((czas / 500) + p.randomOffset) * 4;
+                    p.targetX = p.homeX + przesuniecieX + Math.sin((czas / 700) + p.randomOffset) * 2;
+                    p.targetY = p.homeY + przesuniecieY + Math.cos((czas / 700) + p.randomOffset) * 2;
 
-                    // EKSTRA SMACZEK: Tylko zawodnik bezpośrednio przy piłce podbiega do niej blisko
-                    if (p.team === "A" && ball.x > 300 && p.role === "ATT") { p.targetX = ball.x - 15; p.targetY = ball.y; }
-                    if (p.team === "B" && ball.x < 300 && p.role === "ATT") { p.targetX = ball.x + 15; p.targetY = ball.y; }
+                    // Tylko jeden aktywny napastnik zbliża się spokojnie do piłki
+                    if (p.team === "A" && ball.x > 300 && p.role === "ATT" && p.nr === 9) { p.targetX = ball.x - 18; p.targetY = ball.y; }
+                    if (p.team === "B" && ball.x < 300 && p.role === "ATT" && p.nr === 9) { p.targetX = ball.x + 18; p.targetY = ball.y; }
                 }
 
-                // Płynny ruch
                 p.x += (p.targetX - p.x) * p.speed;
                 p.y += (p.targetY - p.y) * p.speed;
 
-                // Rysowanie kulek
                 ctx.fillStyle = p.team === "A" ? "#e53935" : "#1e88e5";
                 ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke();
                 ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
             });
 
-            // Ruch piłki
             ball.x += (ball.targetX - ball.x) * ball.speed;
             ball.y += (ball.targetY - ball.y) * ball.speed;
             ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = "#000"; ctx.stroke();
 
+            // POPRAWKA: Czas trwania akcji wydłużony ponad TRZYKROTNIE z 160 na 500! 
+            // Sędzia podejmuje decyzje rzadziej, dając czas na płynny lot piłki i czytanie tekstu.
             timerStanu++;
-            if (timerStanu > 160) {
+            if (timerStanu > 500) {
                 timerStanu = 0;
                 silnikDecyzjiSedziego();
             }
@@ -112,45 +110,45 @@
             if (stanMeczu === "srodek" || stanMeczu === "aut" || stanMeczu === "rozny" || stanMeczu === "aut_bramkowy") {
                 stanMeczu = "akcja";
                 if (los < 0.5) {
-                    comment.innerText = "> [Atak] Pomocnicy FC Kuleczki podaniami po skosie rozciągają obronę rywala...";
-                    ball.targetX = 450 + Math.random() * 100; ball.targetY = 100 + Math.random() * 200;
+                    comment.innerText = "> [Atak] Pomocnicy FC Kuleczki spokojnie wymieniają podania i budują atak pozycyjny...";
+                    ball.targetX = 430 + Math.random() * 80; ball.targetY = 120 + Math.random() * 160;
                 } else {
                     comment.style.color = "#ff5252";
-                    comment.innerText = "> [Zagrożenie] Niebieskie Asy wymieniają szybkie podania przed naszym polem karnym...";
-                    ball.targetX = 50 + Math.random() * 100; ball.targetY = 100 + Math.random() * 200;
+                    comment.innerText = "> [Zagrożenie] Niebieskie Asy szukają luki w naszej obronie. Piłka krąży przed polem karnym...";
+                    ball.targetX = 70 + Math.random() * 80; ball.targetY = 120 + Math.random() * 160;
                 }
             } else {
                 if (los < 0.22) {
                     if (ball.x > 300) {
-                        ball.targetX = 595; ball.targetY = 200 + (Math.random()*20 - 10); scoreA++; comment.style.color = "#ffeb3b";
-                        comment.innerText = "⚽ GOOOOL!! Piękne uderzenie z woleja! Piłka ląduje w siatce!";
+                        ball.targetX = 595; ball.targetY = 200 + (Math.random()*16 - 8); scoreA++; comment.style.color = "#ffeb3b";
+                        comment.innerText = "⚽ GOOOOL!! Precyzyjne, wypracowane uderzenie! Piłka ląduje w rogu siatki!";
                     } else {
-                        ball.targetX = 5; ball.targetY = 200 + (Math.random()*20 - 10); scoreB++; comment.style.color = "#ff5252";
-                        comment.innerText = "❌ BRAMKA! Przeciwnik oddaje czysty strzał po ziemi i zdobywa gola.";
+                        ball.targetX = 5; ball.targetY = 200 + (Math.random()*16 - 8); scoreB++; comment.style.color = "#ff5252";
+                        comment.innerText = "❌ BRAMKA! Przeciwnik oddaje niesygnalizowany strzał i zdobywa bramkę.";
                     }
                     stanMeczu = "srodek";
                 } else if (los >= 0.22 && los < 0.48) {
                     stanMeczu = "aut_bramkowy"; comment.style.color = "#aaaaaa";
                     if (ball.x > 300) {
-                        ball.targetX = 595; ball.targetY = Math.random() > 0.5 ? 60 : 340;
-                        comment.innerText = "🥅 [AUT BRAMKOWY] Nieudana próba strzału. Piłka przelatuje nad poprzeczką.";
+                        ball.targetX = 595; ball.targetY = Math.random() > 0.5 ? 80 : 320;
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Dobrze pomyślana akcja, ale strzał przechodzi nad poprzeczką.";
                     } else {
-                        ball.targetX = 5; ball.targetY = Math.random() > 0.5 ? 60 : 340;
-                        comment.innerText = "🥅 [AUT BRAMKOWY] Strzał Niebieskich mija prawy słupek bramki.";
+                        ball.targetX = 5; ball.targetY = Math.random() > 0.5 ? 80 : 320;
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Niebiescy uderzają niecelnie. Piłka opuszcza linię końcową.";
                     }
                 } else if (los >= 0.48 && los < 0.74) {
                     stanMeczu = "rozny"; comment.style.color = "#00e5ff";
                     if (ball.x > 300) {
-                        ball.targetX = 590; ball.targetY = Math.random() > 0.5 ? 15 : 385;
-                        comment.innerText = "📐 [RZUT ROŻNY] Obrońca wślizgiem blokuje strzał! Korner dla FC Kuleczki.";
+                        ball.targetX = 590; ball.targetY = Math.random() > 0.5 ? 20 : 380;
+                        comment.innerText = "📐 [RZUT ROŻNY] Ofiarny blok środkowego obrońcy! Korner dla FC Kuleczki.";
                     } else {
-                        ball.targetX = 10; ball.targetY = Math.random() > 0.5 ? 15 : 385;
-                        comment.innerText = "📐 [RZUT ROŻNY] Nasz defensor ofiarnie wybija piłkę za linię końcową.";
+                        ball.targetX = 10; ball.targetY = Math.random() > 0.5 ? 20 : 380;
+                        comment.innerText = "📐 [RZUT ROŻNY] Nasza defensywa czujnie zbija piłkę za linię końcową.";
                     }
                 } else {
                     stanMeczu = "aut"; comment.style.color = "#ffb300";
-                    ball.targetX = 200 + Math.random() * 200; ball.targetY = Math.random() > 0.5 ? -12 : 412;
-                    comment.innerText = "🏳️ [AUT] Piłka opuszcza boisko za linią boczną po twardej walce w środku pola.";
+                    ball.targetX = 220 + Math.random() * 160; ball.targetY = Math.random() > 0.5 ? -12 : 412;
+                    comment.innerText = "🏳️ [AUT] Gra przerwana. Piłka wybita na aut po twardej walce w środkowej strefie.";
                 }
             }
         }
