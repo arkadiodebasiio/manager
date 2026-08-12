@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Żywe Boisko AI</title>
+    <title>Championship Manager 2D - Dostojne Tempo</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -17,17 +17,16 @@
         const canvas = document.getElementById("matchCanvas"); const ctx = canvas.getContext("2d");
         const comment = document.getElementById("commentary");
 
-        let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.04 };
+        // POPRAWKA: Szybkość lotu piłki zmniejszona o 3/4 (z 0.04 na 0.01) - leci bardzo powoli i dostojnie!
+        let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.01 };
         let players = [];
         let losowyStart = Math.random() > 0.5 ? "A" : "B"; 
         let wylosowanyOdbiorca = null;
-        
-        // Stały licznik klatek dla płynnego dreptania
         let frameCounter = 0; 
 
         const basePositions = [
             { id: "A1", team: "A", nr: 1, x: 40, y: 200 }, { id: "A2", team: "A", nr: 2, x: 120, y: 80 }, { id: "A3", team: "A", nr: 3, x: 110, y: 160 }, { id: "A4", team: "A", nr: 4, x: 110, y: 240 }, { id: "A5", team: "A", nr: 5, x: 120, y: 320 }, { id: "A6", team: "A", nr: 6, x: 220, y: 90 }, { id: "A7", team: "A", nr: 7, x: 200, y: 160 }, { id: "A8", team: "A", nr: 8, x: 200, y: 240 }, { id: "A10", team: "A", nr: 10, x: 220, y: 310 }, { id: "A11", team: "A", nr: 11, x: 270, y: 150 }, { id: "A9", team: "A", nr: 9, x: 270, y: 260 },
-            { id: "B1", team: "B", nr: 1, x: 560, y: 200 }, { id: "B2", team: "B", nr: 2, x: 460, y: 80 }, { id: "B3", team: "B", nr: 3, x: 490, y: 160 }, { id: "B4", team: "B", nr: 4, x: 490, y: 240 }, { id: "B5", team: "B", nr: 5, x: 460, y: 320 }, { id: "B6", team: "B", nr: 6, x: 360, y: 90 }, { id: "B7", team: "B", nr: 7, x: 400, y: 160 }, { id: "B8", team: "B", nr: 8, x: 400, y: 240 }, { id: "B10", team: "B", nr: 10, x: 380, y: 310 }, { id: "B9", team: "B", nr: 9, x: 330, y: 150 }, { id: "B11", team: "B", nr: 11, x: 330, y: 260 }
+            { id: "B1", team: "B", nr: 1, x: 560, y: 200 }, { id: "B2", team: "B", nr: 2, x: 480, y: 80 }, { id: "B3", team: "B", nr: 3, x: 490, y: 160 }, { id: "B4", team: "B", nr: 4, x: 490, y: 240 }, { id: "B5", team: "B", nr: 5, x: 460, y: 320 }, { id: "B6", team: "B", nr: 6, x: 360, y: 90 }, { id: "B7", team: "B", nr: 7, x: 400, y: 160 }, { id: "B8", team: "B", nr: 8, x: 400, y: 240 }, { id: "B10", team: "B", nr: 10, x: 380, y: 310 }, { id: "B9", team: "B", nr: 9, x: 330, y: 150 }, { id: "B11", team: "B", nr: 11, x: 330, y: 260 }
         ];
 
         basePositions.forEach(p => {
@@ -37,7 +36,7 @@
         function meczStart() {
             if (losowyStart === "A") {
                 comment.style.color = "#00ff00";
-                comment.innerText = "⚽ [GWIZDEK] FC KULECZKI rozpoczynają mecz! Podanie nr 9 do nr 11...";
+                comment.innerText = "⚽ [GWIZDEK] FC KULECZKI rozpoczynają mecz od środka boiska!";
                 let p9 = players.find(p => p.id === "A9"); let p11 = players.find(p => p.id === "A11");
                 p9.targetX = 295; p9.targetY = 190; p11.targetX = 295; p11.targetY = 210;
                 setTimeout(() => { ball.targetX = 295; ball.targetY = 210; }, 1000);
@@ -48,13 +47,13 @@
                 p9.targetX = 305; p9.targetY = 190; p11.targetX = 305; p11.targetY = 210;
                 setTimeout(() => { ball.targetX = 305; ball.targetY = 210; }, 1000);
             }
-            setTimeout(wycofanieDoTylu, 2500);
+            // Wydłużony czas do 4 sekund, żeby dopasować się do wolniejszego tempa piłki i graczy
+            setTimeout(wycofanieDoTylu, 4000);
         }
 
         function wycofanieDoTylu() {
             comment.style.color = "#ffeb3b";
             let wolniKoledzy = players.filter(p => p.team === losowyStart && p.id !== (losowyStart + "9") && p.id !== (losowyStart + "1") && p.id !== (losowyStart + "11"));
-            
             wylosowanyOdbiorca = wolniKoledzy[Math.floor(Math.random() * wolniKoledzy.length)];
             
             if (losowyStart === "A") { wylosowanyOdbiorca.targetX = wylosowanyOdbiorca.homeX + 35; } 
@@ -66,7 +65,6 @@
             comment.innerText = "↩️ [TAKTYKA] Piłka wycofana! Zawodnik nr " + wylosowanyOdbiorca.nr + " z drużyny " + nazwaDruzyny + " wybiega do przodu i przejmuje podanie.";
         }
 
-        // --- GŁÓWNA PĘTLA GRAFICZNA 60 FPS ---
         function render() {
             ctx.fillStyle = "#236926"; ctx.fillRect(0, 0, 600, 400);
             ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 2; ctx.strokeRect(0, 0, 600, 400);
@@ -74,17 +72,18 @@
             ctx.beginPath(); ctx.arc(300, 200, 45, 0, Math.PI * 2); ctx.stroke();
             ctx.strokeRect(0, 110, 70, 180); ctx.strokeRect(530, 110, 70, 180);
 
-            frameCounter++; // Licznik idzie w górę z każdą klatką 60 FPS
+            frameCounter++; 
 
             players.forEach(p => {
-                // PRAWIDŁOWE DREPTANIE: Każda kulka na boisku bez przerwy lekko faluje i żyje na murawie
-                let microX = Math.sin((frameCounter / 10) + p.offset) * 3.5;
-                let microY = Math.cos((frameCounter / 12) + p.offset) * 3.5;
+                // POPRAWKA: Intensywność dreptania zmniejszona o połowę (z 3.5 na 1.75) – malutkie, naturalne kroczki!
+                let microX = Math.sin((frameCounter / 10) + p.offset) * 1.75;
+                let microY = Math.cos((frameCounter / 12) + p.offset) * 1.75;
                 
                 let aktualnyCelX = p.targetX + microX;
                 let aktualnyCelY = p.targetY + microY;
 
-                p.x += (aktualnyCelX - p.x) * 0.08; p.y += (aktualnyCelY - p.y) * 0.08;
+                // POPRAWKA: Szybkość biegów zmniejszona o połowę (z 0.08 na 0.04) – gładkie, spokojne przemieszczenia!
+                p.x += (aktualnyCelX - p.x) * 0.04; p.y += (aktualnyCelY - p.y) * 0.04;
                 
                 ctx.fillStyle = p.team === "A" ? "#e53935" : "#1e88e5"; ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = "#fff"; ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
