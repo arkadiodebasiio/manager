@@ -43,6 +43,10 @@
             });
             if (playerWithBall) { ball.x += (playerWithBall.x - ball.x) * 0.3; ball.y += (playerWithBall.y - ball.y) * 0.3; }
             else { ball.x += (ball.targetX - ball.x) * 0.03; ball.y += (ball.targetY - ball.y) * 0.03; }
+            
+            // NAPRAWIONA LINIIKA: Rysowanie białej piłki z czarną obwódką na murawie!
+            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke();
+            
             timerStanu++; if (timerStanu > 400) { timerStanu = 0; silnikDecyzjiSedziego(); }
             requestAnimationFrame(updateGame);
         }
@@ -62,11 +66,11 @@
                         setTimeout(() => { playerWithBall = null; ball.targetX = 5; ball.targetY = 200; scoreB++; comment.style.color = "#ff5252"; comment.innerText = "❌ BRAMKA! Koronkowa akcja rywali. Piłka ląduje w siatce."; }, 1200);
                     }
                     stanMeczu = "srodek";
-                } else if (los >= 0.25 && los < 0.5) {
+                } else if (los >= 0.22 && los < 0.48) {
                     stanMeczu = "aut_bramkowy"; comment.style.color = "#aaaaaa"; playerWithBall = null;
                     if (ball.x > 300) { ball.targetX = 595; ball.targetY = 60; comment.innerText = "🥅 [AUT BRAMKOWY] Piłka po mocnym uderzeniu przelatuje obok słupka."; }
                     else { ball.targetX = 5; ball.targetY = 340; comment.innerText = "🥅 [AUT BRAMKOWY] Niecelny strzał rywali. Grę wznowi nasz bramkarz."; }
-                } else if (los >= 0.5 && los < 0.75) {
+                } else if (los >= 0.48 && los < 0.74) {
                     stanMeczu = "rozny"; comment.style.color = "#00e5ff"; playerWithBall = null;
                     if (ball.x > 300) { ball.targetX = 590; ball.targetY = 385; comment.innerText = "📐 [RZUT ROŻNY] Stoper rywali blokuje strzał! Rzut rożny dla nas."; }
                     else { ball.targetX = 10; ball.targetY = 15; comment.innerText = "📐 [RZUT ROŻNY] Piłka rykoszetem ucieka na rzut rożny dla gości."; }
