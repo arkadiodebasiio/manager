@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Przechwyty AI</title>
+    <title>Championship Manager 2D</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -16,7 +16,7 @@
         const comment = document.getElementById("commentary");
         let scoreA = 0; let scoreB = 0;
         let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.02, owner: null };
-        let players = []; let stanMeczu = "srodek"; let frameCounter = 0; let timerPodania = 0; let druzynaAtakujaca = "A";
+        let players = []; let stanMeczu = "srodek"; let frameCounter = 0; let timerAkcji = 0; let druzynaAtakujaca = "A";
         const basePositions = [
             { id: "A1", team: "A", nr: 1, x: 40, y: 200, r: "GK" }, { id: "A2", team: "A", nr: 2, x: 120, y: 70, r: "DEF" }, { id: "A3", team: "A", nr: 3, x: 110, y: 155, r: "DEF" }, { id: "A4", team: "A", nr: 4, x: 110, y: 245, r: "DEF" }, { id: "A5", team: "A", nr: 5, x: 120, y: 330, r: "DEF" }, { id: "A6", team: "A", nr: 6, x: 220, y: 80, r: "MID" }, { id: "A7", team: "A", nr: 7, x: 200, y: 160, r: "MID" }, { id: "A8", team: "A", nr: 8, x: 200, y: 240, r: "MID" }, { id: "A10", team: "A", nr: 10, x: 220, y: 320, r: "MID" }, { id: "A11", team: "A", nr: 11, x: 270, y: 140, r: "ATT" }, { id: "A9", team: "A", nr: 9, x: 270, y: 260, r: "ATT" },
             { id: "B1", team: "B", nr: 1, x: 560, y: 200, r: "GK" }, { id: "B2", team: "B", nr: 2, x: 480, y: 70, r: "DEF" }, { id: "B3", team: "B", nr: 3, x: 490, y: 155, r: "DEF" }, { id: "B4", team: "B", nr: 4, x: 490, y: 245, r: "DEF" }, { id: "B5", team: "B", nr: 480, y: 330, r: "DEF" }, { id: "B6", team: "B", nr: 6, x: 380, y: 80, r: "MID" }, { id: "B7", team: "B", nr: 7, x: 400, y: 160, r: "MID" }, { id: "B8", team: "B", nr: 8, x: 400, y: 240, r: "MID" }, { id: "B10", team: "B", nr: 10, x: 380, y: 320, r: "MID" }, { id: "B9", team: "B", nr: 9, x: 320, y: 140, r: "ATT" }, { id: "B11", team: "B", nr: 11, x: 330, y: 260, r: "ATT" }
@@ -25,23 +25,22 @@
             players.length = 0;
             basePositions.forEach(p => { players.push({ id: p.id, team: p.team, nr: p.nr, role: p.r, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, offset: Math.random() * 50, speed: 0.035, cooldown: 0 }); });
             ball.x = 300; ball.y = 200; ball.targetX = 300; ball.targetY = 200; ball.owner = null;
-            druzynaAtakujaca = Math.random() > 0.5 ? "A" : "B"; stanMeczu = "srodek"; timerPodania = 0;
+            druzynaAtakujaca = Math.random() > 0.5 ? "A" : "B"; stanMeczu = "srodek"; timerAkcji = 0;
             let p9 = players.find(p => p.id === (druzynaAtakujaca + "9")); let p11 = players.find(p => p.id === (druzynaAtakujaca + "11"));
             p9.targetX = druzynaAtakujaca === "A" ? 295 : 305; p9.targetY = 190; p11.targetX = druzynaAtakujaca === "A" ? 295 : 305; p11.targetY = 210;
-            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Dokładnie dwóch napastników stoi przy piłce. Czekamy na gwizdek...";
+            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Dwóch napastników przy środkowym punkcie. Rozpoczynamy mecz...";
             setTimeout(odpalRozegranieOdSrodka, 1500);
         }
         function odpalRozegranieOdSrodka() {
             let n11 = players.find(p => p.id === (druzynaAtakujaca + "11")); ball.owner = n11;
-            comment.style.color = "#00ff00"; comment.innerText = "⚽ [GWIZDEK] Krótkie podanie napastników w kole środkowym!";
+            comment.style.color = "#00ff00"; comment.innerText = "⚽ [GWIZDEK] Rozpoczęcie meczu! Krótkie podanie napastników...";
             setTimeout(() => {
                 let n9 = players.find(p => p.id === (druzynaAtakujaca + "9")); ball.owner = n9;
                 setTimeout(() => {
                     ball.owner = null;
-                    let wolni = players.filter(mate => mate.team === druzynaAtakujaca && mate.role !== "ATT" && mate.role !== "GK");
+                    let wolni = players.filter(mate => mate.team === druzynaAtakujaca && mate.id !== n9.id);
                     let odbiorca = wolni[Math.floor(Math.random() * wolni.length)];
-                    odbiorca.targetX = odbiorca.homeX + (druzynaAtakujaca === "A" ? 30 : -30);
-                    ball.targetX = odbiorca.targetX; ball.targetY = odbiorca.targetY;
+                    ball.targetX = odbiorca.x; ball.targetY = odbiorca.y;
                     comment.style.color = "#ffeb3b"; comment.innerText = "↩️ [WYCOFANIE] Piłka wycofana do tyłu pod nogi zawodnika nr " + odbiorca.nr + "!";
                     setTimeout(() => { ball.owner = odbiorca; stanMeczu = "gra"; }, 1000);
                 }, 1000);
@@ -59,20 +58,28 @@
                     if (p === ball.owner) {
                         p.targetX = p.x + (kierunek * 15); if (frameCounter % 40 === 0) p.targetY = p.y + (Math.random()*40 - 20);
                         if (p.team === "A" && p.targetX > 520) p.targetX = 510; if (p.team === "B" && p.targetX < 80) p.targetX = 90;
-                        timerPodania++;
-                        if (timerPodania > 40) {
-                            timerPodania = 0; let decyzjaAI = Math.random();
-                            if ((p.team === "A" && p.x > 450) || (p.team === "B" && p.x < 150)) {
+                        
+                        timerAkcji++;
+                        if (timerAkcji > 35) {
+                            timerAkcji = 0;
+                            
+                            // POPRAWKA: UDOSTĘPNIENIE PODANIA (Bez obowiązku!). Gracz decyduje w locie 50/50.
+                            let rzutKoscią = Math.random();
+                            
+                            if ((p.team === "A" && p.x > 450) || (p.team === "B" && p.x < 160)) {
                                 ball.targetX = p.team === "A" ? 595 : 5; ball.targetY = 175 + Math.random()*50; ball.owner = null;
                                 comment.style.color = "#ffeb3b"; comment.innerText = "🚀 [STRZAŁ] Wypracowana pozycja strzałowa! Strzał na bramkę!";
-                            } else if (decyzjaAI < 0.60) {
-                                let koledzy = players.filter(m => m.team === p.team && m.id !== p.id && m.role !== "GK");
+                            } else if (rzutKoscią < 0.50) {
+                                // GRACZ WYBIERA PODANIE (Udostępnione)
+                                let koledzy = players.filter(mate => mate.team === p.team && mate.id !== p.id);
                                 let odbiorca = koledzy[Math.floor(Math.random() * koledzy.length)];
-                                // POPRAWKA: Podanie leci z lekką niedokładnością, dając szansę obronie na reakcję!
-                                ball.targetX = odbiorca.x + (Math.random()*20 - 10); ball.targetY = odbiorca.y + (Math.random()*20 - 10);
-                                ball.owner = null;
-                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Zawodnik nr " + p.nr + " posyła prostopadłą piłkę do przodu!";
-                            } else { comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Zawodnik nr " + p.nr + " idzie sam w krótki rajd."; }
+                                ball.targetX = odbiorca.x; ball.targetY = odbiorca.y;
+                                ball.owner = null; // Piłka uwolniona od stopy, leci wolno
+                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Zawodnik nr " + p.nr + " rozgląda się i podaje do partnera nr " + odbiorca.nr + "!";
+                            } else {
+                                // GRACZ ODMAWIA PODANIA I BIEGNIE DALEJ (Drybling)
+                                comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Zawodnik nr " + p.nr + " decyduje się na dalszy, samodzielny rajd z piłką!";
+                            }
                         }
                     } else { p.targetX = p.homeX + progresX + (kierunek * 25); if (frameCounter % 60 === 0) p.targetY = p.homeY + (Math.random()*20 - 10); }
                 } else {
@@ -80,19 +87,19 @@
                     if (p === najblizszy && dBall < 140 && p.cooldown === 0) {
                         p.targetX = ball.x; p.targetY = ball.y;
                         if (dBall < 12 && ball.owner) {
-                            if (Math.random() > 0.50) { ball.owner = p; timerPodania = 0; comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Defensor nr " + p.nr + " czystym wślizgiem odbiera piłkę!"; }
+                            if (Math.random() > 0.50) { ball.owner = p; timerAkcji = 0; comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Defensor nr " + p.nr + " czystym wślizgiem odbiera piłkę!"; }
                             else { p.cooldown = 45; p.targetX -= (p.team === "A" ? 30 : -30); }
                         }
                     } else { p.targetX = celCofaniaX; p.targetY = p.homeY; }
                 }
             });
-            // POPRAWKA: SYSTEM DYNAMICZNYCH PRZECHWYTÓW (Każdy rywal na linii lotu może przejąć piłkę!)
+            // POPRAWKA DLA PRZECHWYTÓW RYWALA: Dowolna wolna piłka na linii lotu może być przejęta przez przeciwnika!
             if (!ball.owner) {
                 players.forEach(p => {
-                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < 14 && p.role !== "GK" && p.cooldown === 0) {
-                        ball.owner = p; timerPodania = 0;
+                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < 14 && p.role !== "GK" && p.cooldown === 0) { 
+                        ball.owner = p; timerAkcji = 0; 
                         comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252";
-                        comment.innerText = "🧲 [PRZECHWYT] Kapitalne czytanie gry! Zawodnik nr " + p.nr + " przecina podanie rywala!";
+                        comment.innerText = "🧲 [PRZECHWYT] Zawodnik nr " + p.nr + " świetnie wyczuł intencje i przechwycił piłkę!";
                     }
                 });
             }
