@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Główny Silnik Meczowy 11x11 - Wyrównany</title>
+    <title>Championship Manager 2D - Prawdziwe Zasady</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         #board { background: #236926; border: 4px solid #fff; width: 600px; height: 400px; position: relative; margin: 10px auto; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); }
@@ -14,12 +14,10 @@
         .goal { position: absolute; width: 12px; height: 60px; border: 3px solid #fff; top: 170px; background: rgba(255,255,255,0.2); }
         #goal-left { left: -15px; border-right: none; }
         #goal-right { right: -15px; border-left: none; }
-        
-        /* POPRAWKA: Kulki zwiększone z 14px na 20px, czcionka dopasowana */
-        .dot { position: absolute; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: bold; line-height: 20px; text-align: center; color: white; transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform: translate(-50%, -50%); }
+        .dot { position: absolute; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: bold; line-height: 20px; text-align: center; color: white; transition: all 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform: translate(-50%, -50%); }
         .teamA { background: #e53935; border: 1px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .teamB { background: #1e88e5; border: 1px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        #ball { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; border: 1px solid #000; transition: all 0.9s ease-out; transform: translate(-50%, -50%); }
+        #ball { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; border: 1px solid #000; transition: all 0.8s ease-out; transform: translate(-50%, -50%); }
         .star-player { border: 2px solid #ffeb3b !important; box-shadow: 0 0 8px #ffeb3b !important; }
         .name-tag { position: absolute; font-size: 9px; background: rgba(0,0,0,0.85); padding: 1px 4px; border-radius: 3px; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #ffeb3b; border: 1px solid #555; }
         #commentary { background: #000; border: 2px solid #333; width: 580px; min-height: 55px; margin: 10px auto; padding: 10px; font-size: 14px; color: #00ff00; border-radius: 4px; text-align: left; }
@@ -37,39 +35,36 @@
         <div class="goal" id="goal-right"></div>
         <div id="ball" style="left: 300px; top: 200px;"></div>
     </div>
-    <div id="commentary">> Składy wyrównane. Trwa przygotowanie do meczu sprawiedliwych szans...</div>
+    <div id="commentary">> Sędzia sprawdza stan murawy. Za chwilę rozpoczniemy od środka...</div>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         var avatarName = urlParams.get('name') || "Arkadiodebasiio";
-        
-        // POPRAWKA: Wszyscy (w tym Twój napastnik) zaczynają z równą statystyką 70!
         var globalStat = 70; 
-        
         var goalsA = 0; var goalsB = 0;
         var board = document.getElementById("board");
         var playersData = [
-            { id: "A1", team: "A", nr: 1, x: 30, y: 200, stat: globalStat },
-            { id: "A2", team: "A", nr: 2, x: 100, y: 70, stat: globalStat },
-            { id: "A3", team: "A", nr: 3, x: 90, y: 150, stat: globalStat },
-            { id: "A4", team: "A", nr: 4, x: 90, y: 250, stat: globalStat },
-            { id: "A5", team: "A", nr: 5, x: 100, y: 330, stat: globalStat },
-            { id: "A6", team: "A", nr: 6, x: 200, y: 80, stat: globalStat },
-            { id: "A7", team: "A", nr: 7, x: 180, y: 160, stat: globalStat },
-            { id: "A8", team: "A", nr: 8, x: 180, y: 240, stat: globalStat },
-            { id: "A10", team: "A", nr: 10, x: 200, y: 320, stat: globalStat },
-            { id: "A11", team: "A", nr: 11, x: 270, y: 140, stat: globalStat },
-            { id: "A9", team: "A", nr: 9, x: 270, y: 260, stat: globalStat },
-            { id: "B1", team: "B", nr: 1, x: 570, y: 200, stat: globalStat },
-            { id: "B2", team: "B", nr: 2, x: 500, y: 70, stat: globalStat },
-            { id: "B3", team: "B", nr: 3, x: 510, y: 150, stat: globalStat },
-            { id: "B4", team: "B", nr: 4, x: 510, y: 250, stat: globalStat },
-            { id: "B5", team: "B", nr: 5, x: 500, y: 330, stat: globalStat },
-            { id: "B6", team: "B", nr: 6, x: 400, y: 80, stat: globalStat },
-            { id: "B7", team: "B", nr: 7, x: 420, y: 160, stat: globalStat },
-            { id: "B8", team: "B", nr: 8, x: 420, y: 240, stat: globalStat },
-            { id: "B10", team: "B", nr: 10, x: 400, y: 320, stat: globalStat },
-            { id: "B9", team: "B", nr: 9, x: 330, y: 140, stat: globalStat },
-            { id: "B11", team: "B", nr: 11, x: 330, y: 260, stat: globalStat }
+            { id: "A1", team: "A", nr: 1, x: 30, y: 200 },
+            { id: "A2", team: "A", nr: 2, x: 100, y: 70 },
+            { id: "A3", team: "A", nr: 3, x: 90, y: 150 },
+            { id: "A4", team: "A", nr: 4, x: 90, y: 250 },
+            { id: "A5", team: "A", nr: 5, x: 100, y: 330 },
+            { id: "A6", team: "A", nr: 6, x: 200, y: 80 },
+            { id: "A7", team: "A", nr: 7, x: 180, y: 160 },
+            { id: "A8", team: "A", nr: 8, x: 180, y: 240 },
+            { id: "A10", team: "A", nr: 10, x: 200, y: 320 },
+            { id: "A11", team: "A", nr: 11, x: 270, y: 140 },
+            { id: "A9", team: "A", nr: 9, x: 270, y: 260 },
+            { id: "B1", team: "B", nr: 1, x: 570, y: 200 },
+            { id: "B2", team: "B", nr: 2, x: 500, y: 70 },
+            { id: "B3", team: "B", nr: 3, x: 510, y: 150 },
+            { id: "B4", team: "B", nr: 4, x: 510, y: 250 },
+            { id: "B5", team: "B", nr: 5, x: 500, y: 330 },
+            { id: "B6", team: "B", nr: 6, x: 400, y: 80 },
+            { id: "B7", team: "B", nr: 7, x: 420, y: 160 },
+            { id: "B8", team: "B", nr: 8, x: 420, y: 240 },
+            { id: "B10", team: "B", nr: 10, x: 400, y: 320 },
+            { id: "B9", team: "B", nr: 9, x: 330, y: 140 },
+            { id: "B11", team: "B", nr: 11, x: 330, y: 260 }
         ];
         playersData.forEach(function(p) {
             var dot = document.createElement("div");
@@ -87,80 +82,123 @@
         });
         window.onload = function() {
             document.getElementById("star-name").innerText = avatarName + " (STAT: " + globalStat + ")";
-            setTimeout(odpalNastepnaAkcje, 3000);
+            setTimeout(wznowienieOdSrodka, 2000);
         };
-        function przesunWszystkieKulkiNaStart() {
+
+        function przesunFormacjeNaStart() {
             playersData.forEach(function(p) {
                 var el = document.getElementById(p.id);
                 el.style.left = p.x + "px"; el.style.top = p.y + "px";
             });
-            document.getElementById("ball").style.left = "300px";
-            document.getElementById("ball").style.top = "200px";
         }
-        function odpalNastepnaAkcje() {
+
+        function wznowienieOdSrodka() {
             var comment = document.getElementById("commentary");
             var ball = document.getElementById("ball");
             comment.style.color = "#00ff00";
+            
+            przesunFormacjeNaStart();
+            ball.style.left = "300px"; ball.style.top = "200px";
+            comment.innerText = "⚽ [ŚRODEK] Gwizdek sędziego! Rozpoczynamy mecz od środka boiska. Krótkie podanie...";
+
+            setTimeout(losujAkcjeMeczowa, 2500);
+        }
+
+        function losujAkcjeMeczowa() {
+            var comment = document.getElementById("commentary");
+            var ball = document.getElementById("ball");
             var los = Math.random();
-            if (los > 0.5) {
-                comment.innerText = "> [Rozegranie] Atak pozycyjny FC Kuleczki. Piłka wędruje między pomocnikami...";
-                document.getElementById("A7").style.left = "320px"; document.getElementById("A8").style.left = "320px";
-                document.getElementById("A11").style.left = "440px";
-                document.getElementById("B3").style.left = "460px"; document.getElementById("B4").style.left = "460px";
+
+            if (los < 0.4) {
+                // ATAK TWOJEJ DRUŻYNY
+                comment.innerText = "> [Atak] FC Kuleczki ruszają z ofensywą. Podanie do " + avatarName + "...";
                 var a9 = document.getElementById("A9");
-                a9.style.left = "450px"; a9.style.top = "230px";
-                ball.style.left = "440px"; ball.style.top = "220px";
+                a9.style.left = "460px"; a9.style.top = "210px";
+                ball.style.left = "450px"; ball.style.top = "200px";
+
                 setTimeout(function() {
-                    // Wyrównany pojedynek: 70 kontra losowe starcie obronne (0-100)
-                    var walkaObronna = Math.floor(Math.random() * 100) + 1;
-                    if (globalStat >= walkaObronna) {
-                        comment.innerText = "> [Pojedynek] Wygrane starcie fizyczne (" + globalStat + " vs " + walkaObronna + ")! " + avatarName + " składa się do strzału...";
-                        a9.style.left = "520px"; a9.style.top = "200px";
-                        ball.style.left = "535px"; ball.style.top = "195px";
-                        document.getElementById("B1").style.left = "550px";
-                        setTimeout(function() {
-                            ball.style.left = "595px"; ball.style.top = "200px";
-                            goalsA++; document.getElementById("scoreA").innerText = goalsA;
-                            comment.style.color = "#ffeb3b";
-                            comment.innerText = "⚽ GOOOOL!! Piękna zespołowa akcja! " + avatarName + " wbija piłkę do bramki!";
-                            setTimeout(zakonczAkcje, 4000);
-                        }, 1200);
-                    } else {
-                        comment.innerText = "> [Przejęcie] Obrona Niebieskich okazała się sprytniejsza (" + walkaObronna + "). Blokują kulkę nr 9.";
-                        document.getElementById("B3").style.left = "430px";
-                        ball.style.left = "410px"; ball.style.top = "150px";
-                        setTimeout(zakonczAkcje, 4000);
+                    var losWyjscia = Math.random();
+                    if (losWyjscia < 0.4) {
+                        // GOL!
+                        a9.style.left = "530px"; ball.style.left = "595px"; ball.style.top = "200px";
+                        goalsA++; document.getElementById("scoreA").innerText = goalsA;
+                        comment.style.color = "#ffeb3b";
+                        comment.innerText = "⚽ GOOOOL!! Fantastyczny strzał! " + avatarName + " zdobywa bramkę!";
+                        setTimeout(wznowienieOdSrodka, 4000);
+                    } 
+                    else if (losWyjscia >= 0.4 && losWyjscia < 0.7) {
+                        // AUT BRAMKOWY (Piłka poza pole bramki)
+                        ball.style.left = "595px"; ball.style.top = "60px"; // Wylatuje nad/obok bramki
+                        comment.style.color = "#aaaaaa";
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Nieskuteczny strzał " + avatarName + ". Piłka mija słupek i opuszcza pole bramki.";
+                        setTimeout(autBramkowyRywala, 3000);
+                    } 
+                    else {
+                        // RZUT ROŻNY (Wybija obrońca)
+                        document.getElementById("B3").style.left = "480px";
+                        ball.style.left = "595px"; ball.style.top = "380px"; // Obrońca wybija na róg
+                        comment.style.color = "#00e5ff";
+                        comment.innerText = "📐 [RZUT ROŻNY] Obrońca Niebieskich blokuje strzał! Piłka wypada za linię końcową.";
+                        setTimeout(rzutRoznyDlaNas, 3000);
                     }
                 }, 1500);
-            } else {
+
+            } 
+            else if (los >= 0.4 && los < 0.8) {
+                // ATAK PRZECIWNIKA
                 comment.style.color = "#ff5252";
-                comment.innerText = "> [Zagrożenie] Niebieskie Asy odpowiadają szybkim atakiem ze skrzydła...";
-                document.getElementById("B9").style.left = "180px"; document.getElementById("B9").style.top = "120px";
-                ball.style.left = "160px"; ball.style.top = "110px";
-                document.getElementById("A2").style.left = "140px";
+                comment.innerText = "> [Zagrożenie] Niebieskie Asy konstruują atak pozycyjny...";
+                ball.style.left = "150px"; ball.style.top = "200px";
+
                 setTimeout(function() {
-                    comment.innerText = "> [Strzał] Rywale oddają mocny strzał z dystansu!";
-                    var obronaBramkarza = Math.floor(Math.random() * 100) + 1;
-                    if (globalStat < obronaBramkarza) {
+                    if (Math.random() > 0.5) {
                         ball.style.left = "5px"; ball.style.top = "200px";
                         goalsB++; document.getElementById("scoreB").innerText = goalsB;
-                        comment.innerText = "❌ BRAMKA! Wyrównany pojedynek przegrany w defensywie. Gol dla Niebieskich.";
+                        comment.innerText = "❌ BRAMKA! Przeciwnik trafia prosto w okienko. Gol dla Niebieskich Asów.";
+                        setTimeout(wznowienieOdSrodka, 4000);
                     } else {
-                        document.getElementById("A1").style.top = "160px";
-                        ball.style.left = "-10px"; ball.style.top = "120px";
-                        comment.style.color = "#00ff00";
-                        comment.innerText = "> [Interwencja] Bramkarz FC Kuleczki popisuje się genialną paradą na linii!";
+                        ball.style.left = "5px"; ball.style.top = "340px"; // Bramkarz paruje lub pudło obok
+                        comment.style.color = "#aaaaaa";
+                        comment.innerText = "🥅 [AUT BRAMKOWY] Strzał napastnika Niebieskich przelatuje obok bramki. Grę wznowi nasz bramkarz.";
+                        setTimeout(autBramkowyNasz, 3000);
                     }
-                    setTimeout(zakonczAkcje, 4000);
+                }, 1500);
+            } 
+            else {
+                // AUT BOCZNY (Wypada poza boczna linie boiska)
+                comment.style.color = "#ffb300";
+                comment.innerText = "> [Walka] Ostra walka o piłkę w środku pola...";
+                
+                setTimeout(function() {
+                    ball.style.left = "300px"; ball.style.top = "-15px"; // Wylatuje za górną linię boczną
+                    comment.innerText = "🏳️ [AUT] Piłka opuszcza boczną linię boiska po zablokowanym podaniu. Grę wznowią zawodnicy z autu.";
+                    setTimeout(wznowienieZAutu, 3000);
                 }, 1500);
             }
         }
-        function zakonczAkcje() {
-            var comment = document.getElementById("commentary");
-            comment.style.color = "#00ff00";
-            comment.innerText = "> Formacje wracają na pozycje wyjściowe. Wznowienie od środka...";
-            przesunWszystkieKulkiNaStart();
-            setTimeout(odpalNastepnaAkcje, 3000);
+
+        function autBramkowyRywala() {
+            document.getElementById("commentary").innerText = "> Bramkarz Niebieskich Asów ustawia piłkę na 5 metrze i wykonuje rzut od bramki...";
+            document.getElementById("ball").style.left = "530px"; document.getElementById("ball").style.top = "200px";
+            setTimeout(losujAkcjeMeczowa, 2500);
+        }
+
+        function autBramkowyNasz() {
+            document.getElementById("commentary").innerText = "> Nasz bramkarz spokojnie wznawia grę z pola bramkowego...";
+            document.getElementById("ball").style.left = "70px"; document.getElementById("ball").style.top = "200px";
+            setTimeout(losujAkcjeMeczowa, 2500);
+        }
+
+        function rzutRoznyDlaNas() {
+            document.getElementById("commentary").innerText = "📐 Do narożnika boiska podchodzi pomocnik FC Kuleczki. Dośrodkowanie w pole karne!";
+            document.getElementById("ball").style.left = "585px"; document.getElementById("ball").style.top = "385px";
+            setTimeout(losujAkcjeMeczowa, 2500);
+        }
+
+        function wznowienieZAutu() {
+            document.getElementById("commentary").innerText = "🏳️ Zawodnik wrzuca piłkę z autu z powrotem na murawę boiska...";
+            document.getElementById("ball").style.left = "300px"; document.getElementById("ball").style.top = "30px";
+            setTimeout(losujAkcjeMeczowa, 2500);
         }
     </script>
 </body>
