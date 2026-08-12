@@ -10,7 +10,7 @@
 </head>
 <body>
     <canvas id="matchCanvas" width="600" height="400"></canvas>
-    <div id="commentary">> Sędzia sprawdza ustawienie linii obronnych...</div>
+    <div id="commentary">> Inicjalizacja asynchronicznych mózgów AI...</div>
     <script>
         const canvas = document.getElementById("matchCanvas"); const ctx = canvas.getContext("2d");
         const comment = document.getElementById("commentary");
@@ -18,19 +18,20 @@
         let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.05, owner: null, targetPlayer: null };
         let players = []; let stanMeczu = "srodek"; let frameCounter = 0; let timerAkcji = 0; let druzynaAtakujaca = "A";
         const basePositions = [
-            { id: "A1", team: "A", nr: 1, x: 40, y: 200, type: "GK" }, { id: "A2", team: "A", nr: 2, x: 120, y: 70, type: "FIELD" }, { id: "A3", team: "A", nr: 3, x: 110, y: 155, type: "FIELD" }, { id: "A4", team: "A", nr: 4, x: 110, y: 245, type: "FIELD" }, { id: "A5", team: "A", nr: 5, x: 120, y: 330, type: "FIELD" }, { id: "A6", team: "A", nr: 6, x: 220, y: 80, type: "FIELD" }, { id: "A7", team: "A", nr: 7, x: 200, y: 160, type: "FIELD" }, { id: "A8", team: "A", nr: 8, x: 200, y: 240, type: "FIELD" }, { id: "A10", team: "A", nr: 10, x: 220, y: 320, type: "FIELD" }, { id: "A11", team: "A", nr: 11, x: 440, y: 140, type: "ATT" }, { id: "A9", team: "A", nr: 9, x: 440, y: 260, type: "ATT" },
-            { id: "B1", team: "B", nr: 1, x: 560, y: 200, type: "GK" }, { id: "B2", team: "B", nr: 2, x: 480, y: 70, type: "FIELD" }, { id: "B3", team: "B", nr: 3, x: 490, y: 155, type: "FIELD" }, { id: "B4", team: "B", nr: 4, x: 490, y: 245, type: "FIELD" }, { id: "B5", team: "B", nr: 480, y: 330, type: "FIELD" }, { id: "B6", team: "B", nr: 6, x: 380, y: 80, type: "FIELD" }, { id: "B7", team: "B", nr: 7, x: 400, y: 160, type: "FIELD" }, { id: "B8", team: "B", nr: 8, x: 400, y: 240, type: "FIELD" }, { id: "B10", team: "B", nr: 10, x: 380, y: 320, type: "FIELD" }, { id: "B9", team: "B", nr: 9, x: 160, y: 140, type: "ATT" }, { id: "B11", team: "B", nr: 11, x: 160, y: 260, type: "ATT" }
+            { id: "A1", team: "A", nr: 1, x: 40, y: 200, type: "GK" }, { id: "A2", team: "A", nr: 2, x: 120, y: 70, type: "FIELD" }, { id: "A3", team: "A", nr: 3, x: 110, y: 155, type: "FIELD" }, { id: "A4", team: "A", nr: 4, x: 110, y: 245, type: "FIELD" }, { id: "A5", team: "A", nr: 5, x: 120, y: 330, type: "FIELD" }, { id: "A6", team: "A", nr: 6, x: 220, y: 80, type: "FIELD" }, { id: "A7", team: "A", nr: 7, x: 200, y: 160, type: "FIELD" }, { id: "A8", team: "A", nr: 8, x: 200, y: 240, type: "FIELD" }, { id: "A10", team: "A", nr: 10, x: 220, y: 320, type: "FIELD" }, { id: "A11", team: "A", nr: 11, x: 450, y: 140, type: "ATT" }, { id: "A9", team: "A", nr: 9, x: 440, y: 260, type: "ATT" },
+            { id: "B1", team: "B", nr: 1, x: 560, y: 200, type: "GK" }, { id: "B2", team: "B", nr: 2, x: 480, y: 70, type: "FIELD" }, { id: "B3", team: "B", nr: 3, x: 490, y: 155, type: "FIELD" }, { id: "B4", team: "B", nr: 4, x: 490, y: 245, type: "FIELD" }, { id: "B5", team: "B", nr: 480, y: 330, type: "FIELD" }, { id: "B6", team: "B", nr: 6, x: 380, y: 80, type: "FIELD" }, { id: "B7", team: "B", nr: 7, x: 400, y: 160, type: "FIELD" }, { id: "B8", team: "B", nr: 8, x: 400, y: 240, type: "FIELD" }, { id: "B10", team: "B", nr: 10, x: 380, y: 320, type: "FIELD" }, { id: "B9", team: "B", nr: 9, x: 150, y: 140, type: "ATT" }, { id: "B11", team: "B", nr: 11, x: 160, y: 260, type: "ATT" }
         ];
         function ustawSkladNaStart() {
             players.length = 0; druzynaAtakujaca = Math.random() > 0.5 ? "A" : "B"; stanMeczu = "srodek"; timerAkcji = 0;
             basePositions.forEach(p => {
                 let startX = p.x; if (p.type === "ATT" && p.team !== druzynaAtakujaca) { startX = (druzynaAtakujaca === "A" ? 320 : 280); }
-                players.push({ id: p.id, team: p.team, nr: p.nr, type: p.type, homeX: p.x, homeY: p.y, x: startX, y: p.y, targetX: startX, targetY: p.y, speed: 0.035, cooldown: 0 });
+                // POPRAWKA: Każdy bot dostaje losowy refleks cyklu myślowego (od 25 do 50 klatek)
+                players.push({ id: p.id, team: p.team, nr: p.nr, type: p.type, homeX: p.x, homeY: p.y, x: startX, y: p.y, targetX: startX, targetY: p.y, offset: Math.random() * 50, speed: 0.035, cooldown: 0, refleks: Math.floor(Math.random()*25) + 25 });
             });
             ball.x = 300; ball.y = 200; ball.targetX = 300; ball.targetY = 200; ball.owner = null; ball.targetPlayer = null;
             let p9 = players.find(p => p.id === (druzynaAtakujaca + "9")); let p11 = players.find(p => p.id === (druzynaAtakujaca + "11"));
             p9.targetX = druzynaAtakujaca === "A" ? 295 : 305; p9.targetY = 190; p11.targetX = druzynaAtakujaca === "A" ? 295 : 305; p11.targetY = 210;
-            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Drużyny ustawione zgodnie z przepisami. Czekamy...";
+            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Oczekiwanie na pierwszy gwizdek sędziego...";
             setTimeout(odpalRozegranieOdSrodka, 1500);
         }
         function odpalRozegranieOdSrodka() {
@@ -72,22 +73,33 @@
                             } else { comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Prowadzenie piłki liniowym torem."; }
                         }
                     } else { 
-                        if (p.type === "ATT") { p.targetX = p.homeX; p.targetY = p.homeY; } 
-                        else { p.targetX = p.homeX + progresX; p.targetY = p.homeY; }
+                        // POPRAWKA: Rozbicie ruchu blokowego! Boty aktualizują pozycję TYLKO we własnym takcie refleksu
+                        if (frameCounter % p.refleks === 0) {
+                            if (p.type === "ATT") { p.targetX = p.homeX + (Math.random()*20 - 10); p.targetY = p.homeY + (Math.random()*20 - 10); } 
+                            else { p.targetX = p.homeX + progresX + (Math.random()*16 - 8); p.targetY = p.homeY; }
+                        }
                     }
                 } else {
-                    // POPRAWKA CRITICAL: Pancerne trzymanie linii boiska! Obrońcy nie mogą wyjść poza białą linię końcową!
                     let celCofaniaX = p.homeX + (druzynaAtakujaca === "A" ? -55 : 55);
-                    if (p.team === "A" && celCofaniaX < 75) celCofaniaX = 75; // Hamulec dla lewej obrony
-                    if (p.team === "B" && celCofaniaX > 525) celCofaniaX = 525; // Hamulec dla prawej obrony
+                    if (p.team === "A" && celCofaniaX < 75) celCofaniaX = 75; if (p.team === "B" && celCofaniaX > 525) celCofaniaX = 525;
                     
-                    p.targetX = celCofaniaX; p.targetY = p.homeY;
+                    // POPRAWKA: Przesunięcie obrony następuje asynchronicznie, uniemożliwiając ruch "sztywnego klocka"
+                    if (frameCounter % p.refleks === 0) { p.targetX = celCofaniaX; p.targetY = p.homeY; }
+                    
                     let najblizszy = players.filter(d => d.team === p.team && d.type !== "GK").reduce((prev, curr) => Math.hypot(ball.x - prev.x, ball.y - prev.y) < Math.hypot(ball.x - curr.x, ball.y - curr.y) ? prev : curr);
-                    if (p === najblizszy && dBall < 120 && !ball.targetPlayer) {
+                    if (p === najblizszy && dBall < 120 && !ball.targetPlayer && p.cooldown === 0) {
                         p.targetX = ball.x; p.targetY = ball.y;
+                        
+                        // POPRAWKA: Eliminacja wiecznego zderzania i zacinania silnika
                         if (dBall < 12 && ball.owner) {
-                            if (Math.random() > 0.55) { ball.owner = p; timerAkcji = 0; comment.style.color = "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Czysta interwencja w defensywie!"; }
-                            else { p.cooldown = 45; p.targetX -= (p.team === "A" ? 25 : -25); }
+                            if (Math.random() > 0.55) { 
+                                ball.owner = p; timerAkcji = 0; comment.style.color = "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Czysta interwencja w defensywie!"; 
+                            } else { 
+                                // Jeśli odbiór się nie udał, obrońca dostaje paraliż (cooldown) na 60 klatek i zostaje w tyle.
+                                // Napastnik natychmiast dostaje nagły wektor ucieczki, odskakując w bok!
+                                p.cooldown = 60; p.targetX -= (p.team === "A" ? 35 : -35);
+                                ball.owner.targetX += (p.team === "A" ? 25 : -25); ball.owner.targetY += (Math.random() > 0.5 ? 30 : -30);
+                            }
                         }
                     }
                 }
@@ -96,7 +108,7 @@
                 if (ball.targetPlayer) {
                     ball.targetX = ball.targetPlayer.x; ball.targetY = ball.targetPlayer.y;
                     if (Math.hypot(ball.x - ball.targetPlayer.x, ball.y - ball.targetPlayer.y) < 15) { ball.owner = ball.targetPlayer; ball.targetPlayer = null; timerAkcji = 0; }
-                } else { players.forEach(p => { if (Math.hypot(ball.x - p.x, ball.y - p.y) < 15) { ball.owner = p; timerAkcji = 0; } }); }
+                } else { players.forEach(p => { if (Math.hypot(ball.x - p.x, ball.y - p.y) < 15 && p.cooldown === 0) { ball.owner = p; timerAkcji = 0; } }); }
             }
         }
         function render() {
