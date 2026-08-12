@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Prawdziwa Taktyka</title>
+    <title>Championship Manager 2D - Pełna Swoboda</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -10,7 +10,7 @@
 </head>
 <body>
     <canvas id="matchCanvas" width="600" height="400"></canvas>
-    <div id="commentary">> Sędzia sprawdza gotowość systemów. Rozpoczynamy...</div>
+    <div id="commentary">> Inicjalizacja swobodnego silnika wektorowego 360...</div>
     <script>
         const canvas = document.getElementById("matchCanvas"); const ctx = canvas.getContext("2d");
         const comment = document.getElementById("commentary");
@@ -25,12 +25,12 @@
             players.length = 0;
             basePositions.forEach(p => { players.push({ id: p.id, team: p.team, nr: p.nr, role: p.r, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, targetKrycia: p.kryje, offset: Math.random() * 50, speed: 0.04 }); });
             ball.x = 300; ball.y = 200; ball.targetX = 300; ball.targetY = 200; ball.owner = null; druzynaAtakujaca = Math.random() > 0.5 ? "A" : "B"; stanMeczu = "srodek";
-            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Przygotowanie do wznowienia od środka boiska...";
+            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Wznowienie od środka boiska...";
             setTimeout(odpalGwizdekMeczu, 1500);
         }
         function odpalGwizdekMeczu() {
             let n11 = players.find(p => p.id === (druzynaAtakujaca + "11")); ball.owner = n11; stanMeczu = "gra"; timerPodania = 0;
-            comment.style.color = "#00ff00"; comment.innerText = "⚽ [GWIZDEK] Rozpoczęcie! Drużyna " + (druzynaAtakujaca === "A" ? "Czerwonych" : "Niebieskich") + " zaczyna budować swój atak!";
+            comment.style.color = "#00ff00"; comment.innerText = "⚽ [GWIZDEK] Piłka w grze! Rozpoczęcie akcji ofensywnej!";
         }
         function przeliczTaktykeAI() {
             if (stanMeczu !== "gra") return;
@@ -40,41 +40,52 @@
                 if (p.team === druzynaAtakujaca) {
                     let kierunekAtaku = p.team === "A" ? 1 : -1;
                     if (p === ball.owner) {
-                        p.targetX = p.x + (kierunekAtaku * 20); p.targetY = p.y + (Math.sin(frameCounter / 20) * 15);
+                        // POPRAWKA: Ruch wektorowy 360 stopni - zawodnik gładko manewruje, a nie leci pod sztywnym skosem
+                        p.targetX = p.x + (kierunekAtaku * 18);
+                        p.targetY = p.y + Math.sin(frameCounter / 15) * 12 + (Math.cos(frameCounter / 25) * 8);
                         if (p.team === "A" && p.targetX > 520) p.targetX = 510; if (p.team === "B" && p.targetX < 80) p.targetX = 90;
                         timerPodania++;
                         if (timerPodania > 120 + Math.random()*80) {
                             timerPodania = 0;
                             if ((p.team === "A" && p.x > 440) || (p.team === "B" && p.x < 160)) {
                                 ball.targetX = p.team === "A" ? 595 : 5; ball.targetY = 175 + Math.random()*50; ball.owner = null;
-                                comment.style.color = "#ffeb3b"; comment.innerText = "🚀 [STRZAŁ] Zawodnik z numerem " + p.nr + " decyduje się na strzał na bramkę!";
+                                comment.style.color = "#ffeb3b"; comment.innerText = "🚀 [STRZAŁ] Potężne uderzenie na bramkę!";
                             } else {
                                 let koledzy = players.filter(mate => mate.team === p.team && mate.id !== p.id && mate.role !== "GK");
                                 let odbiorca = koledzy[Math.floor(Math.random() * koledzy.length)];
                                 ball.targetX = odbiorca.x; ball.targetY = odbiorca.y; ball.owner = null;
-                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Ładne rozegranie! Piłka podana do zawodnika nr " + odbiorca.nr + ".";
+                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Szybka wymiana piłki w ataku do zawodnika nr " + odbiorca.nr + ".";
                             }
                         }
-                    } else { p.targetX = p.homeX + (kierunekAtaku * 110); p.targetY = p.homeY + (Math.sin((frameCounter / 30) + p.offset) * 20); }
+                    } else { 
+                        // Zawodnicy bez piłki płynnie zaokrąglają swoje pozycje w ataku
+                        p.targetX = p.homeX + (kierunekAtaku * 110); 
+                        p.targetY = p.homeY + (Math.sin((frameCounter / 25) + p.offset) * 18); 
+                    }
                 } else {
                     let celCofaniaX = p.homeX + (druzynaAtakujaca === "A" ? -50 : 50); let dystansDoPilki = Math.hypot(ball.x - p.x, ball.y - p.y);
                     let najblizszyObronca = players.filter(d => d.team === p.team).reduce((prev, curr) => Math.hypot(ball.x - prev.x, ball.y - prev.y) < Math.hypot(ball.x - curr.x, ball.y - curr.y) ? prev : curr);
                     if (p === najblizszyObronca && dystansDoPilki < 160) {
+                        // POPRAWKA: Prawdziwy, bezpośredni pościg pod dowolnym kątem wektora (360) za posiadaczem piłki
                         p.targetX = ball.x; p.targetY = ball.y;
                         if (dystansDoPilki < 12 && ball.owner) {
-                            if (Math.random() > 0.40) { ball.owner = p; timerPodania = 0; comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Kapitalna interwencja w defensywie! Zawodnik nr " + p.nr + " czysto zabiera piłkę rywalowi!"; }
-                            else { p.targetX -= (p.team === "A" ? 30 : -30); comment.innerText = "🔀 [ZWÓD] Rywal próbuje odebrać piłkę, ale napastnik mija go sprytnym zwodem!"; }
+                            if (Math.random() > 0.40) { ball.owner = p; timerPodania = 0; comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Świetne wyczucie! Czyste odebranie piłki wślizgiem!"; }
+                            else { p.targetX -= (p.team === "A" ? 25 : -25); p.targetY += (Math.random() > 0.5 ? 20 : -20); }
                         }
                     } else {
                         let rywalDoKrycia = players.find(opp => opp.id === p.targetKrycia);
-                        if (rywalDoKrycia) { p.targetX = (celCofaniaX + rywalDoKrycia.x) / 2; p.targetY = (p.homeY + rywalDoKrycia.y) / 2; }
+                        if (rywalDoKrycia) { 
+                            // Krycie dopasowuje się łukami do pozycji rywala
+                            p.targetX = (celCofaniaX + rywalDoKrycia.x) / 2; 
+                            p.targetY = (p.homeY + rywalDoKrycia.y) / 2; 
+                        }
                         else { p.targetX = celCofaniaX; p.targetY = p.homeY; }
                     }
                 }
             });
             if (!ball.owner) {
                 players.forEach(p => {
-                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < 12 && p.role !== "GK") { ball.owner = p; timerPodania = 0; comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252"; comment.innerText = "🧲 [PRZECHWYT] Zawodnik nr " + p.nr + " kapitalnie przecina linię podania!"; }
+                    if (Math.hypot(ball.x - p.x, ball.y - p.y) < 12 && p.role !== "GK") { ball.owner = p; timerPodania = 0; comment.style.color = p.team === "A" ? "#00ff00" : "#ff5252"; comment.innerText = "🧲 [PRZECHWYT] Czujne przecięcie podania przez zawodnika nr " + p.nr + "!"; }
                 });
             }
         }
@@ -94,10 +105,10 @@
             else { ball.x += (ball.targetX - ball.x) * ball.speed; ball.y += (ball.targetY - ball.y) * ball.speed; }
             if ((ball.x > 595 || ball.x < 5 || ball.y < 5 || ball.y > 395) && stanMeczu === "gra") {
                 stanMeczu = "stop";
-                if (ball.x > 595 && ball.y > 170 && ball.y < 230) { scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna zespołowa akcja wykończona strzałem w siatkę!"; }
+                if (ball.x > 595 && ball.y > 170 && ball.y < 230) { scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna akcja wykończona strzałem w siatkę!"; }
                 else if (ball.x < 5 && ball.y > 170 && ball.y < 230) { scoreB++; comment.style.color = "#ff5252"; comment.innerText = "❌ BRAMKA! Przeciwnik oddaje precyzyjny strzał i zdobywa punkt."; }
-                else if (ball.x > 595 || ball.x < 5) { comment.style.color = "#aaaaaa"; comment.innerText = "🥅 [AUT BRAMKOWY] Strzał mija światło bramki. Piłka poza linią końcową."; }
-                else { comment.style.color = "#ffb300"; comment.innerText = "🏳️ [AUT] Piłka opuszcza boisko za linią boczną po ostrym starciu taktycznym."; }
+                else if (ball.x > 595 || ball.x < 5) { comment.style.color = "#aaaaaa"; comment.innerText = "Grid out! 🥅 [AUT BRAMKOWY] Strzał mija światło bramki."; }
+                else { comment.style.color = "#ffb300"; comment.innerText = "🏳️ [AUT] Piłka opuszcza boisko za linią boczną."; }
                 setTimeout(ustawSkladNaStart, 3500);
             }
             ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#000"; ctx.stroke();
