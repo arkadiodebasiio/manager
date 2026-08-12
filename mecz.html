@@ -23,23 +23,23 @@
         ];
         function ustawSkladNaStart() {
             players.length = 0;
-            basePositions.forEach(p => { players.push({ id: p.id, team: p.team, nr: p.nr, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, offset: Math.random() * 50, speed: 0.04 }); });
+            basePositions.forEach(p => { players.push({ id: p.id, team: p.team, nr: p.nr, role: p.r, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, offset: Math.random() * 50, speed: 0.03 + Math.random()*0.01, cooldown: 0 }); });
             ball.x = 300; ball.y = 200; ball.targetX = 300; ball.targetY = 200; ball.owner = null; ball.targetPlayer = null;
             druzynaAtakujaca = Math.random() > 0.5 ? "A" : "B"; stanMeczu = "srodek"; timerAkcji = 0;
             let p9 = players.find(p => p.id === (druzynaAtakujaca + "9")); let p11 = players.find(p => p.id === (druzynaAtakujaca + "11"));
             p9.targetX = druzynaAtakujaca === "A" ? 295 : 305; p9.targetY = 190; p11.targetX = druzynaAtakujaca === "A" ? 295 : 305; p11.targetY = 210;
-            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Dokładnie dwóch zawodników rozpoczyna mecz od środka...";
+            comment.style.color = "#ffeb3b"; comment.innerText = "⚽ [ŚRODEK] Dwóch zawodników gotowych do rozpoczęcia meczu...";
             setTimeout(odpalRozegranieOdSrodka, 1500);
         }
         function odpalRozegranieOdSrodka() {
             let n11 = players.find(p => p.id === (druzynaAtakujaca + "11")); ball.owner = n11;
-            comment.style.color = "#00ff00"; comment.innerText = "⚽ [GWIZDEK] Podanie do partnera z ataku...";
+            comment.style.color = "#00ff00"; comment.innerText = "⚽ [GWIZDEK] Rozpoczęcie! Podanie napastników w kole środkowym.";
             setTimeout(() => {
                 let n9 = players.find(p => p.id === (druzynaAtakujaca + "9")); ball.owner = n9;
                 setTimeout(() => {
-                    ball.owner = null; let wolni = players.filter(mate => mate.team === druzynaAtakujaca && mate.id !== n9.id);
+                    ball.owner = null; let wolni = players.filter(mate => mate.team === druzynaAtakujaca && mate.role !== "ATT" && mate.role !== "GK");
                     let odbiorca = wolni[Math.floor(Math.random() * wolni.length)]; ball.targetPlayer = odbiorca;
-                    comment.style.color = "#ffeb3b"; comment.innerText = "↩️ [WYCOFANIE] Piłka wycofana do tyłu pod nogi zawodnika nr " + odbiorca.nr + "!";
+                    comment.style.color = "#ffeb3b"; comment.innerText = "↩️ [WYCOFANIE] Realistyczne wycofanie piłki do tyłu!";
                     setTimeout(() => { ball.owner = odbiorca; ball.targetPlayer = null; stanMeczu = "gra"; }, 1000);
                 }, 1000);
             }, 800);
@@ -48,41 +48,49 @@
             if (stanMeczu !== "gra") return;
             if (ball.owner) { druzynaAtakujaca = ball.owner.team; }
             players.forEach(p => {
-                let dBall = Math.hypot(ball.x - p.x, ball.y - p.y);
+                let dBall = Math.hypot(ball.x - p.x, ball.y - p.y); if (p.cooldown > 0) p.cooldown--;
                 if (p.team === druzynaAtakujaca) {
                     let kierunek = p.team === "A" ? 1 : -1;
                     if (p === ball.owner) {
-                        p.targetX = p.x + (kierunek * 10); if (frameCounter % 40 === 0) p.targetY = p.y + (Math.random()*40 - 20);
+                        p.targetX = p.x + (kierunek * 12); if (frameCounter % 50 === 0) p.targetY = p.y + (Math.random()*40 - 20);
                         if (p.team === "A" && p.targetX > 530) p.targetX = 520; if (p.team === "B" && p.targetX < 70) p.targetX = 80;
                         timerAkcji++;
-                        if (timerAkcji > 40) {
+                        if (timerAkcji > 35) {
                             timerAkcji = 0; let preferencjaPodania = Math.random();
-                            if ((p.team === "A" && p.x > 460) || (p.team === "B" && p.x < 140)) {
+                            if ((p.team === "A" && p.x > 450) || (p.team === "B" && p.x < 150)) {
                                 ball.targetX = p.team === "A" ? 595 : 5; ball.targetY = 180 + Math.random()*40; ball.owner = null; ball.targetPlayer = null;
-                                comment.style.color = "#ffeb3b"; comment.innerText = "🚀 [STRZAŁ] Próba uderzenia na bramkę rywala!";
-                            } else if (preferencjaPodania < 0.75) {
+                                comment.style.color = "#ffeb3b"; comment.innerText = "🚀 [STRZAŁ] Uderzenie na bramkę rywala!";
+                            } else if (preferencjaPodania < 0.70) {
+                                // SYSTEM DYNAMICZNEGO WYBORU ODBIORCY
                                 let koledzy = players.filter(m => m.team === p.team && m.id !== p.id);
                                 let odbiorca = koledzy[Math.floor(Math.random() * koledzy.length)];
-                                ball.owner = null; ball.targetPlayer = odbiorca; // POPRAWKA: Piłka namierza pozycję kolegi w biegu!
-                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Płynna wymiana! Podanie zawodnika nr " + p.nr + " do nr " + odbiorca.nr + "!";
-                            } else { comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Zawodnik nr " + p.nr + " holuje piłkę i zyskuje metry."; }
+                                
+                                // POPRAWKA: Tylko wylosowany odbiorca rwie do przodu na pozycję! Reszta stoi!
+                                odbiorca.targetX = odbiorca.x + (kierunek * 50); 
+                                ball.owner = null; ball.targetPlayer = odbiorca; // Piłka leci prosto do niego
+                                comment.style.color = "#00ff00"; comment.innerText = "👟 [PODANIE] Zawodnik nr " + p.nr + " posyła ładną piłkę do wybiegającego nr " + odbiorca.nr + "!";
+                            } else { comment.style.color = "#00e5ff"; comment.innerText = "🏃‍♂️ [DRYBLING] Indywidualny rajd z piłką przy nodze."; }
                         }
-                    } else { p.targetX = p.homeX + (ball.x - 300) * 0.45; p.targetY = p.homeY; }
+                    } else { 
+                        // POPRAWKA CRITICAL: Koniec z mechanicznym ruchem całego zespołu! 
+                        // Zawodnicy bez piłki bezwzględnie TRZYMAJĄ SWOJE STREFY DOMOWE i nie biegają razem w lewo/prawo!
+                        if (p.targetPlayer !== p) { p.targetX = p.homeX; p.targetY = p.homeY; }
+                    }
                 } else {
-                    p.targetX = p.homeX + (ball.x - 300) * 0.35; p.targetY = p.homeY;
+                    // OBRONA: Obrońcy spokojnie pilnują swoich nominalnych stref 4-4-2 z tyłu
+                    p.targetX = p.homeX; p.targetY = p.homeY;
                     let najblizszy = players.filter(d => d.team === p.team).reduce((prev, curr) => Math.hypot(ball.x - prev.x, ball.y - prev.y) < Math.hypot(ball.x - curr.x, ball.y - curr.y) ? prev : curr);
-                    if (p === najblizszy && dBall < 110 && !ball.targetPlayer) {
+                    if (p === najblizszy && dBall < 120 && !ball.targetPlayer) {
                         p.targetX = ball.x; p.targetY = ball.y;
                         if (dBall < 12 && ball.owner) {
-                            if (Math.random() > 0.55) { ball.owner = p; timerAkcji = 0; comment.style.color = "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Defensor nr " + p.nr + " czysto odbiera futbolówkę!"; }
-                            else { p.targetX -= (p.team === "A" ? 25 : -25); }
+                            if (Math.random() > 0.55) { ball.owner = p; timerAkcji = 0; comment.style.color = "#ff5252"; comment.innerText = "🧲 [ODBIÓR] Czysta interwencja stoperów!"; }
+                            else { p.cooldown = 45; p.targetX -= (p.team === "A" ? 25 : -25); }
                         }
                     }
                 }
             });
             if (!ball.owner) {
                 if (ball.targetPlayer) {
-                    // POPRAWKA: Adresowanie dynamiczne - piłka aktualizuje cel prosto do nóg odbiorcy!
                     ball.targetX = ball.targetPlayer.x; ball.targetY = ball.targetPlayer.y;
                     if (Math.hypot(ball.x - ball.targetPlayer.x, ball.y - ball.targetPlayer.y) < 15) { ball.owner = ball.targetPlayer; ball.targetPlayer = null; timerAkcji = 0; }
                 } else { players.forEach(p => { if (Math.hypot(ball.x - p.x, ball.y - p.y) < 15) { ball.owner = p; timerAkcji = 0; } }); }
@@ -101,17 +109,18 @@
                 ctx.strokeStyle = "#fff"; ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.fillText(p.nr, p.x - 5, p.y + 4);
             });
             if (ball.owner) { ball.x = ball.owner.x; ball.y = ball.owner.y + 6; ball.targetX = ball.x; ball.targetY = ball.y; }
-            else { ball.x += (ball.targetX - ball.x) * 0.06; ball.y += (ball.targetY - ball.y) * 0.06; }
+            else { ball.x += (ball.targetX - ball.x) * 0.05; ball.y += (ball.targetY - ball.y) * 0.05; }
             if (stanMeczu === "gra" && (ball.x > 595 || ball.x < 5 || ball.y < 5 || ball.y > 395)) {
                 stanMeczu = "stop";
-                if (ball.x > 595 && ball.y > 170 && ball.y < 230) { scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna zespołowa akcja zakończona bramką!"; }
+                if (ball.x > 595 && ball.y > 170 && ball.y < 230) { scoreA++; comment.style.color = "#ffeb3b"; comment.innerText = "⚽ GOOOOL!! Piękna akcja zakończona bramką!"; }
                 else if (ball.x < 5 && ball.y > 170 && ball.y < 230) { scoreB++; comment.style.color = "#ff5252"; comment.innerText = "❌ BRAMKA dla przeciwników po mocnym strzale!"; }
                 else if (ball.x > 595 || ball.x < 5) { comment.style.color = "#aaaaaa"; comment.innerText = "🥅 [AUT BRAMKOWY] Strzał mija bramkę."; }
                 else { comment.style.color = "#ffb300"; comment.innerText = "🏳️ [AUT] Piłka opuszcza linię boczną boiska."; }
                 setTimeout(ustawSkladNaStart, 3500);
             }
-            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#000"; ctx.stroke();
+            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#000"; stroke();
         }
+        function stroke() { ctx.stroke(); }
         setInterval(render, 16); ustawSkladNaStart();
     </script>
 </body>
