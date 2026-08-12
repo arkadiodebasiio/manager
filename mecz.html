@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Championship Manager 2D - Wymuszony Ruch</title>
+    <title>Championship Manager 2D - Żywe Boisko AI</title>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
         canvas { background: #236926; border: 4px solid #fff; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); display: block; margin: 10px auto; }
@@ -11,7 +11,7 @@
 <body>
 
     <canvas id="matchCanvas" width="600" height="400"></canvas>
-    <div id="commentary">> Inicjalizacja murawy. Czekamy na pierwszy gwizdek...</div>
+    <div id="commentary">> Składy na murawie. Za chwilę sędzia rozpocznie mecz...</div>
 
     <script>
         const canvas = document.getElementById("matchCanvas"); const ctx = canvas.getContext("2d");
@@ -20,14 +20,18 @@
         let ball = { x: 300, y: 200, targetX: 300, targetY: 200, speed: 0.04 };
         let players = [];
         let losowyStart = Math.random() > 0.5 ? "A" : "B"; 
+        let wylosowanyOdbiorca = null;
+        
+        // Stały licznik klatek dla płynnego dreptania
+        let frameCounter = 0; 
 
         const basePositions = [
             { id: "A1", team: "A", nr: 1, x: 40, y: 200 }, { id: "A2", team: "A", nr: 2, x: 120, y: 80 }, { id: "A3", team: "A", nr: 3, x: 110, y: 160 }, { id: "A4", team: "A", nr: 4, x: 110, y: 240 }, { id: "A5", team: "A", nr: 5, x: 120, y: 320 }, { id: "A6", team: "A", nr: 6, x: 220, y: 90 }, { id: "A7", team: "A", nr: 7, x: 200, y: 160 }, { id: "A8", team: "A", nr: 8, x: 200, y: 240 }, { id: "A10", team: "A", nr: 10, x: 220, y: 310 }, { id: "A11", team: "A", nr: 11, x: 270, y: 150 }, { id: "A9", team: "A", nr: 9, x: 270, y: 260 },
-            { id: "B1", team: "B", nr: 1, x: 560, y: 200 }, { id: "B2", team: "B", nr: 2, x: 480, y: 80 }, { id: "B3", team: "B", nr: 3, x: 490, y: 160 }, { id: "B4", team: "B", nr: 4, x: 490, y: 240 }, { id: "B5", team: "B", nr: 5, x: 480, y: 320 }, { id: "B6", team: "B", nr: 6, x: 380, y: 90 }, { id: "B7", team: "B", nr: 7, x: 400, y: 160 }, { id: "B8", team: "B", nr: 8, x: 400, y: 240 }, { id: "B10", team: "B", nr: 10, x: 380, y: 310 }, { id: "B9", team: "B", nr: 9, x: 330, y: 150 }, { id: "B11", team: "B", nr: 11, x: 330, y: 260 }
+            { id: "B1", team: "B", nr: 1, x: 560, y: 200 }, { id: "B2", team: "B", nr: 2, x: 460, y: 80 }, { id: "B3", team: "B", nr: 3, x: 490, y: 160 }, { id: "B4", team: "B", nr: 4, x: 490, y: 240 }, { id: "B5", team: "B", nr: 5, x: 460, y: 320 }, { id: "B6", team: "B", nr: 6, x: 360, y: 90 }, { id: "B7", team: "B", nr: 7, x: 400, y: 160 }, { id: "B8", team: "B", nr: 8, x: 400, y: 240 }, { id: "B10", team: "B", nr: 10, x: 380, y: 310 }, { id: "B9", team: "B", nr: 9, x: 330, y: 150 }, { id: "B11", team: "B", nr: 11, x: 330, y: 260 }
         ];
 
         basePositions.forEach(p => {
-            players.push({ id: p.id, team: p.team, nr: p.nr, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, offset: Math.random() * 100 });
+            players.push({ id: p.id, team: p.team, nr: p.nr, homeX: p.x, homeY: p.y, x: p.x, y: p.y, targetX: p.x, targetY: p.y, offset: Math.random() * 50 });
         });
 
         function meczStart() {
@@ -50,14 +54,19 @@
         function wycofanieDoTylu() {
             comment.style.color = "#ffeb3b";
             let wolniKoledzy = players.filter(p => p.team === losowyStart && p.id !== (losowyStart + "9") && p.id !== (losowyStart + "1") && p.id !== (losowyStart + "11"));
-            let wylosowanyGracz = wolniKoledzy[Math.floor(Math.random() * wolniKoledzy.length)];
-            ball.targetX = wylosowanyGracz.homeX; ball.targetY = wylosowanyGracz.homeY;
+            
+            wylosowanyOdbiorca = wolniKoledzy[Math.floor(Math.random() * wolniKoledzy.length)];
+            
+            if (losowyStart === "A") { wylosowanyOdbiorca.targetX = wylosowanyOdbiorca.homeX + 35; } 
+            else { wylosowanyOdbiorca.targetX = wylosowanyOdbiorca.homeX - 35; }
+
+            ball.targetX = wylosowanyOdbiorca.targetX; ball.targetY = wylosowanyOdbiorca.targetY;
             
             let nazwaDruzyny = losowyStart === "A" ? "FC Kuleczki" : "Niebieskich Asów";
-            comment.innerText = "↩️ [TAKTYKA] Piłka wycofana do tyłu! Przejmuje ją zawodnik nr " + wylosowanyGracz.nr + " z drużyny " + nazwaDruzyny + ".";
+            comment.innerText = "↩️ [TAKTYKA] Piłka wycofana! Zawodnik nr " + wylosowanyOdbiorca.nr + " z drużyny " + nazwaDruzyny + " wybiega do przodu i przejmuje podanie.";
         }
 
-        // POPRAWKA: Przebudowana funkcja rysująca (działa bez żądania klatek z systemu)
+        // --- GŁÓWNA PĘTLA GRAFICZNA 60 FPS ---
         function render() {
             ctx.fillStyle = "#236926"; ctx.fillRect(0, 0, 600, 400);
             ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 2; ctx.strokeRect(0, 0, 600, 400);
@@ -65,11 +74,13 @@
             ctx.beginPath(); ctx.arc(300, 200, 45, 0, Math.PI * 2); ctx.stroke();
             ctx.strokeRect(0, 110, 70, 180); ctx.strokeRect(530, 110, 70, 180);
 
-            let czas = Date.now();
+            frameCounter++; // Licznik idzie w górę z każdą klatką 60 FPS
 
             players.forEach(p => {
-                let microX = Math.sin((czas / 300) + p.offset) * 5;
-                let microY = Math.cos((czas / 400) + p.offset) * 5;
+                // PRAWIDŁOWE DREPTANIE: Każda kulka na boisku bez przerwy lekko faluje i żyje na murawie
+                let microX = Math.sin((frameCounter / 10) + p.offset) * 3.5;
+                let microY = Math.cos((frameCounter / 12) + p.offset) * 3.5;
+                
                 let aktualnyCelX = p.targetX + microX;
                 let aktualnyCelY = p.targetY + microY;
 
@@ -83,10 +94,7 @@
             ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#000"; ctx.stroke();
         }
 
-        // POPRAWKA: Wymuszony zegar JavaScript (odświeża ekran równo co 16 milisekund, czyli 60 razy na sekundę)
-        // Działa bez problemu we wbudowanej przeglądarce Second Life od razu po włączeniu!
         setInterval(render, 16);
-
         setTimeout(meczStart, 1000);
     </script>
 </body>
