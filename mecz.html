@@ -1,93 +1,164 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SM Match Engine 2D</title>
+    <title>Główny Silnik Meczowy 2D</title>
     <style>
-        body { background: #222; color: white; font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
-        #board { background: #2e7d32; border: 4px solid #fff; width: 600px; height: 400px; position: relative; margin: 10px auto; box-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
-        .line { position: absolute; border: 1px solid rgba(255,255,255,0.5); }
+        body { background: #1a1a1a; color: white; font-family: 'Courier New', Arial, sans-serif; text-align: center; margin: 0; padding: 10px; overflow: hidden; }
+        #board { background: #236926; border: 4px solid #fff; width: 600px; height: 400px; position: relative; margin: 10px auto; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); }
+        .line { position: absolute; border: 1px solid rgba(255,255,255,0.4); }
         #half-line { width: 1px; height: 100%; left: 50%; top: 0; }
-        #center-circle { width: 80px; height: 80px; border-radius: 50%; left: 260px; top: 160px; }
-        .dot { position: absolute; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: bold; line-height: 20px; text-align: center; color: white; transition: all 0.6s linear; transform: translate(-50%, -50%); }
-        .teamA { background: #d32f2f; border: 2px solid #fff; box-shadow: 0 0 5px #000; }
-        .teamB { background: #1976d2; border: 2px solid #fff; box-shadow: 0 0 5px #000; }
-        #ball { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; border: 1px solid #000; transition: all 0.5s ease-out; transform: translate(-50%, -50%); }
-        .name-tag { position: absolute; font-size: 9px; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 3px; top: -15px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; }
-        #commentary { background: #111; border: 2px solid #444; width: 580px; min-height: 50px; margin: 10px auto; padding: 10px; font-size: 14px; color: #ffeb3b; border-radius: 50px; }
+        #center-circle { width: 90px; height: 90px; border-radius: 50%; left: 255px; top: 155px; }
+        
+        /* Bramki */
+        .goal { position: absolute; width: 15px; height: 80px; border: 3px solid #fff; top: 160px; background: rgba(255,255,255,0.1); }
+        #goal-left { left: -18px; border-right: none; }
+        #goal-right { right: -18px; border-left: none; }
+
+        /* Kulki i Piłka */
+        .dot { position: absolute; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: bold; line-height: 22px; text-align: center; color: white; transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform: translate(-50%, -50%); }
+        .teamA { background: #e53935; border: 2px solid #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        .teamB { background: #1e88e5; border: 2px solid #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        #ball { position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; border: 2px solid #000; transition: all 0.7s ease-out; transform: translate(-50%, -50%); }
+        
+        .name-tag { position: absolute; font-size: 10px; background: rgba(0,0,0,0.85); padding: 2px 6px; border-radius: 4px; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #ffeb3b; border: 1px solid #444; }
+        #commentary { background: #000; border: 2px solid #333; width: 580px; min-height: 55px; margin: 10px auto; padding: 10px; font-size: 15px; color: #00ff00; border-radius: 4px; box-sizing: border-radius; text-align: left; }
+        #score-board { font-size: 20px; margin: 5px; font-weight: bold; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
-    <h2>🏆 RETRO MENEDŻER 2D 🏆</h2>
+    <div id="score-board">🔴 FC KULECZKI <span id="scoreA">0</span> : <span id="scoreB">0</span> NIEBIESKIE ASY 🔵</div>
+    
     <div id="board">
         <div class="line" id="half-line"></div>
         <div class="line" id="center-circle"></div>
+        <div class="goal" id="goal-left"></div>
+        <div class="goal" id="goal-right"></div>
         
-        <!-- Kulka przypisana do Awatara -->
+        <!-- TWOJA KULKA (Napastnik) -->
         <div id="player1" class="dot teamA" style="left: 150px; top: 200px;">
             9
-            <div class="name-tag" id="player1-name">Ładowanie zawodnika...</div>
+            <div class="name-tag" id="player1-name">Oczekiwanie na dane z SL...</div>
         </div>
         
-        <!-- Przeciwnik -->
-        <div id="enemy1" class="dot teamB" style="left: 450px; top: 200px;">4</div>
+        <!-- KULKA PRZECIWNIKA (Obrońca) -->
+        <div id="enemy1" class="dot teamB" style="left: 420px; top: 200px;">4</div>
         
         <!-- Piłka -->
         <div id="ball" style="left: 300px; top: 200px;"></div>
     </div>
     
-    <div id="commentary">Przygotowanie do rozpoczęcia meczu...</div>
+    <div id="commentary">> System gotowy. Oczekiwanie na pierwszy gwizdek sędziego...</div>
 
     <script>
-        // Automatyczny silnik meczowy - pobiera dane z linku URL z Second Life
+        // Odbieramy PRAWDZIWE parametry z linku Second Life [1]
         const urlParams = new URLSearchParams(window.location.search);
-        var avatarName = urlParams.get('name') || "Arkadiodebasiio";
-        var avatarSpeed = parseInt(urlParams.get('speed')) || 85;
+        var avatarName = urlParams.get('name') || "Testowy Gracz";
+        var avatarSpeed = parseInt(urlParams.get('speed')) || 50; // Jeśli nie trenował, dostaje bazowe 50 punktów
 
-        // Ta funkcja włącza się sama, gdy Second Life załaduje ekran
+        var goalsA = 0;
+        var goalsB = 0;
+
+        // Ustawiamy prawdziwy Nick zawodnika nad kulką
+        document.getElementById("player1-name").innerText = avatarName + " (SZY: " + avatarSpeed + ")";
+
+        // Silnik meczu rusza automatycznie po 3 sekundach od włączenia tablicy
         window.onload = function() {
-            document.getElementById("player1-name").innerText = avatarName + " (SZY: " + avatarSpeed + ")";
-            // Odczekaj 2 sekundy na pełne załadowanie i zacznij akcję
-            setTimeout(executeAction, 2000); 
+            setTimeout(losujAkcjeMeczowa, 3000); 
         };
 
-        function executeAction() {
+        function losujAkcjeMeczowa() {
             var player = document.getElementById("player1");
             var enemy = document.getElementById("enemy1");
             var ball = document.getElementById("ball");
             var comment = document.getElementById("commentary");
 
-            comment.innerText = "⚡ AKCJA: " + avatarName + " wykorzystuje szybkość " + avatarSpeed + " i rusza skrzydłem!";
-            player.style.left = "420px"; player.style.top = "150px";
-            ball.style.left = "440px"; ball.style.top = "140px";
-
-            setTimeout(function() { enemy.style.left = "380px"; enemy.style.top = "190px"; }, 200);
+            // --- KOŚĆ ZOSTAŁA RZUCONA (Matematyczne obliczanie szans) ---
+            // Generujemy losową obronę przeciwnika (od 1 do 100)
+            var obronaPrzeciwnika = Math.floor(Math.random() * 100) + 1;
             
-            setTimeout(function() {
-                ball.style.left = "595px"; ball.style.top = "200px";
-                comment.innerText = "⚽ GOOOOL!!! " + avatarName + " zdobywa piękną bramkę!";
+            // Losujemy rodzaj akcji (0 - nasza akcja, 1 - akcja rywala)
+            var ktoAtakuje = Math.random() > 0.4 ? 0 : 1; 
+
+            if (ktoAtakuje === 0) {
+                // ATAKUJE TWOJA KULKA
+                comment.innerText = "> [Atak] Piłka trafia do kulki nr 9 (" + avatarName + "). Próba wyjścia na pozycję...";
                 
-                // PĘTLA: Po strzeleniu gola odczekaj 5 sekund, zresetuj pozycje i zacznij nową akcję!
-                setTimeout(resetAndRestart, 5000);
-            }, 800);
+                // Ruch kulek na środek pola walki
+                player.style.left = "350px"; player.style.top = "160px";
+                enemy.style.left = "390px"; enemy.style.top = "170px";
+                ball.style.left = "365px"; ball.style.top = "155px";
+
+                setTimeout(function() {
+                    // Porównujemy Twoją szybkość z bieżni z losową obroną rywala!
+                    if (avatarSpeed >= obronaPrzeciwnika) {
+                        // SUKCES: Twoja kulka mija obrońcę i strzela gola!
+                        comment.innerText = "> [Pojedynek] " + avatarName + " wygrywa pojedynek szybkością (" + avatarSpeed + " vs " + obronaPrzeciwnika + ")! Sam na sam z bramkarzem...";
+                        
+                        player.style.left = "520px"; player.style.top = "200px";
+                        ball.style.left = "540px"; ball.style.top = "200px";
+
+                        setTimeout(function() {
+                            ball.style.left = "605px"; ball.style.top = "200px"; // Piłka w bramce
+                            goalsA++;
+                            document.getElementById("scoreA").innerText = goalsA;
+                            comment.style.color = "#ffeb3b";
+                            comment.innerText = "⚽ GOOOOL!! Niesamowity rajd! " + avatarName + " zdobywa bramkę dla FC Kuleczki!";
+                            setTimeout(resetPozycji, 4000);
+                        }, 1000);
+
+                    } else {
+                        // PORAŻKA: Obrońca był sprytniejszy lub Twoja szybkość była za niska
+                        comment.innerText = "> [Pojedynek] Ojej! Obrońca powstrzymuje kulkę " + avatarName + " (" + avatarSpeed + " vs " + obronaPrzeciwnika + "). Strata piłki.";
+                        enemy.style.left = "340px";
+                        ball.style.left = "320px";
+                        setTimeout(resetPozycji, 4000);
+                    }
+                }, 1500);
+
+            } else {
+                // ATAKUJE PRZECIWNIK
+                comment.style.color = "#ff5252";
+                comment.innerText = "> [Zagrożenie] Niebieskie Asy przejmują piłkę. Groźny kontratak rywali...";
+                
+                player.style.left = "250px"; player.style.top = "240px";
+                enemy.style.left = "200px"; enemy.style.top = "200px";
+                ball.style.left = "185px"; ball.style.top = "200px";
+
+                setTimeout(function() {
+                    // Losowy rzut na bramkę przeciwnika
+                    if (Math.random() > 0.5) {
+                        ball.style.left = "-10px"; ball.style.top = "200px"; // Gol dla rywala
+                        goalsB++;
+                        document.getElementById("scoreB").innerText = goalsB;
+                        comment.innerText = "❌ BRAMKA! Niestety, Niebieskie Asy doskonale rozegrały tę akcję. Gol.";
+                    } else {
+                        ball.style.left = "100px"; ball.style.top = "350px"; // Pudło rywala
+                        comment.style.color = "#00ff00";
+                        comment.innerText = "> [Obrona] Strzał przeciwnika przelatuje wysoko nad poprzeczką! Uff...";
+                    }
+                    setTimeout(resetPozycji, 4000);
+                }, 1500);
+            }
         }
 
-        function resetAndRestart() {
+        function resetPozycji() {
             var player = document.getElementById("player1");
             var enemy = document.getElementById("enemy1");
             var ball = document.getElementById("ball");
             var comment = document.getElementById("commentary");
 
-            // Powrót na pozycje startowe
+            comment.style.color = "#00ff00";
+            comment.innerText = "> Przygotowanie do kolejnej akcji meczowej. Zawodnicy wracają na pozycje...";
+            
+            // Powrót na start
             player.style.left = "150px"; player.style.top = "200px";
-            enemy.style.left = "450px"; enemy.style.top = "200px";
+            enemy.style.left = "420px"; enemy.style.top = "200px";
             ball.style.left = "300px"; ball.style.top = "200px";
-            comment.innerText = "Trwa przygotowanie do kolejnej akcji meczowej...";
 
-            // Odpal nową akcję automatycznie za 2 sekundy
-            setTimeout(executeAction, 2000);
+            // Losujemy kolejną akcję za 3 sekundy (mecz toczy się w nieskończoność!)
+            setTimeout(losujAkcjeMeczowa, 3000);
         }
     </script>
 </body>
 </html>
-
