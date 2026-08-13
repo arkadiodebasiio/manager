@@ -1,3 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Modern Cyber Boxing Manager 2D</title>
+    <style>
+        body { background: #111; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .wrapper { max-width: 800px; margin: 0 auto; }
+        canvas { background: #1a1a1a; border: 5px solid #d4af37; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: block; margin: 20px auto; }
+        .hud { display: flex; justify-content: space-between; width: 700px; margin: 0 auto; font-size: 18px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .bar-bg { background: #333; border-radius: 4px; width: 250px; height: 20px; border: 2px solid #555; overflow: hidden; margin-top: 5px; }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.1s ease; }
+        #commentary { background: #000; border: 1px solid #333; color: #00ffaa; font-family: monospace; padding: 12px; height: 100px; overflow-y: auto; text-align: left; border-radius: 5px; width: 676px; margin: 10px auto; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <h1>CYBER BOXING MANAGER</h1>
+        
+        <div class="hud">
+            <div>
+                <span style="color: #ff2255;">PROTOTYP_RED</span>
+                <div class="bar-bg"><div id="hp1" class="bar-fill" style="background: #ff2255;"></div></div>
+            </div>
+            <div>
+                <span style="color: #00ccff;">PROTOTYP_BLUE</span>
+                <div class="bar-bg"><div id="hp2" class="bar-fill" style="background: #00ccff;"></div></div>
+            </div>
+        </div>
+
+        <canvas id="boxingRing" width="700" height="350"></canvas>
+        <div id="commentary"></div>
+    </div>
+
+    <!-- Załadowanie logiki z drugiego pliku JavaScript -->
+    <script src="cyber_logika.js"></script>
+</body>
+</html>
 const canvas = document.getElementById("boxingRing");
 const ctx = canvas.getContext("2d");
 const commBox = document.getElementById("commentary");
@@ -7,7 +45,6 @@ function logEvent(text, color = "#00ffaa") {
     commBox.scrollTop = commBox.scrollHeight;
 }
 
-// Nowoczesne, neonowe definicje zawodników (Wizualny styl Cyber-Glow)
 let p1 = {
     x: 180, baseRealY: 280, hp: 100, color: "#ff2255", glowColor: "rgba(255, 34, 85, 0.5)", name: "PROTOTYP_RED",
     facing: 1, punching: false, punchProgress: 0, punchStage: "out",
@@ -25,29 +62,26 @@ let endOfGame = false;
 function drawModernFighter(f) {
     ctx.save();
     let groundY = f.baseRealY;
-
-    // EFEKT HIT-FLASH: Jeśli zawodnik dostał cios, całe jego ciało na chwilę rozbłyskuje na biało
     let isFlashing = f.hitFlash > 0;
     if (isFlashing) f.hitFlash--;
 
-    // Włączenie nowoczesnego efektu poświaty (Glow) dla neonów
     ctx.shadowBlur = isFlashing ? 30 : 15;
     ctx.shadowColor = isFlashing ? "#ffffff" : f.color;
 
-    // 1. FUTURYSTYCZNE NOGI (Szybkie, dynamiczne linie neonowe)
+    // 1. NOGI NEONOWE
     ctx.strokeStyle = isFlashing ? "#ffffff" : f.color;
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(f.x - 15, groundY);
     ctx.lineTo(f.x - 2, groundY - 35); 
-    ctx.lineTo(f.x, groundY - 45); // Tylna noga pod kątem
+    ctx.lineTo(f.x, groundY - 45); 
     ctx.moveTo(f.x + 20, groundY);
     ctx.lineTo(f.x + 8, groundY - 35);
-    ctx.lineTo(f.x, groundY - 45); // Przednia noga
+    ctx.lineTo(f.x, groundY - 45); 
     ctx.stroke();
 
-    // 2. NOWOCZESNY PANCERZ / KORPUS (Półprzezroczysty poligon z neonową ramką)
+    // 2. KORPUS
     ctx.fillStyle = "rgba(20, 20, 20, 0.85)";
     ctx.strokeStyle = isFlashing ? "#ffffff" : f.color;
     ctx.lineWidth = 3;
@@ -60,13 +94,12 @@ function drawModernFighter(f) {
     ctx.fill();
     ctx.stroke();
 
-    // Szorstka faktura rdzenia pancerza
     ctx.fillStyle = isFlashing ? "rgba(255,255,255,0.4)" : f.glowColor;
     ctx.beginPath();
     ctx.arc(f.x - 3 * f.facing, groundY - 75, 8, 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. CYFROWY RDZEŃ GŁOWY (Minimalistyczna, lewitująca kapsuła energetyczna)
+    // 3. CYFROWY RDZEŃ GŁOWY
     let headX = f.x - (5 * f.facing);
     let headY = groundY - 125;
     ctx.fillStyle = "rgba(10, 10, 10, 0.9)";
@@ -77,24 +110,20 @@ function drawModernFighter(f) {
     ctx.fill();
     ctx.stroke();
 
-    // Neonowy wizjer / oczy bota
     ctx.fillStyle = isFlashing ? "#ffffff" : f.color;
     ctx.fillRect(headX + (3 * f.facing), headY - 4, 8 * f.facing, 4);
 
-    // 4. SYSTĘM WYSUWANIA RAMION I ENERGETYCZNE TARCZE UDERZENIOWE
+    // 4. TELESKOPOWE RAMIĘ I TARCZA KINETYCZNA
     let shoulderX = f.x - (2 * f.facing);
     let shoulderY = groundY - 95;
-    
     let currentReach = 22; 
     if (f.punching) {
-        // Płynne, potężne wysunięcie teleskopowe na 100 pikseli do przodu
         currentReach = 22 + (f.punchProgress * 78);
     }
 
     let gloveX = shoulderX + (currentReach * f.facing);
     let gloveY = shoulderY - 8;
 
-    // Ramię: Nowoczesna podwójna szyna mechaniczna zamiast zwykłej kreski
     ctx.strokeStyle = isFlashing ? "#ffffff" : "rgba(200, 200, 200, 0.4)";
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -104,8 +133,6 @@ function drawModernFighter(f) {
     ctx.lineTo(gloveX - (12 * f.facing), gloveY + 4);
     ctx.stroke();
 
-    // NOWOCZESNA RĘKAWICA: Masywna tarcza kinetyczna (Większa od głowy, promień 20)
-    // Podczas ciosu świeci oślepiającym białym neonem
     ctx.fillStyle = f.punching ? "#ffffff" : "rgba(25, 25, 25, 0.9)";
     ctx.strokeStyle = isFlashing ? "#ffffff" : f.color;
     ctx.lineWidth = 4;
@@ -114,7 +141,6 @@ function drawModernFighter(f) {
     ctx.fill();
     ctx.stroke();
 
-    // Wewnętrzny neonowy pierścień akceleratora ciosu
     ctx.strokeStyle = f.punching ? f.color : "rgba(100,100,100,0.5)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -127,25 +153,21 @@ function drawModernFighter(f) {
 function AI(self, enemy) {
     self.timer--;
     self.facing = (enemy.x > self.x) ? 1 : -1;
-
-    if (self.punching) return; // Blokada ruchu nóg podczas wyprostu
+    if (self.punching) return;
 
     let dist = Math.abs(enemy.x - self.x);
 
     if (self.timer <= 0) {
         let r = Math.random();
         if (r < 0.50 && dist > 140) {
-            // Natarcie: Doskok na precyzyjny zasięg uderzenia tarczy kinetycznej
             self.state = "forward";
             self.targetX = enemy.x - (115 * self.facing);
             self.timer = 18;
         } else if (r < 0.88 && dist < 160) {
-            // Unik taktyczny: Szybki mikrokrok w tył, by ramię wroga uderzyło w próżnię
             self.state = "backward";
             self.targetX = self.x - (65 * self.facing);
             self.timer = 12;
         } else {
-            // Dynamiczne wyczekiwanie w gardzie bocznej
             self.state = "idle";
             self.timer = 8;
         }
@@ -154,11 +176,10 @@ function AI(self, enemy) {
     if (self.state === "forward" || self.state === "backward") {
         let dx = self.targetX - self.x;
         if (Math.abs(dx) > 4) {
-            self.x += (dx > 0 ? 1 : -1) * 3.0; // Prędkość poruszania się unowocześnionych botów
+            self.x += (dx > 0 ? 1 : -1) * 3.0; 
         }
     }
 
-    // PRECYZYJNA DETEKCJA ODLEGŁOŚCI DLA WYPROSTU RAMIENIA
     if (!self.punching && dist >= 100 && dist <= 140 && Math.random() > 0.93) {
         self.punching = true;
         self.punchProgress = 0;
@@ -170,7 +191,7 @@ function handlePunchLogic(self, enemy) {
     if (!self.punching) return;
 
     if (self.punchStage === "out") {
-        self.punchProgress += 0.18; // Bardziej eksplozywny, szybszy wyprost ramienia (Nowoczesna dynamika)
+        self.punchProgress += 0.18; 
         if (self.punchProgress >= 1) {
             self.punchProgress = 1;
             self.punchStage = "return";
@@ -178,29 +199,24 @@ function handlePunchLogic(self, enemy) {
             let shoulderX = self.x - (2 * self.facing);
             let myGloveGlobalX = shoulderX + (100 * self.facing);
             let enemyHeadX = enemy.x - (5 * enemy.facing);
-            
             let hitDistance = Math.abs(enemyHeadX - myGloveGlobalX);
 
-            // Trafienie wchodzi TYLKO jeśli środek tarczy kinetycznej uderzy centralnie w głowę przeciwnika
             if (hitDistance <= 25) {
                 enemy.hp -= 10;
                 if (enemy.hp < 0) enemy.hp = 0;
-
-                enemy.hitFlash = 4; // Aktywacja błysku uszkodzeń na 4 klatki animacji
+                enemy.hitFlash = 4; 
 
                 document.getElementById("hp1").style.width = p1.hp + "%";
                 document.getElementById("hp2").style.width = p2.hp + "%";
 
-                logEvent(`KRACH KINETYCZNY! <b style='color:${self.color}'>${self.name}</b> deklasuje obronę i trafia prosto w rdzeń głowy! (-10 HP)`, self.color);
-                
-                // Odrzut fizyczny oponenta po udanym trafieniu na wprost
+                logEvent(`KRACH KINETYCZNY! <b style='color:${self.color}'>${self.name}</b> deklasuje obronę i trafia w rdzeń głowy! (-10 HP)`, self.color);
                 enemy.x -= (25 * enemy.facing);
             } else {
-                logEvent(`${self.name} wyprowadził wyprost, ale wróg zrobił perfekcyjny spacing (Chybienie).`, "#666");
+                logEvent(`${self.name} wyprowadził wyprost, ale wróg zrobił perfekcyjny spacing.`, "#666");
             }
         }
     } else if (self.punchStage === "return") {
-        self.punchProgress -= 0.12; // Szybki powrót ramienia do osłony bocznej
+        self.punchProgress -= 0.12; 
         if (self.punchProgress <= 0) {
             self.punchProgress = 0;
             self.punching = false;
@@ -210,14 +226,11 @@ function handlePunchLogic(self, enemy) {
 
 function updateGame() {
     if (endOfGame) return;
-
     AI(p1, p2);
     AI(p2, p1);
-
     handlePunchLogic(p1, p2);
     handlePunchLogic(p2, p1);
 
-    // Dynamiczne ściany ringu (Liny laserowe)
     [p1, p2].forEach(p => {
         p.x = Math.max(90, Math.min(610, p.x));
     });
@@ -232,8 +245,6 @@ function updateGame() {
 
 function drawScene() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // NOWOCZESNY CYBER-RING (Laserowe liny i cyfrowe podłoże)
     ctx.shadowBlur = 10;
     ctx.shadowColor = "#333333";
     
@@ -241,22 +252,19 @@ function drawScene() {
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(40, 280);
-    ctx.lineTo(660, 280); // Podłoga energetyczna
+    ctx.lineTo(660, 280); 
     ctx.stroke();
 
-    // Laserowe liny bokserskie w tle
     ctx.strokeStyle = "rgba(212, 175, 55, 0.25)";
     ctx.lineWidth = 2;
     ctx.strokeRect(40, 160, 620, 1);
     ctx.strokeRect(40, 200, 620, 1);
     ctx.strokeRect(40, 240, 620, 1);
 
-    // Konstrukcja słupów narożnikowych
     ctx.fillStyle = "#222";
     ctx.fillRect(35, 130, 6, 150);
     ctx.fillRect(659, 130, 6, 150);
 
-    // Rysowanie unowocześnionych zawodników
     drawModernFighter(p1);
     drawModernFighter(p2);
 }
