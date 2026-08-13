@@ -3,240 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO BOXING MANAGER 2026</title>
+    <title>Next-Gen Boxing Simulation 3D</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: #020617;
-            color: #f8fafc;
             font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
+            flex-direction: column;
         }
-        /* Główny kontener gry - Nowoczesny interfejs Premium */
-        #game-container {
-            width: 100%;
-            max-width: 800px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        #canvas-3d {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;
         }
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 15px;
-        }
-        header h1 { font-size: 22px; font-weight: 800; letter-spacing: 1.5px; color: #fff; text-transform: uppercase; }
-        header p { color: #94a3b8; font-size: 13px; margin-top: 4px; }
-        
-        /* Układ dwukolumnowy */
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-        .card {
+        /* Nowoczesny Panel Live Dashboard */
+        #combat-hud {
+            position: relative; z-index: 10;
+            margin: 20px;
+            width: calc(100% - 40px);
+            max-width: 500px;
             background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 14px;
-            padding: 20px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            align-self: center;
         }
-        .card h3 { font-size: 14px; text-transform: uppercase; color: #f59e0b; margin-bottom: 15px; letter-spacing: 0.5px; }
-        
-        /* Statystyki */
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .stat-name { color: #94a3b8; font-size: 13px; font-weight: 600; }
-        .stat-controls { display: flex; align-items: center; gap: 12px; }
-        .stat-val { font-family: monospace; font-size: 16px; font-weight: 700; color: #38bdf8; }
-        
-        button.btn-plus {
-            background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);
-            width: 28px; height: 28px; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 14px;
-        }
-        button.btn-plus:hover { background: #3b82f6; color: #fff; }
-        
-        /* Ring tekstowy i logi walki */
-        #console-ring {
-            background: #020617;
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 10px;
-            height: 140px;
-            padding: 12px;
+        .fighter-meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #94a3b8; }
+        .hp-track { background: rgba(51, 65, 85, 0.5); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+        .hp-fill { height: 100%; transition: width 0.15s ease-out; }
+        #hp-a { background: linear-gradient(90deg, #3b82f6, #60a5fa); width: 100%; }
+        #hp-b { background: linear-gradient(90deg, #ef4444, #f43f5e); width: 100%; }
+        #log-console {
+            color: #f59e0b; font-size: 13px; font-weight: 600; text-align: center; margin-top: 5px;
             font-family: monospace;
-            font-size: 12px;
-            overflow-y: auto;
-            color: #cbd5e1;
-            line-height: 1.6;
         }
-        .log-hit { color: #f43f5e; font-weight: bold; }
-        .log-ko { color: #10b981; font-weight: bold; font-size: 13px; }
-
-        /* Paski Zdrowia HP */
-        .hp-container { margin-top: 10px; }
-        .hp-bar-bg { background: #334155; height: 6px; border-radius: 3px; width: 100%; margin-top: 4px; overflow: hidden; }
-        .hp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.2s ease; }
-        #hp-p1 { background: linear-gradient(90deg, #2563eb, #38bdf8); width: 100%; }
-        #hp-p2 { background: linear-gradient(90deg, #be123c, #fb7185); width: 100%; }
-
-        /* Przycisk akcji */
-        #action-btn {
-            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: white; border: none;
-            width: 100%; padding: 14px; margin-top: 20px; font-size: 14px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 1px; border-radius: 10px; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        #start-btn {
+            position: relative; z-index: 10; align-self: center; margin-bottom: 30px;
+            background: linear-gradient(90deg, #2563eb, #3b82f6); color: white; border: none;
+            padding: 12px 36px; font-size: 14px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); transition: transform 0.2s;
         }
-        #action-btn:hover { background: #2563eb; }
+        #start-btn:hover { transform: translateY(-1px); }
     </style>
+    <!-- Ładowanie oficjalnego silnika 3D z bezpiecznego CDN -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
-    <div id="game-container">
-        <header>
-            <h1>World Boxing League Manager</h1>
-            <p>Centrum treningowe i zarządzanie galą boksu</p>
-        </header>
+    <div id="canvas-3d"></div>
 
-        <div class="grid">
-            <!-- LEWA STRONA: PANEL ROZWOJU -->
-            <div class="card">
-                <h3>Gym & Trening</h3>
-                <div class="stat-row">
-                    <span class="stat-name">Wolne punkty rozwoju:</span>
-                    <span id="pts" style="color: #a855f7; font-weight: bold; font-size: 16px;">5</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-name">SIŁA (POWER):</span>
-                    <div class="stat-controls">
-                        <span class="val" id="v-pow">15</span>
-                        <button class="btn-plus" onclick="upgradeStat('pow')">+</button>
-                    </div>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-name">SZYBKOŚĆ (SPEED):</span>
-                    <div class="stat-controls">
-                        <span class="val" id="v-spd">8</span>
-                        <button class="btn-plus" onclick="upgradeStat('spd')">+</button>
-                    </div>
-                </div>
-                
-                <div class="hp-container" style="margin-top: 20px;">
-                    <div class="stat-row" style="margin:0;"><span class="stat-name">Kondycja: ALEX (Ty)</span><span id="txt-hp1" style="font-size:12px; font-weight: bold;">100/100 HP</span></div>
-                    <div class="hp-bar-bg"><div id="hp-p1" class="hp-bar-fill"></div></div>
-                </div>
-            </div>
+    <!-- NOWOCZESNY MONITOR LIVE WALKI -->
+    <div id="combat-hud">
+        <div class="fighter-meta"><span>ALEX (Menedżer)</span><span id="txt-a">100/100 HP</span></div>
+        <div class="hp-track"><div id="hp-a" class="hp-fill"></div></div>
+        
+        <div class="fighter-meta"><span>BOB (Pretendent)</span><span id="txt-b">100/100 HP</span></div>
+        <div class="hp-track"><div id="hp-b" class="hp-fill"></div></div>
 
-            <!-- PRAWA STRONA: MONITORING WALKI (LIVE RING) -->
-            <div class="card">
-                <h3>Live Ring Server</h3>
-                <div id="console-ring">
-                    [SYSTEM]: Oczekuję na rozpoczęcie pojedynku...<br>
-                    [SYSTEM]: Przydziel wolne punkty trenera, aby zwiększyć szanse zawodnika na ringu.
-                </div>
-
-                <div class="hp-container" style="margin-top: 15px;">
-                    <div class="stat-row" style="margin:0;"><span class="stat-name">Kondycja: BOB (Rywal)</span><span id="txt-hp2" style="font-size:12px; font-weight: bold;">100/100 HP</span></div>
-                    <div class="hp-bar-bg"><div id="hp-p2" class="hp-bar-fill"></div></div>
-                </div>
-            </div>
-        </div>
-
-        <button id="action-btn" onclick="startSimulation()">Rozpocznij Symulację Walki</button>
+        <div id="log-console">SYMULATOR WALKI GOTOWY DO URUCHOMIENIA</div>
     </div>
 
+    <div style="flex-grow: 1;"></div>
+    <button id="start-btn" onclick="run3DMatch()">Rozpocznij galę 3D</button>
+
 <script>
-let coachPoints = 5;
-let matchOver = false, matchRunning = false;
+// --- ZAAWANSOWANA INICJALIZACJA GRAFIKI 3D ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020617);
+scene.fog = new THREE.FogExp2(0x020617, 0.02); // Atmosferyczna mgła kinowa
 
-// Dynamiczne statystyki postaci
-let player = { name: "ALEX", hp: 100, power: 15, speed: 8 };
-let enemy = { name: "BOB", hp: 100, power: 14, speed: 7 };
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.set(0, 10, 24);
 
-const ring = document.getElementById("console-ring");
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.getElementById("canvas-3d").appendChild(renderer.domElement);
 
-function logToRing(message, type = "") {
-    let span = document.createElement("span");
-    if (type) span.className = type;
-    span.innerHTML = message + "<br>";
-    ring.appendChild(span);
-    ring.scrollTop = ring.scrollHeight; // Auto-scroll w dół
+// Oświetlenie studyjne (Ciepłe i zimne źródła światła dla kontrastu filmowego)
+const lightMain = new THREE.DirectionalLight(0xffffff, 1.2);
+lightMain.position.set(5, 15, 7);
+lightMain.castShadow = true;
+scene.add(lightMain);
+
+const lightFill = new THREE.PointLight(0x38bdf8, 0.8, 50);
+lightFill.position.set(-10, 8, -10);
+scene.add(lightFill);
+
+// Budowa Nowoczesnego Ringu 3D (Zamiast płaskich tekstur)
+const matFloor = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6, metalness: 0.1 });
+const ringFloor = new THREE.Mesh(new THREE.BoxGeometry(16, 0.5, 16), matFloor);
+ringFloor.position.y = -0.25;
+ringFloor.receiveShadow = true;
+scene.add(ringFloor);
+
+// Słupki narożne z metalicznym wykończeniem
+const matPost = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 });
+const postGeo = new THREE.CylinderGeometry(0.2, 0.2, 3.5, 16);
+[[-7.8, 7.8], [7.8, -7.8], [7.8, 7.8], [-7.8, -7.8]].forEach(pos => {
+    let p = new THREE.Mesh(postGeo, postMat = matPost);
+    p.position.set(pos[0], 1.75, pos[1]);
+    scene.add(p);
+});
+
+// --- GENEROWANIE AUTOMATYCZNYCH MODELI MANEKINÓW DO WALKI 3D ---
+function build3DBoxer(mainColor) {
+    const boxerGroup = new THREE.Group();
+    const matSkin = new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.4 });
+    const matGear = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.3 });
+
+    // Głowa
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 24), matSkin);
+    head.position.y = 3.6;
+    boxerGroup.add(head);
+
+    // Klatka piersiowa / Tors
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.5, 1.8, 24), matSkin);
+    torso.position.y = 2.4;
+    torso.castShadow = true;
+    boxerGroup.add(torso);
+
+    // Spodenki bokserskie
+    const shorts = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.6, 24), matGear);
+    shorts.position.y = 1.4;
+    boxerGroup.add(shorts);
+
+    // Garda (Rękawice trójwymiarowe)
+    const gloveGeo = new THREE.SphereGeometry(0.25, 16, 16);
+    const gL = new THREE.Mesh(gloveGeo, matGear); gL.position.set(0.4, 2.6, 0.8);
+    const gR = new THREE.Mesh(gloveGeo, matGear); gR.position.set(-0.4, 2.6, 0.8);
+    boxerGroup.add(gL, gR);
+
+    return { mesh: boxerGroup, gL: gL, gR: gR };
 }
 
-function upgradeStat(type) {
-    if (coachPoints <= 0 || matchRunning) return;
-    coachPoints--;
-    document.getElementById("pts").innerText = coachPoints;
-    if (type === 'pow') {
-        player.power += 4;
-        document.getElementById("v-pow").innerText = player.power;
-    } else {
-        player.speed += 1;
-        document.getElementById("v-spd").innerText = player.speed;
+const fighterA = build3DBoxer(0x2563eb); // Niebieski Champion
+fighterA.mesh.position.set(-3, 0, 0);
+fighterA.mesh.rotation.y = Math.PI / 2;
+scene.add(fighterA.mesh);
+
+const fighterB = build3DBoxer(0xd946ef); // Różowy / Neonowy Pretendent
+fighterB.mesh.position.set(3, 0, 0);
+fighterB.mesh.rotation.y = -Math.PI / 2;
+scene.add(fighterB.mesh);
+
+// --- LOGIKA MECHANIKI WALKI ---
+let active = false, over = false;
+let statA = { hp: 100, pow: 12, speed: 0.05, initX: -3 };
+let statB = { hp: 100, pow: 14, speed: 0.04, initX: 3 };
+
+function run3DMatch() {
+    if (active) return;
+    statA.hp = 100; statB.hp = 100; over = false; active = true;
+    document.getElementById("log-console").innerText = "GONG! WALKA ROZPOCZĘTA.";
+}
+
+function triggerVisualPunch(attacker, target, statsTarget, htmlHpId, htmlTextId, logText, isLeft) {
+    // Animacja ruchu modelu 3D do przodu (Wypad z ciosem)
+    let moveDir = isLeft ? 1.8 : -1.8;
+    attacker.mesh.position.x += moveDir;
+    
+    setTimeout(() => {
+        attacker.mesh.position.x = attacker.initX; // powrót do pozycji
+        statsTarget.hp -= attacker.pow;
+        if (statsTarget.hp < 0) statsTarget.hp = 0;
+        
+        // Aktualizacja interfejsu HUD
+        document.getElementById(htmlHpId).style.width = statsTarget.hp + "%";
+        document.getElementById(htmlTextId).innerText = statsTarget.hp + "/100 HP";
+        document.getElementById("log-console").innerText = logText;
+
+        if (statsTarget.hp <= 0 && !over) {
+            over = true; active = false;
+            document.getElementById("log-console").innerText = `K.O.! WALKA ZAKOŃCZONA. WYGRYWA UNIKALNA TAKTYKA!`;
+        }
+    }, 120);
+}
+
+// Główna pętla renderowania (Kinowy obrót kamery 3D)
+let clock = 0;
+function tick() {
+    requestAnimationFrame(tick);
+    clock += 0.008;
+
+    // Ruch kamery wokół ringu dający głębię rzeczywistej przestrzeni
+    camera.position.x = Math.sin(clock) * 22;
+    camera.position.z = Math.cos(clock) * 22;
+    camera.lookAt(0, 2, 0);
+
+    // Bokserski taniec stóp (Kołysanie modeli w osi Y)
+    fighterA.mesh.position.y = Math.sin(clock * 6) * 0.06;
+    fighterB.mesh.position.y = Math.cos(clock * 5.5) * 0.06;
+
+    if (active && !over) {
+        if (Math.random() < statA.speed) {
+            triggerVisualPunch(statA, fighterA, statB, "hp-b", "txt-b", `🥊 ALEX trafia czystym prawym prostym!`, true);
+        }
+        if (Math.random() < statB.speed && !over) {
+            triggerVisualPunch(statB, fighterB, statA, "hp-a", "txt-a", `💥 BOB odpowiada potężnym sierpowym!`, false);
+        }
     }
+
+    renderer.render(scene, camera);
 }
 
-function startSimulation() {
-    if (matchRunning) return;
-    matchRunning = true;
-    matchOver = false;
-    player.hp = 100;
-    enemy.hp = 100;
-    
-    // Reset pasków
-    document.getElementById("hp-p1").style.width = "100%";
-    document.getElementById("hp-p2").style.width = "100%";
-    document.getElementById("txt-hp1").innerText = "100/100 HP";
-    document.getElementById("txt-hp2").innerText = "100/100 HP";
-    
-    ring.innerHTML = ""; // Czyszczenie konsoli
-    logToRing("[GONG]: RUNDA 1 ROZPOCZĘTA!", "log-ko");
-    
-    let fightInterval = setInterval(() => {
-        if (matchOver) {
-            clearInterval(fightInterval);
-            matchRunning = false;
-            return;
-        }
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-        // AI Gracza (Szansa na cios oparta na statystyce szybkości)
-        if (Math.random() * 20 < player.speed) {
-            enemy.hp -= player.power;
-            if (enemy.hp < 0) enemy.hp = 0;
-            document.getElementById("hp-p2").style.width = enemy.hp + "%";
-            document.getElementById("txt-hp2").innerText = enemy.hp + "/100 HP";
-            logToRing(`🥊 [ATAK]: ${player.name} uderza lewym prostym i zadaje <span class="log-hit">-${player.power} HP</span>!`);
-        }
-
-        // AI Przeciwnika
-        if (Math.random() * 20 < enemy.speed && enemy.hp > 0) {
-            player.hp -= enemy.power;
-            if (player.hp < 0) player.hp = 0;
-            document.getElementById("hp-p1").style.width = player.hp + "%";
-            document.getElementById("txt-hp1").innerText = player.hp + "/100 HP";
-            logToRing(`⚠️ [KONTRA]: ${enemy.name} wyprowadza prawy sierpowy! Tracisz <span class="log-hit">-${enemy.power} HP</span>.`);
-        }
-
-        // Warunki zakończenia walki (Knockout)
-        if (enemy.hp <= 0) {
-            matchOver = true;
-            logToRing(`🏆 [K.O.]: ${enemy.name} pada na matę! WYGRYWA ${player.name}!`, "log-ko");
-        } else if (player.hp <= 0) {
-            matchOver = true;
-            logToRing(`❌ [K.O.]: Zostałeś znokautowany. Walkę wygrywa ${enemy.name}.`, "log-hit");
-        }
-
-    }, 600); // Krok symulacji co 600ms
-}
+tick();
 </script>
 </body>
 </html>
