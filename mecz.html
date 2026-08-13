@@ -2,43 +2,274 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Prosty Silnik Bokserski w Przeglądarce</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silnik Gry Bokserskiej 2D - JS Canvas</title>
     <style>
-        body { background: #222; color: #fff; text-align: center; font-family: sans-serif; }
-        canvas { background: #333; display: block; margin: 20px auto; border: 2px solid #555; }
+        body {
+            background-color: #323232;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        canvas {
+            background-color: #222;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border: 4px solid #555;
+            display: block;
+            margin: 20px auto;
+        }
+        .controls {
+            background: #444;
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .player-info h3 { margin-top: 0; }
     </style>
 </head>
 <body>
-    <h1>Silnik Bokserski 2D</h1>
-    <p>Gracz 1 (Niebieski): A/D ruch, S blok, F cios | Gracz 2 (Czerwony): Strzałki lewo/prawo, Strzałka dół blok, Klawisz K cios</p>
-    <canvas id="ring" width="800" height="400"></canvas>
 
-    <script>
-        const canvas = document.getElementById("ring");
-        const ctx = canvas.getContext("2d");
+    <h1>Prosty Silnik Bokserski 2D</h1>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-        class Boxer {
-            constructor(x, color, side) {
-                this.x = x; this.y = 220; this.width = 50; this.height = 100;
-                this.color = color; this.side = side;
-                this.hp = 100; this.state = "IDLE";
-            }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-            }
-        }
+    <div class="controls">
+        <div class="player-info">
+            <h3 style="color: #4466ff;">Gracz 1 (Niebieski)</h3>
+            <p>Ruch: <b>A / D</b></p>
+            <p>Garda (Blok): <b>S</b></p>
+            <p>Cios: <b>F</b></p>
+        </div>
+        <div class="player-info">
+            <h3 style="color: #ff4444;">Gracz 2 (Czerwony)</h3>
+            <p>Ruch: <b>Strzałka Lewo / Prawo</b></p>
+            <p>Garda (Blok): <b>Strzałka Dół</b></p>
+            <p>Cios: <b>Klawisz K</b></p>
+        </div>
+    </div>
 
-        const p1 = new Boxer(200, "#3355ff", "left");
-        const p2 = new Boxer(550, "#ff3333", "right");
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            p1.draw();
-            p2.draw();
-            requestAnimationFrame(gameLoop);
-        }
-        gameLoop();
-    </script>
+    <!-- Podłączenie osobnego pliku ze skryptem gry -->
+    <script src="game.js"></script>
 </body>
 </html>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
+const FPS = 60;
+
+// Śledzenie wciśniętych klawiszy
+const keys = {};
+window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+class Boxer {
+    constructor(x, y, color, side) {
+        this.x = x;
+        this.y = y;
+        this.width = 60;
+        this.height = 120;
+        this.color = color;
+        this.side = side; // "left" lub "right"
+        
+        // Statystyki
+        this.hp = 100;
+        this.stamina = 100;
+        this.speed = 4;
+        
+        // Stany zawodnika
+        this.state = "IDLE"; // IDLE, PUNCHING, BLOCKING
+        this.stateTimer = 0;
+        this.punchCooldown = 0;
+    }
+
+    getRect() {
+        return { x: this.x, y: this.y, width: this.width, height: this.height };
+    }
+
+    getFistRect() {
+        if (this.state === "PUNCHING" && this.stateTimer > 10) {
+            const fistSize = 25;
+            if (this.side === "left") {
+                return { x: this.x + this.width, y: this.y + 20, width: fistSize, height: fistSize };
+            } else {
+                return { x: this.x - fistSize, y: this.y + 20, width: fistSize, height: fistSize };
+            }
+        }
+        return null;
+    }
+
+    update() {
+        // Regeneracja staminy
+        if (this.state !== "PUNCHING" && this.stamina < 100) {
+            this.stamina = Math.min(100, this.stamina + 0.5);
+        }
+        
+        // Liczniki czasu
+        if (this.punchCooldown > 0) this.punchCooldown--;
+        
+        if (this.state === "PUNCHING") {
+            this.stateTimer--;
+            if (this.stateTimer <= 0) {
+                this.state = "IDLE";
+            }
+        }
+    }
+
+    move(dx, opponentX) {
+        if (this.state === "PUNCHING") return;
+        
+        this.x += dx * this.speed;
+        
+        // Granice ringu oraz blokada mijania się plecami
+        if (this.side === "left") {
+            this.x = Math.max(50, Math.min(this.x, opponentX - this.width - 10));
+        } else {
+            this.x = Math.min(WIDTH - 50 - this.width, Math.max(this.x, opponentX + this.width + 10));
+        }
+    }
+
+    punch(opponent) {
+        if (this.state === "IDLE" && this.punchCooldown === 0 && this.stamina >= 20) {
+            this.state = "PUNCHING";
+            this.stateTimer = 20;
+            this.punchCooldown = 30;
+            this.stamina -= 20;
+            
+            // Sprawdzenie trafienia natychmiast przy wyciągnięciu pięści
+            setTimeout(() => {
+                const fist = this.getFistRect();
+                if (fist) {
+                    const oppRect = opponent.getRect();
+                    // Detekcja kolizji prostokątów AABB
+                    if (fist.x < oppRect.x + oppRect.width &&
+                        fist.x + fist.width > oppRect.x &&
+                        fist.y < oppRect.y + oppRect.height &&
+                        fist.y + fist.height > oppRect.y) {
+                        opponent.takeDamage(10);
+                    }
+                }
+            }, 150);
+        }
+    }
+
+    block(isBlocking) {
+        if (this.state === "IDLE" || this.state === "BLOCKING") {
+            this.state = isBlocking ? "BLOCKING" : "IDLE";
+        }
+    }
+
+    takeDamage(amount) {
+        if (this.state === "BLOCKING") {
+            this.stamina = Math.max(0, this.stamina - amount * 0.5);
+        } else {
+            this.hp = Math.max(0, this.hp - amount);
+        }
+    }
+
+    draw() {
+        // Tułów
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        const fistColor = "#cccccc";
+        
+        if (this.state === "BLOCKING") {
+            ctx.fillStyle = fistColor;
+            let bx = (this.side === "left") ? this.x + this.width - 15 : this.x;
+            ctx.fillRect(bx, this.y + 10, 15, 40);
+        } else if (this.state === "PUNCHING") {
+            const fist = this.getFistRect();
+            if (fist) {
+                ctx.fillStyle = fistColor;
+                ctx.fillRect(fist.x, fist.y, fist.width, fist.height);
+                
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                let startX = (this.side === "left") ? this.x + this.width : this.x;
+                ctx.moveTo(startX, this.y + 32);
+                ctx.lineTo(fist.x + fist.width/2, fist.y + fist.height/2);
+                ctx.stroke();
+            }
+        } else {
+            ctx.fillStyle = fistColor;
+            let bx = (this.side === "left") ? this.x + this.width - 10 : this.x;
+            ctx.fillRect(bx, this.y + 25, 10, 25);
+        }
+    }
+}
+
+// Inicjalizacja graczy
+const player1 = new Boxer(200, 350, "#3355ff", "left");
+const player2 = new Boxer(540, 350, "#ff3333", "right");
+let gameOver = false;
+
+function drawUI() {
+    // Paski Gracz 1
+    ctx.fillStyle = "#dc3232"; ctx.fillRect(50, 30, 250, 20);
+    ctx.fillStyle = "#32c832"; ctx.fillRect(50, 30, player1.hp * 2.5, 20);
+    ctx.fillStyle = "#ffc800"; ctx.fillRect(50, 55, player1.stamina * 2.5, 10);
+
+    // Paski Gracz 2
+    ctx.fillStyle = "#dc3232"; ctx.fillRect(WIDTH - 300, 30, 250, 20);
+    ctx.fillStyle = "#32c832"; ctx.fillRect(WIDTH - 300, 30, player2.hp * 2.5, 20);
+    ctx.fillStyle = "#ffc800"; ctx.fillRect(WIDTH - 300, 55, player2.stamina * 2.5, 10);
+}
+
+function gameLoop() {
+    ctx.fillStyle = "#323232";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    
+    ctx.fillStyle = "#505050";
+    ctx.fillRect(50, 470, WIDTH - 100, 20); // Podłoga ringu
+
+    if (!gameOver) {
+        // --- KONTROLA GRACZA 1 ---
+        let p1_dx = 0;
+        if (keys["a"]) p1_dx = -1;
+        if (keys["d"]) p1_dx = 1;
+        player1.move(p1_dx, player2.x);
+        player1.block(keys["s"]);
+        if (keys["f"]) player1.punch(player2);
+
+        // --- KONTROLA GRACZA 2 ---
+        let p2_dx = 0;
+        if (keys["arrowleft"]) p2_dx = -1;
+        if (keys["arrowright"]) p2_dx = 1;
+        player2.move(p2_dx, player1.x);
+        player2.block(keys["arrowdown"]);
+        if (keys["k"]) player2.punch(player1);
+
+        player1.update();
+        player2.update();
+
+        if (player1.hp <= 0 || player2.hp <= 0) {
+            gameOver = true;
+        }
+    }
+
+    player1.draw();
+    player2.draw();
+    drawUI();
+
+    if (gameOver) {
+        ctx.fillStyle = "white";
+        ctx.font = "bold 40px Arial";
+        let winner = (player2.hp <= 0) ? "Gracz 1 (NIEBIESKI)" : "Gracz 2 (CZERWONY)";
+        ctx.fillText("KO! Wygrywa " + winner, WIDTH/2 - 250, HEIGHT/2);
+    }
+
+    setTimeout(() => {
+        requestAnimationFrame(gameLoop);
+    }, 1000 / FPS);
+}
+
+// Start silnika
+gameLoop();
