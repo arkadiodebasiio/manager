@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Symulacja Tenisa AI vs AI</title>
+    <title>Symulacja Tenisa - Zawodnicy AI</title>
     <style>
         body {
             background-color: #222;
@@ -17,7 +17,7 @@
         }
         canvas {
             border: 4px solid #fff;
-            background-color: #2e8b57; /* Kolor kortu */
+            background-color: #2e8b57;
             box-shadow: 0px 0px 20px rgba(0,0,0,0.5);
         }
         #scoreboard {
@@ -37,47 +37,49 @@ const canvas = document.getElementById("tennisCanvas");
 const ctx = canvas.getContext("2d");
 const scoreboard = document.getElementById("scoreboard");
 
-// --- STATYSTYKI POSTACI (To będziemy modyfikować w przyszłości) ---
+// --- STATYSTYKI POSTACI ---
 const PlayerA = {
+    x: 40,
     y: canvas.height / 2 - 40,
+    width: 20,
+    height: 70,
     score: 0,
-    // Statystyki:
-    speed: 4.5,       // Jak szybko się porusza
-    reaction: 0.15,   // Czas reakcji (im mniej, tym lepiej reaguje na piłkę)
-    power: 1.0        // Mnożnik siły uderzenia
+    speed: 4.8,
+    reaction: 0.18,
+    power: 1.1,
+    color: "#3498db",
+    name: "Alex"
 };
 
 const PlayerB = {
+    x: canvas.width - 60,
     y: canvas.height / 2 - 40,
+    width: 20,
+    height: 70,
     score: 0,
-    // Statystyki:
-    speed: 4.2,       // Nieco wolniejszy od Gracza A
-    reaction: 0.20,   // Wolniejsza reakcja
-    power: 1.1        // Uderza nieco mocniej
+    speed: 4.2,
+    reaction: 0.22,
+    power: 1.2,
+    color: "#e74c3c",
+    name: "Bob"
 };
 
-// --- PARAMETRY OBIEKTÓW ---
-const paddleWidth = 12;
-const paddleHeight = 80;
-const ballRadius = 8;
-
+// --- PIŁKA ---
 const ball = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    vx: 4,
-    vy: 2,
-    speed: 5
+    vx: 5,
+    vy: 2.5,
+    radius: 8,
+    speed: 5.5
 };
 
-// --- LOGIKA SZTUCZNEJ INTELIGENCJI (AI) ---
-function moveAI(player) {
-    // AI śledzi pozycję piłki z uwzględnieniem swojego parametru reakcji
-    let targetY = ball.y - paddleHeight / 2;
-    
-    // Prosty algorytm pościgu (Interpolacja liniowa oparta na statystykach)
+// --- AI ZAWODNIKÓW ---
+function moveAI(player, isLeft) {
+    let targetY = ball.y - player.height / 2;
     let diff = targetY - player.y;
     
-    if (Math.abs(diff) > 10) { // Margines błędu martwej strefy
+    if (Math.abs(diff) > 8) {
         if (diff > 0) {
             player.y += Math.min(player.speed, diff * player.reaction * 10);
         } else {
@@ -85,63 +87,51 @@ function moveAI(player) {
         }
     }
 
-    // Ograniczenie, aby paletka nie wyleciała poza kort
     if (player.y < 0) player.y = 0;
-    if (player.y > canvas.height - paddleHeight) player.y = canvas.height - paddleHeight;
+    if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
 }
 
-// --- SILNIK FIZYCZNY I AKTUALIZACJA GRY ---
+// --- FIZYKA ---
 function update() {
-    // Ruch sztucznej inteligencji
-    moveAI(PlayerA);
-    moveAI(PlayerB);
+    moveAI(PlayerA, true);
+    moveAI(PlayerB, false);
 
-    // Ruch piłki
     ball.x += ball.vx;
     ball.y += ball.vy;
 
-    // Odbicie od górnej i dolnej ściany
-    if (ball.y - ballRadius < 0 || ball.y + ballRadius > canvas.height) {
+    if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
         ball.vy = -ball.vy;
     }
 
-    // Wykrywanie kolizji z paletką Gracza A (Lewa strona)
-    if (ball.x - ballRadius < paddleWidth) {
-        if (ball.y > PlayerA.y && ball.y < PlayerA.y + paddleHeight) {
-            // Obliczanie punktu uderzenia (wpływa na kąt odbicia)
-            let collidePoint = (ball.y - (PlayerA.y + paddleHeight / 2)) / (paddleHeight / 2);
+    // Kolizja z Graczem A
+    if (ball.x - ball.radius < PlayerA.x + PlayerA.width && ball.x > PlayerA.x) {
+        if (ball.y > PlayerA.y && ball.y < PlayerA.y + PlayerA.height) {
+            let collidePoint = (ball.y - (PlayerA.y + PlayerA.height / 2)) / (PlayerA.height / 2);
             let angleRad = (Math.PI / 4) * collidePoint;
-            
-            // Zmiana kierunku z uwzględnieniem siły uderzenia (power)
             ball.vx = Math.cos(angleRad) * ball.speed * PlayerA.power;
             ball.vy = Math.sin(angleRad) * ball.speed * PlayerA.power;
-        } else if (ball.x < 0) {
-            // Punkt dla Gracza B
+        } else if (ball.x < PlayerA.x) {
             PlayerB.score++;
             resetBall();
         }
     }
 
-    // Wykrywanie kolizji z paletką Gracza B (Prawa strona)
-    if (ball.x + ballRadius > canvas.width - paddleWidth) {
-        if (ball.y > PlayerB.y && ball.y < PlayerB.y + paddleHeight) {
-            let collidePoint = (ball.y - (PlayerB.y + paddleHeight / 2)) / (paddleHeight / 2);
+    // Kolizja z Graczem B
+    if (ball.x + ball.radius > PlayerB.x && ball.x < PlayerB.x + PlayerB.width) {
+        if (ball.y > PlayerB.y && ball.y < PlayerB.y + PlayerB.height) {
+            let collidePoint = (ball.y - (PlayerB.y + PlayerB.height / 2)) / (PlayerB.height / 2);
             let angleRad = (Math.PI / 4) * collidePoint;
-            
             ball.vx = -Math.cos(angleRad) * ball.speed * PlayerB.power;
             ball.vy = Math.sin(angleRad) * ball.speed * PlayerB.power;
-        } else if (ball.x > canvas.width) {
-            // Punkt dla Gracza A
+        } else if (ball.x > PlayerB.x + PlayerB.width) {
             PlayerA.score++;
             resetBall();
         }
     }
 
-    // Aktualizacja wyniku tekstowego
-    scoreboard.innerHTML = `Gracz A (Szybki): ${PlayerA.score} | Gracz B (Silny): ${PlayerB.score}`;
+    scoreboard.innerHTML = `${PlayerA.name} (${PlayerA.score}) vs ${PlayerB.name} (${PlayerB.score})`;
 }
 
-// Resetowanie piłki po zdobyciu punktu
 function resetBall() {
     ball.x = canvas.width / 2;
     ball.y = canvas.height / 2;
@@ -149,44 +139,52 @@ function resetBall() {
     ball.vy = (Math.random() * 2 - 1) * ball.speed;
 }
 
-// --- RENDEROWANIE GRAFIKI (Canvas) ---
+// --- RENDEROWANIE POSTACI ---
+function drawPlayer(p, facingRight) {
+    // Tułów (ciało)
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y + 15, p.width, p.height - 25);
+
+    // Głowa
+    ctx.beginPath();
+    ctx.arc(p.x + p.width / 2, p.y + 10, 10, 0, Math.PI * 2);
+    ctx.fillStyle = "#f39c12"; // Kolor skóry
+    ctx.fill();
+
+    // Rakieta / Ręka trzymająca odbijak
+    ctx.fillStyle = "#fff";
+    let rx = facingRight ? p.x + p.width : p.x - 6;
+    ctx.fillRect(rx, p.y + 20, 6, 35);
+}
+
 function draw() {
-    // Czyszczenie kortu
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Rysowanie siatki na środku kortu
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    // Siatka kortu
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
     ctx.lineWidth = 4;
-    ctx.setLineDash([10, 10]);
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, 0);
     ctx.lineTo(canvas.width / 2, canvas.height);
     ctx.stroke();
-    ctx.setLineDash([]); // Reset linii przerywanej
 
-    // Gracz A (Niebieski)
-    ctx.fillStyle = "#3498db";
-    ctx.fillRect(0, PlayerA.y, paddleWidth, paddleHeight);
+    // Rysowanie zawodników
+    drawPlayer(PlayerA, true);
+    drawPlayer(PlayerB, false);
 
-    // Gracz B (Czerwony)
-    ctx.fillStyle = "#e74c3c";
-    ctx.fillRect(canvas.width - paddleWidth, PlayerB.y, paddleWidth, paddleHeight);
-
-    // Piłka (Żółta)
+    // Piłka
     ctx.fillStyle = "#f1c40f";
     ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
     ctx.fill();
 }
 
-// Główna pętla gry (60 klatek na sekundę)
 function gameLoop() {
     update();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Uruchomienie symulacji
 gameLoop();
 </script>
 </body>
