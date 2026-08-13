@@ -1,207 +1,76 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Boxing Manager Mini</title>
+    <style>
+        body { background: #0f172a; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #panel { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; width: 300px; border: 1px solid #475569; }
+        .row { display: flex; justify-content: space-between; margin: 6px 0; font-weight: bold; }
+        button { background: #2563eb; color: #fff; border: none; padding: 4px 10px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        #fight-btn { background: #059669; width: 100%; padding: 10px; margin-top: 8px; font-size: 14px; border-radius: 8px; }
+        canvas { border-radius: 12px; border: 2px solid #fff; background: #1e1b4b; }
+    </style>
+</head>
+<body>
+
+    <div id="panel">
+        <div class="row"><span>Punkty Trenera:</span><span id="pts" style="color:#38bdf8">5</span></div>
+        <div class="row"><span>SIŁA (<span id="v-pow">12</span>):</span><button onclick="train('pow')">+</button></div>
+        <div class="row"><span>SZYBKOŚĆ (<span id="v-spd">6</span>):</span><button onclick="train('spd')">+</button></div>
+        <button id="fight-btn" onclick="startFight()">START WALKID</button>
+    </div>
+
+    <canvas id="stage" width="400" height="200"></canvas>
+
+<script>
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
 
-let points = 5;
-let shakeTimer = 0;
-let flashTimer = 0;
-let globalTime = 0;
-
-let bA = { name: "ALEX", x: 150, y: 135, hp: 100, color: "#0ea5e9", colorDark: "#0369a1", gloves: "#f59e0b", state: "IDLE", timer: 0, speed: 0.05, power: 12 };
-let bB = { name: "BOB",  x: 270, y: 135, hp: 100, color: "#f43f5e", colorDark: "#be123c", gloves: "#f8fafc", state: "IDLE", timer: 0, speed: 0.06, power: 14 };
-
-let active = false;
-let over = false;
-let statusText = "ZAPLANUJ CYKL TRENINGOWY";
+let points = 5, active = false, over = false, txt = "TRENUJ I ROZPOCZNIJ WALKĘ";
+let bA = { name: "ALEX", x: 130, y: 80, hp: 100, color: "#38bdf8", gloves: "#f59e0b", state: "IDLE", timer: 0, speed: 0.05, power: 12 };
+let bB = { name: "BOB",  x: 240, y: 80, hp: 100, color: "#f43f5e", gloves: "#ffffff", state: "IDLE", timer: 0, speed: 0.06, power: 14 };
 
 function train(type) {
     if (points <= 0) return;
-    points--;
-    document.getElementById("pts").innerText = points;
-    if (type === 'pow') {
-        bA.power += 4;
-        document.getElementById("v-pow").innerText = bA.power;
-    } else {
-        bA.speed += 0.02;
-        document.getElementById("v-spd").innerText = Math.round(bA.speed * 100);
-    }
+    points--; document.getElementById("pts").innerText = points;
+    if (type === 'pow') { bA.power += 4; document.getElementById("v-pow").innerText = bA.power; }
+    else { bA.speed += 0.02; document.getElementById("v-spd").innerText = Math.round(bA.speed * 100); }
 }
 
-function triggerFight() {
-    if (active) return;
-    bA.hp = 100; bB.hp = 100; over = false; active = true;
-    statusText = "RUNDA 1 - GONG!";
-}
+function startFight() { bA.hp = 100; bB.hp = 100; over = false; active = true; txt = "RUNDA 1 - GONG!"; }
 
-function processAI(p, enemy, isLeft) {
-    if (!active || over) return;
-    p.timer++;
-
-    if ((p.state === "PUNCH" || p.state === "HIT") && p.timer > 9) p.state = "IDLE";
-
+function runAI(p, enemy, isLeft) {
+    if (!active || over) return; p.timer++;
+    if ((p.state === "PUNCH" || p.state === "HIT") && p.timer > 10) p.state = "IDLE";
     if (p.state === "IDLE" && Math.random() < p.speed) {
-        p.state = "PUNCH"; p.timer = 0;
-        enemy.state = "HIT"; enemy.timer = 0;
-        enemy.hp -= p.power;
-        
-        shakeTimer = 10; flashTimer = 4;
-        statusText = `TRAFIENIE! ${p.name} ZADAJE -${p.power} HP!`;
-
-        if (enemy.hp <= 0) {
-            enemy.hp = 0; over = true;
-            statusText = `MISTRZOWSKIE K.O.! WYGRYWA ${p.name}!`;
-        }
+        p.state = "PUNCH"; p.timer = 0; enemy.state = "HIT"; enemy.timer = 0; enemy.hp -= p.power;
+        txt = `${p.name} TRAFIA ZA -${p.power} HP!`;
+        if (enemy.hp <= 0) { enemy.hp = 0; over = true; txt = `K.O.! WYGRYWA ${p.name}!`; }
     }
 }
 
-function drawFighter(p, isLeft) {
-    ctx.save();
-    let dx = p.x; let dy = p.y;
-
-    if (p.state === "PUNCH") dx += isLeft ? 22 : -22;
-    if (p.state === "HIT") { dx += isLeft ? -10 : 10; dy -= 3; }
-
-    let shadowGrad = ctx.createRadialGradient(dx+16, dy+62, 2, dx+16, dy+62, 22);
-    shadowGrad.addColorStop(0, "rgba(0,0,0,0.4)");
-    shadowGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = shadowGrad;
-    ctx.fillRect(dx-10, dy+50, 50, 20);
-
-    ctx.fillStyle = "#020617";
-    ctx.fillRect(dx - 1.5, dy - 1.5, 33, 63);
-
-    ctx.fillStyle = "#fbcfe8"; 
-    ctx.fillRect(dx, dy + 16, 30, 28);
-    ctx.fillStyle = "#f4a261"; 
-    ctx.fillRect(dx + 2, dy + 16, 26, 28);
-    ctx.fillStyle = "#e76f51"; 
-    ctx.fillRect(isLeft ? dx + 2 : dx + 20, dy + 18, 8, 26);
-    ctx.fillStyle = "#2a1b15"; 
-    ctx.fillRect(isLeft ? dx + 5 : dx + 23, dy + 22, 2, 16);
-
-    ctx.fillStyle = p.color;
-    ctx.fillRect(dx, dy + 44, 30, 16);
-    ctx.fillStyle = p.colorDark; 
-    ctx.fillRect(isLeft ? dx : dx + 20, dy + 44, 10, 16);
-    ctx.fillStyle = "#f8fafc"; 
-    ctx.fillRect(dx, dy + 44, 30, 4);
-
-    ctx.fillStyle = p.gloves;
-    if (p.state === "PUNCH") {
-        ctx.fillRect(isLeft ? dx + 28 : dx - 16, dy + 18, 18, 14);
-        ctx.strokeStyle = "#000"; ctx.strokeRect(isLeft ? dx + 28 : dx - 16, dy + 18, 18, 14);
-    } else {
-        ctx.fillRect(dx - 6, dy + 20, 12, 14);
-        ctx.fillRect(dx + 24, dy + 20, 12, 14);
-    }
-
-    ctx.fillStyle = "#f4a261";
-    ctx.fillRect(dx + 6, dy, 18, 16);
-    ctx.fillStyle = "#1e293b"; 
-    ctx.fillRect(dx + 6, dy, 18, 4);
-    ctx.fillStyle = "#000"; 
-    ctx.fillRect(isLeft ? dx + 18 : dx + 10, dy + 6, 2, 2);
-
-    ctx.restore();
+function drawBoxer(p, isLeft) {
+    let dx = p.x; if (p.state === "PUNCH") dx += isLeft ? 15 : -15; if (p.state === "HIT") dx += isLeft ? -6 : 6;
+    ctx.fillStyle = p.color; ctx.fillRect(dx, dy = p.y + 14, 24, 30); // Tors i spodenki
+    ctx.fillStyle = "#ffcc99"; ctx.fillRect(dx + 3, p.y, 18, 14); // Twarz
+    ctx.fillStyle = p.gloves; // Rękawice
+    if (p.state === "PUNCH") ctx.fillRect(isLeft ? dx + 20 : dx - 10, p.y + 6, 12, 12);
+    else { ctx.fillRect(dx - 4, p.y + 10, 8, 10); ctx.fillRect(dx + 20, p.y + 10, 8, 10); }
+    ctx.fillStyle = "#ef4444"; ctx.fillRect(p.x - 2, p.y - 10, 28, 4); // Paski życia
+    ctx.fillStyle = "#10b981"; ctx.fillRect(p.x - 2, p.y - 10, (p.hp / 100) * 28, 4);
 }
 
 function render() {
-    globalTime++;
-    ctx.save();
-    
-    if (shakeTimer > 0) {
-        let amt = shakeTimer * 0.8;
-        ctx.translate((Math.random() - 0.5) * amt, (Math.random() - 0.5) * amt);
-        shakeTimer--;
-    }
-
-    let bgGrad = ctx.createLinearGradient(0, 0, 0, 110);
-    bgGrad.addColorStop(0, "#020617");
-    bgGrad.addColorStop(0.7, "#0f172a");
-    bgGrad.addColorStop(1, "#1e1b4b");
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, 460, 280);
-
-    ctx.fillStyle = "rgba(56, 189, 248, 0.04)";
-    ctx.beginPath(); ctx.moveTo(100, 0); ctx.lineTo(160, 110); ctx.lineTo(40, 110); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(360, 0); ctx.lineTo(420, 110); ctx.lineTo(300, 110); ctx.fill();
-
-    for (let i = 0; i < 4; i++) {
-        if (Math.random() < 0.08) {
-            let fx = Math.random() * 460; let fy = Math.random() * 80;
-            ctx.fillStyle = "rgba(255,255,255,0.6)"; ctx.fillRect(fx, fy, 4, 3);
-            ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.fillRect(fx-4, fy-3, 12, 9);
-        }
-    }
-
-    ctx.fillStyle = "#0f172a"; 
-    ctx.fillRect(0, 110, 460, 170);
-    
-    let ringGrad = ctx.createLinearGradient(0, 110, 0, 280);
-    ringGrad.addColorStop(0, "#334155");
-    ringGrad.addColorStop(1, "#475569");
-    ctx.fillStyle = ringGrad;
-    ctx.beginPath();
-    ctx.moveTo(80, 110); ctx.lineTo(380, 110);
-    ctx.lineTo(460, 250); ctx.lineTo(0, 250);
-    ctx.fill();
-
-    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(0, 106); ctx.lineTo(460, 106); ctx.stroke();
-    ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, 98); ctx.lineTo(460, 98); ctx.stroke();
-
-    ctx.fillStyle = "#090d16"; ctx.fillRect(220, 98, 22, 40);
-    ctx.fillStyle = "#f8fafc"; ctx.fillRect(225, 98, 4, 40); ctx.fillRect(233, 98, 4, 40);
-    ctx.fillStyle = "#f4a261"; ctx.fillRect(223, 84, 16, 14);
-
-    ctx.fillStyle = "rgba(255,255,255,0.02)";
-    let fogShift = Math.sin(globalTime * 0.02) * 20;
-    ctx.fillRect(50 + fogShift, 120, 150, 40);
-    ctx.fillRect(200 - fogShift, 140, 180, 30);
-
-    drawFighter(bA, true);
-    drawFighter(bB, false);
-
-    if (flashTimer > 0) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.fillRect(0, 0, 460, 280);
-        ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(190, 145); ctx.lineTo(270, 125);
-        ctx.moveTo(200, 115); ctx.lineTo(260, 155);
-        ctx.stroke();
-        flashTimer--;
-    }
-
-    ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
-    ctx.fillRect(30, 242, 120, 22); ctx.fillRect(310, 242, 120, 22);
-    ctx.strokeStyle = "rgba(255,255,255,0.1)"; 
-    ctx.strokeRect(30, 242, 120, 22); ctx.strokeRect(310, 242, 120, 22);
-
-    let gradA = ctx.createLinearGradient(35, 0, 135, 0);
-    gradA.addColorStop(0, "#2563eb"); gradA.addColorStop(1, "#38bdf8");
-    ctx.fillStyle = gradA; ctx.fillRect(35, 247, bA.hp, 12);
-
-    let gradB = ctx.createLinearGradient(315, 0, 415, 0);
-    gradB.addColorStop(0, "#be123c"); gradB.addColorStop(1, "#fb7185");
-    ctx.fillStyle = gradB; ctx.fillRect(315, 247, bB.hp, 12);
-
-    ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
-    ctx.fillRect(50, 195, 360, 30);
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.3)"; ctx.strokeRect(50, 195, 360, 30);
-    
-    ctx.fillStyle = "#f59e0b"; ctx.font = "bold 11px system-ui, sans-serif"; ctx.textAlign = "center";
-    ctx.fillText(statusText, 230, 214);
-    ctx.textAlign = "left";
-
-    ctx.restore();
+    ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0, 0, 400, 200); // Widownia
+    ctx.fillStyle = "#475569"; ctx.fillRect(40, 50, 320, 120); // Ring
+    ctx.fillStyle = "#ef4444"; ctx.fillRect(40, 46, 320, 4); // Lina ringu
+    runAI(bA, bB, true); runAI(bB, bA, false); drawBoxer(bA, true); drawBoxer(bB, false);
+    ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.fillRect(50, 145, 300, 22); // Panel tekstu
+    ctx.fillStyle = "#fbbf24"; ctx.font = "11px monospace"; ctx.fillText(txt, 60, 159);
+    requestAnimationFrame(render);
 }
-
-function loop() {
-    processAI(bA, bB, true);
-    processAI(bB, bA, false);
-    render();
-    requestAnimationFrame(loop);
-}
-
-loop();
+render();
+</script>
+</body>
+</html>
