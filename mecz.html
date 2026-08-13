@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Boxing Engine - Pixels</title>
+    <title>Retro Boxing Engine</title>
     <style>
         body {
             margin: 0;
@@ -21,9 +21,7 @@
             position: relative;
             width: 800px;
             height: 400px;
-            background-image: url('https://itch.zone');
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
+            background: #222;
             border: 4px solid #fff;
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
             overflow: hidden;
@@ -33,14 +31,14 @@
             bottom: 40px;
             width: 100%;
             height: 4px;
-            background: rgba(255,255,255,0.2);
+            background: #555;
         }
         .ui-panel {
             position: absolute;
             top: 15px;
             width: 320px;
             padding: 10px;
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.85);
             border: 2px solid #555;
             border-radius: 5px;
             z-index: 10;
@@ -57,28 +55,20 @@
         .stamina { background: #33ff33; width: 100%; transition: width 0.1s; }
         .state-text { font-size: 12px; color: #aaa; }
         
+        /* Bokserzy - zastąpieni prostymi, wyraźnymi sylwetkami w CSS, żeby zawsze działały */
         .boxer {
             position: absolute;
-            bottom: 30px;
-            width: 110px;
-            height: 150px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: bottom center;
+            bottom: 44px;
+            width: 60px;
+            height: 120px;
+            border-radius: 6px 6px 0 0;
         }
-        
-        #player1 { 
-            background-image: url('https://discourse-cdn.com'); 
-            left: 180px; 
-        }
-        #player2 { 
-            background-image: url('https://discourse-cdn.com'); 
-            left: 510px;
-            transform: scaleX(-1);
-        }
-        
+        #player1 { background: #3388ff; left: 180px; }
+        #player2 { background: #ff3333; left: 510px; }
+
         .hit-effect {
-            filter: brightness(3) sepia(1) hue-rotate(-50deg);
+            filter: brightness(2.5);
+            background-color: #fff !important;
         }
 
         #controls-info {
@@ -116,146 +106,126 @@
     </div>
 
     <div id="controls-info">
-        <strong>Gracz 1 (Niebieski UI):</strong> A / D - Poruszanie | W - Garda (Blok) | G - Lewy Prosty | H - Prawy Sierpowy<br>
-        <strong>Gracz 2 (Czerwony UI):</strong> Strzałki Lewo / Prawo - Poruszanie | Strzałka Góra - Blok | 1 - Lewy Prosty | 2 - Prawy Sierpowy
+        <strong>Gracz 1 (Niebieski):</strong> A / D - Ruch | W - Garda | G - Lewy Prosty | H - Prawy Sierpowy<br>
+        <strong>Gracz 2 (Czerwony):</strong> Strzałki Lewo / Prawo - Ruch | Strzałka Góra - Garda | 1 - Lewy Prosty | 2 - Prawy Sierpowy
     </div>
 
-    <!-- Podłączenie logiki gry z osobnego pliku -->
-    <script src="script.js"></script>
+<script>
+    const CONFIG = {
+        speed: 5,
+        jabDist: 70,
+        hookDist: 50,
+        staminaRegen: 0.6
+    };
+
+    const p1 = {
+        id: 1, el: document.getElementById('player1'),
+        hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
+        x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+    };
+
+    const p2 = {
+        id: 2, el: document.getElementById('player2'),
+        hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
+        x: 510, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+    };
+
+    const keys = {};
+
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function punch(attacker, defender, type) {
+        if (attacker.state !== 'idle' || attacker.stamina < 20) return;
+
+        attacker.state = type;
+        attacker.stateTimer = type === 'jab' ? 12 : 20; 
+        attacker.stamina -= type === 'jab' ? 15 : 25;
+
+        const distance = Math.abs(attacker.x - defender.x);
+        const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
+        const damage = type === 'jab' ? 7 : 16;
+
+        if (distance <= reach + 60) { 
+            setTimeout(() => {
+                if (defender.state === 'blocking') {
+                    defender.stamina = Math.max(0, defender.stamina - (damage / 2));
+                } else {
+                    defender.hp = Math.max(0, defender.hp - damage);
+                    defender.state = 'hit';
+                    defender.stateTimer = 10; 
+                }
+            }, 60);
+        }
+    }
+
+    function updatePlayer(player) {
+        player.el.style.left = player.x + 'px';
+        
+        if (player.state === 'hit') {
+            player.el.classList.add('hit-effect');
+        } else {
+            player.el.classList.remove('hit-effect');
+        }
+    }
+
+    function update() {
+        [p1, p2].forEach(p => {
+            if (p.stateTimer > 0) {
+                p.stateTimer--;
+            } else {
+                if (p.state !== 'blocking') p.state = 'idle';
+            }
+            if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
+        });
+
+        // Sterowanie Gracz 1
+        if (p1.state === 'idle' || p1.state === 'blocking') {
+            if (keys['KeyW']) p1.state = 'blocking';
+            else if (p1.state === 'blocking') p1.state = 'idle';
+
+            if (p1.state === 'idle') {
+                if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
+                if (keys['KeyD']) p1.x = Math.min(p2.x - 60, p1.x + CONFIG.speed);
+                if (keys['KeyG']) punch(p1, p2, 'jab');
+                if (keys['KeyH']) punch(p1, p2, 'hook');
+            }
+        }
+
+        // Sterowanie Gracz 2
+        if (p2.state === 'idle' || p2.state === 'blocking') {
+            if (keys['ArrowUp']) p2.state = 'blocking';
+            else if (p2.state === 'blocking') p2.state = 'idle';
+
+            if (p2.state === 'idle') {
+                if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 60, p2.x - CONFIG.speed);
+                if (keys['ArrowRight']) p2.x = Math.min(740, p2.x + CONFIG.speed);
+                if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
+                if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
+            }
+        }
+
+        updatePlayer(p1);
+        updatePlayer(p2);
+
+        p1.hpEl.style.width = p1.hp + '%';
+        p1.stamEl.style.width = p1.stamina + '%';
+        p1.stateEl.innerText = `STAN: ${p1.state.toUpperCase()}`;
+
+        p2.hpEl.style.width = p2.hp + '%';
+        p2.stamEl.style.width = p2.stamina + '%';
+        p2.stateEl.innerText = `STAN: ${p2.state.toUpperCase()}`;
+
+        if (p1.hp <= 0 || p2.hp <= 0) {
+            alert(p1.hp <= 0 ? "K.O.! GRACZ 2 WYGRYWA!" : "K.O.! GRACZ 1 WYGRYWA!");
+            p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 510;
+            p1.stamina = 100; p2.stamina = 100;
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    update();
+</script>
 </body>
 </html>
-// Linki do stanów grafik (Sprite'y retro)
-const SPRITES = {
-    idle: 'https://discourse-cdn.com',
-    punch: 'https://squarespace-cdn.com',
-    block: 'https://openclipart.org'
-};
-
-const CONFIG = {
-    speed: 5,
-    jabDist: 70,
-    hookDist: 50,
-    staminaRegen: 0.6
-};
-
-const p1 = {
-    id: 1, el: document.getElementById('player1'),
-    hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
-    x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-};
-
-const p2 = {
-    id: 2, el: document.getElementById('player2'),
-    hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
-    x: 510, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-};
-
-const keys = {};
-
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
-
-function punch(attacker, defender, type) {
-    if (attacker.state !== 'idle' || attacker.stamina < 20) return;
-
-    attacker.state = type;
-    attacker.stateTimer = type === 'jab' ? 12 : 20; 
-    attacker.stamina -= type === 'jab' ? 15 : 25;
-
-    const distance = Math.abs(attacker.x - defender.x);
-    const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
-    const damage = type === 'jab' ? 7 : 16;
-
-    if (distance <= reach + 80) { 
-        setTimeout(() => {
-            if (defender.state === 'blocking') {
-                defender.stamina = Math.max(0, defender.stamina - (damage / 2));
-            } else {
-                defender.hp = Math.max(0, defender.hp - damage);
-                defender.state = 'hit';
-                defender.stateTimer = 10; 
-            }
-        }, 60);
-    }
-}
-
-function drawPlayer(player, isP2 = false) {
-    player.el.style.left = player.x + 'px';
-
-    if (player.state === 'jab' || player.state === 'hook') {
-        player.el.style.backgroundImage = `url('${SPRITES.punch}')`;
-    } else if (player.state === 'blocking') {
-        player.el.style.backgroundImage = `url('${SPRITES.block}')`;
-    } else {
-        player.el.style.backgroundImage = `url('${SPRITES.idle}')`;
-    }
-
-    if (player.state === 'hit') {
-        player.el.classList.add('hit-effect');
-    } else {
-        player.el.classList.remove('hit-effect');
-    }
-
-    if (isP2) {
-        player.el.style.transform = "scaleX(-1)";
-    }
-}
-
-function update() {
-    [p1, p2].forEach(p => {
-        if (p.stateTimer > 0) {
-            p.stateTimer--;
-        } else {
-            if (p.state !== 'blocking') p.state = 'idle';
-        }
-        if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
-    });
-
-    // Sterowanie Gracz 1
-    if (p1.state === 'idle' || p1.state === 'blocking') {
-        if (keys['KeyW']) p1.state = 'blocking';
-        else if (p1.state === 'blocking') p1.state = 'idle';
-
-        if (p1.state === 'idle') {
-            if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
-            if (keys['KeyD']) p1.x = Math.min(p2.x - 70, p1.x + CONFIG.speed);
-            if (keys['KeyG']) punch(p1, p2, 'jab');
-            if (keys['KeyH']) punch(p1, p2, 'hook');
-        }
-    }
-
-    // Sterowanie Gracz 2
-    if (p2.state === 'idle' || p2.state === 'blocking') {
-        if (keys['ArrowUp']) p2.state = 'blocking';
-        else if (p2.state === 'blocking') p2.state = 'idle';
-
-        if (p2.state === 'idle') {
-            if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 70, p2.x - CONFIG.speed);
-            if (keys['ArrowRight']) p2.x = Math.min(690, p2.x + CONFIG.speed);
-            if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
-            if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
-        }
-    }
-
-    drawPlayer(p1, false);
-    drawPlayer(p2, true);
-
-    p1.hpEl.style.width = p1.hp + '%';
-    p1.stamEl.style.width = p1.stamina + '%';
-    p1.stateEl.innerText = `STAN: ${p1.state.toUpperCase()}`;
-
-    p2.hpEl.style.width = p2.hp + '%';
-    p2.stamEl.style.width = p2.stamina + '%';
-    p2.stateEl.innerText = `STAN: ${p2.state.toUpperCase()}`;
-
-    if (p1.hp <= 0 || p2.hp <= 0) {
-        alert(p1.hp <= 0 ? "K.O.! ROCKY (GRACZ 2) WYGRYWA!" : "K.O.! MIGUEL (GRACZ 1) WYGRYWA!");
-        p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 510;
-        p1.stamina = 100; p2.stamina = 100;
-    }
-
-    requestAnimationFrame(update);
-}
-
-// Start pętli gry po załadowaniu skryptu
-update();
