@@ -2,11 +2,11 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Gala Boksu - Symulacja Walki</title>
+    <title>Super Boxing Arena 2D</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #0b0b0f;
             color: #e0e0e0;
             margin: 0;
             padding: 20px;
@@ -17,183 +17,377 @@
         .container {
             width: 100%;
             max-width: 800px;
-            background: #1e1e1e;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            background: #16161e;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border: 1px solid #2d2d3d;
         }
-        h1, h2 {
+        h1 {
             text-align: center;
-            color: #ff4d4d;
-            margin-bottom: 5px;
+            color: #ff3333;
+            font-size: 1.8em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0 0 15px 0;
         }
-        h2 { color: #aaa; font-size: 1.2em; margin-bottom: 25px; }
+        #gameCanvas {
+            background: radial-gradient(circle, #2a2d3d 0%, #111319 100%);
+            border: 4px solid #ff3333;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto 15px auto;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+        }
         .scorecard {
             display: flex;
-            justify-content: space-around;
-            background: #262626;
-            padding: 15px;
+            justify-content: space-between;
+            background: #21212b;
+            padding: 12px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #333344;
         }
-        .boxer-card {
-            text-align: center;
+        .boxer-info {
             width: 45%;
         }
-        .hp-bar-container {
-            background: #444;
-            border-radius: 4px;
-            height: 16px;
-            width: 100%;
-            margin-top: 8px;
+        .boxer-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #fff;
+        }
+        .hp-bar-bg {
+            background: #333;
+            height: 14px;
+            border-radius: 7px;
+            margin-top: 5px;
             overflow: hidden;
+            border: 1px solid #555;
         }
         .hp-bar {
-            background: #33cc33;
             height: 100%;
             width: 100%;
-            transition: width 0.3s ease;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            transition: width 0.2s ease;
         }
-        #log {
-            background: #141414;
-            border: 1px solid #333;
+        .hp-bar.damaged {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+        #commentary {
+            background: #0d0d13;
             border-radius: 8px;
-            padding: 15px;
-            height: 300px;
-            overflow-y: auto;
-            font-family: monospace;
+            padding: 12px;
+            height: 90px;
+            overflow-y: hidden;
+            font-family: 'Courier New', monospace;
             font-size: 0.95em;
-            line-height: 1.5;
-            margin-bottom: 20px;
+            border-left: 5px solid #ff3333;
+            margin-bottom: 15px;
         }
-        .log-round { color: #ffb3b3; font-weight: bold; margin-top: 10px; }
-        .log-hit { color: #ff9999; }
-        .log-crit { color: #ff3333; font-weight: bold; background: #3a1a1a; padding: 2px 5px; display: block; margin: 4px 0; }
-        .log-dodge { color: #808080; font-style: italic; }
-        .log-info { color: #33cc33; font-weight: bold; }
+        .line { margin-bottom: 4px; }
+        .hit { color: #ff6666; }
+        .crit { color: #ff3333; font-weight: bold; }
+        .miss { color: #95a5a6; }
+        .system { color: #f1c40f; font-weight: bold; }
+        
         button {
-            background-color: #ff4d4d;
+            background: linear-gradient(180deg, #ff4d4d 0%, #cc0000 100%);
             color: white;
             border: none;
-            padding: 12px 25px;
-            font-size: 1em;
+            padding: 14px;
+            font-size: 1.1em;
             font-weight: bold;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            transition: background 0.2s;
+            box-shadow: 0 4px 15px rgba(255,51,51,0.3);
+            text-transform: uppercase;
         }
-        button:hover { background-color: #e03b3b; }
-        button:disabled { background-color: #555; cursor: not-allowed; }
+        button:hover {
+            background: linear-gradient(180deg, #ff6666 0%, #e60000 100%);
+        }
+        button:disabled {
+            background: #444;
+            color: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>OSTATNI GONG: MISTRZOSTWO WAGI CIEZKIEJ</h1>
-    <h2>Tomasz "Grom" Majewski vs Damian "Orzel" Orlowski</h2>
-
+    <h1>Gala Mistrzów: Finałowa Walka</h1>
+    
     <div class="scorecard">
-        <div class="boxer-card">
-            <strong id="name1">Tomasz Majewski (Grom)</strong>
-            <div class="hp-bar-container"><div id="hp1" class="hp-bar"></div></div>
-            <span id="hpval1">HP: 100%</span>
+        <div class="boxer-info">
+            <div class="boxer-name" style="color: #3498db;">GROM (Niebieski)</div>
+            <div class="hp-bar-bg"><div id="hp1" class="hp-bar"></div></div>
         </div>
-        <div class="boxer-card">
-            <strong id="name2">Damian Orlowski (Orzel)</strong>
-            <div class="hp-bar-container"><div id="hp2" class="hp-bar"></div></div>
-            <span id="hpval2">HP: 100%</span>
+        <div class="boxer-info" style="text-align: right;">
+            <div class="boxer-name" style="color: #e74c3c;">ORZEŁ (Czerwony)</div>
+            <div class="hp-bar-bg"><div id="hp2" class="hp-bar"></div></div>
         </div>
     </div>
 
-    <div id="log">Kliknij przycisk poniżej, aby rozpocząć walkę...</div>
+    <canvas id="gameCanvas" width="760" height="280"></canvas>
 
-    <button id="startBtn" onclick="startMatch()">ROZPOCZNIJ WALKĘ</button>
+    <div id="commentary">
+        <div class="system">Kliknij przycisk poniżej, aby zawodnicy wyszli z narożników!</div>
+    </div>
+
+    <button id="actionBtn" onclick="runSimulation()">Rozpocznij Pojedynek</button>
 </div>
 
-<script>
-    const tadek = { name: "Tomasz Majewski", nick: "Grom", hp: 100, stamina: 100, power: 88, speed: 70, chin: 90, defense: 85, score: 0 };
-    const damian = { name: "Damian Orlowski", nick: "Orzel", hp: 100, stamina: 100, power: 75, speed: 92, chin: 78, defense: 80, score: 0 };
-
-    const punches = ["lewy prosty", "prawy sierp", "hak na korpus", "podbródkowy", "overhand"];
-    const zones = ["głowę", "korpus"];
-
-    function updateUI() {
-        document.getElementById("hp1").style.width = Math.max(0, tadek.hp) + "%";
-        document.getElementById("hpval1").innerText = `HP: ${Math.max(0, tadek.hp)}%`;
-        document.getElementById("hp2").style.width = Math.max(0, damian.hp) + "%";
-        document.getElementById("hpval2").innerText = `HP: ${Math.max(0, damian.hp)}%`;
-    }
-
-    function logMessage(html, className = "") {
-        const log = document.getElementById("log");
-        log.innerHTML += `<div class="${className}">${html}</div>`;
-        log.scrollTop = log.scrollHeight;
-    }
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function startMatch() {
-        document.getElementById("startBtn").disabled = true;
-        document.getElementById("log").innerHTML = "";
-        
-        tadek.hp = 100; damian.hp = 100;
-        tadek.score = 0; damian.score = 0;
-        updateUI();
-
-        const totalRounds = 3;
-
-        for (let r = 1; r <= totalRounds; r++) {
-            if (tadek.hp <= 0 || damian.hp <= 0) break;
-            logMessage(`--- RUNDA ${r} ---`, "log-round");
-            await sleep(800);
-
-            for (let ex = 1; ex <= 5; ex++) {
-                if (tadek.hp <= 0 || damian.hp <= 0) break;
-                
-                let attacker = Math.random() < 0.5 ? tadek : damian;
-                let defender = attacker === tadek ? damian : tadek;
-
-                let p = punches[Math.floor(Math.random() * punches.length)];
-                let z = zones[Math.floor(Math.random() * zones.length)];
-
-                let attackRoll = attacker.speed + Math.floor(Math.random() * 30);
-                let defenseRoll = defender.defense + Math.floor(Math.random() * 30);
-
-                if (attackRoll > defenseRoll) {
-                    let dmg = Math.floor(attacker.power / 5) + Math.floor(Math.random() * 10) - Math.floor(defender.chin / 15);
-                    dmg = Math.max(3, dmg);
-                    defender.hp -= dmg;
-
-                    if (dmg > 16 && Math.random() < 0.3) {
-                        logMessage(`[${attacker.nick}] trafia potężnym ${p} w ${z}! (${dmg} pkt obrażeń) - NOKDAUN!`, "log-crit");
-                    } else {
-                        logMessage(`[${attacker.nick}] trafia czysto ciosem: ${p} w ${z} (${dmg} dmg)`, "log-hit");
-                    }
-                } else {
-                    logMessage(`[${defender.nick}] robi świetny unik! ${attacker.nick} przestrzeliwuje.`, "log-dodge");
-                }
-
-                updateUI();
-                await sleep(700);
-            }
-        }
-
-        logMessage("=== KONIEC WALKI ===", "log-round");
-        if (tadek.hp <= 0) {
-            logMessage(`Wygrywa przez nokaut: ${damian.name} (${damian.nick})!`, "log-info");
-        } else if (damian.hp <= 0) {
-            logMessage(`Wygrywa przez nokaut: ${tadek.name} (${tadek.nick})!`, "log-info");
-        } else {
-            logMessage(`Walka dobiegła końca! Sędziowie ogłaszają remis lub wyrównaną decyzję.`, "log-info");
-        }
-
-        document.getElementById("startBtn").disabled = false;
-        document.getElementById("startBtn").innerText = "WALCZ PONOWNIE";
-    }
-</script>
+<!-- DOŁĄCZENIE DRUGIEGO PLIKU Z LOGIKĄ -->
+<script src="script.js"></script>
 
 </body>
 </html>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const b1 = { 
+    name: "Grom", x: 180, startX: 180, y: 200, hp: 100, maxHp: 100, color: "#3498db", 
+    targetX: 180, state: "idle", punchProgress: 0, bop: 0, bloodParticles: [] 
+};
+const b2 = { 
+    name: "Orzeł", x: 580, startX: 580, y: 200, hp: 100, maxHp: 100, color: "#e74c3c", 
+    targetX: 580, state: "idle", punchProgress: 0, bop: 0, bloodParticles: [] 
+};
+
+let matchActive = false;
+const punches = ["lewy prosty", "prawy sierp", "hak na korpus", "podbródkowy", "overhand"];
+const zones = ["głowę", "korpus"];
+
+function drawBoxer(boxer, isLeftOriented) {
+    ctx.save();
+    
+    boxer.bop += 0.15;
+    let bopY = Math.sin(boxer.bop) * 3;
+    if (boxer.state === "hit") bopY = 8;
+
+    let lean = 0;
+    if (boxer.state === "dodge") {
+        lean = isLeftOriented ? -25 : 25;
+    }
+
+    ctx.translate(boxer.x, boxer.y + bopY);
+
+    ctx.fillStyle = "#333";
+    ctx.fillRect(-10, 40, 6, 40);
+    ctx.fillRect(4, 40, 6, 40);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(isLeftOriented ? -10 : -14, 75, 10, 8);
+    ctx.fillRect(isLeftOriented ? 4 : 0, 75, 10, 8);
+
+    ctx.fillStyle = boxer.color;
+    ctx.fillRect(-15, 20, 30, 25);
+    ctx.fillStyle = "#fff"; 
+    ctx.fillRect(-15, 17, 30, 5);
+
+    ctx.fillStyle = "#e0a98c"; 
+    ctx.save();
+    ctx.translate(lean * 0.3, 0);
+    ctx.fillRect(-16, -25, 32, 43);
+
+    ctx.beginPath();
+    ctx.arc(0, -40, 14, 0, Math.PI * 2);
+    ctx.fillStyle = "#e0a98c";
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.fillStyle = "#000";
+    if (isLeftOriented) {
+        ctx.fillRect(5, -44, 3, 3);
+    } else {
+        ctx.fillRect(-8, -44, 3, 3);
+    }
+
+    ctx.fillStyle = boxer.color; 
+    let punchX = 0;
+    if (boxer.state === "punching") {
+        punchX = Math.sin(boxer.punchProgress * Math.PI) * 55;
+    }
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(lean, 0);
+    if (isLeftOriented) {
+        ctx.beginPath(); ctx.arc(-5, -20, 10, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(15 + punchX, -23, 11, 0, Math.PI*2); ctx.fill();
+    } else {
+        ctx.beginPath(); ctx.arc(5, -20, 10, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-15 - punchX, -23, 11, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.restore();
+
+    drawBlood(boxer);
+}
+
+function triggerBlood(boxer) {
+    for(let i=0; i<12; i++) {
+        boxer.bloodParticles.push({
+            x: boxer.x + (Math.random()*20 - 10),
+            y: boxer.y - 30 + (Math.random()*20 - 10),
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.8) * 8,
+            alpha: 1
+        });
+    }
+}
+
+function drawBlood(boxer) {
+    for(let i = boxer.bloodParticles.length - 1; i >= 0; i--) {
+        let p = boxer.bloodParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.3; 
+        p.alpha -= 0.04;
+
+        ctx.fillStyle = `rgba(200, 0, 0, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+        ctx.fill();
+
+        if(p.alpha <= 0) boxer.bloodParticles.splice(i, 1);
+    }
+}
+
+function drawScene() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "#444454";
+    ctx.lineWidth = 4;
+    for(let i = 110; i <= 170; i += 30) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#1e212b";
+    ctx.fillRect(0, 190, canvas.width, canvas.height - 190);
+    ctx.strokeStyle = "#ff3333";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(5, 190, canvas.width - 10, canvas.height - 195);
+
+    b1.x += (b1.targetX - b1.x) * 0.15;
+    b2.x += (b2.targetX - b2.x) * 0.15;
+
+    if (b1.state === "punching") {
+        b1.punchProgress += 0.15;
+        if (b1.punchProgress >= 1) { b1.state = "idle"; b1.punchProgress = 0; b1.targetX = b1.startX; }
+    }
+    if (b2.state === "punching") {
+        b2.punchProgress += 0.15;
+        if (b2.punchProgress >= 1) { b2.state = "idle"; b2.punchProgress = 0; b2.targetX = b2.startX; }
+    }
+
+    drawBoxer(b1, true);
+    drawBoxer(b2, false);
+
+    requestAnimationFrame(drawScene);
+}
+
+function addComment(text, typeClass) {
+    const box = document.getElementById("commentary");
+    box.innerHTML = `<div class="line ${typeClass}">${text}</div>` + box.innerHTML;
+}
+
+function updateBars() {
+    const bar1 = document.getElementById("hp1");
+    const bar2 = document.getElementById("hp2");
+    bar1.style.width = Math.max(0, b1.hp) + "%";
+    bar2.style.width = Math.max(0, b2.hp) + "%";
+
+    if(b1.hp < 35) bar1.className = "hp-bar damaged";
+    if(b2.hp < 35) bar2.className = "hp-bar damaged";
+}
+
+function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function runSimulation() {
+    document.getElementById("actionBtn").disabled = true;
+    matchActive = true;
+    b1.hp = 100; b2.hp = 100;
+    b1.x = b1.startX; b2.x = b2.startX;
+    document.getElementById("hp1").className = "hp-bar";
+    document.getElementById("hp2").className = "hp-bar";
+    updateBars();
+    
+    document.getElementById("commentary").innerHTML = "";
+    addComment("=== WALKA ROZPOCZĘTA! GONG! ===", "system");
+
+    for (let round = 1; round <= 3; round++) {
+        if (b1.hp <= 0 || b2.hp <= 0) break;
+        addComment(`--- ROZPOCZYNA SIĘ RUNDA ${round} ---`, "system");
+        await delay(1200);
+
+        for (let exchange = 0; exchange < 6; exchange++) {
+            if (b1.hp <= 0 || b2.hp <= 0) break;
+
+            let att = Math.random() < 0.5 ? b1 : b2;
+            let def = (att === b1) ? b2 : b1;
+
+            att.targetX = 330;
+            def.targetX = 430;
+            await delay(300);
+
+            att.state = "punching";
+            att.punchProgress = 0;
+
+            let hitChance = Math.random();
+
+            if (hitChance < 0.6) {
+                def.state = "hit";
+                let dmg = Math.floor(Math.random() * 12) + 8;
+                def.hp = Math.max(0, def.hp - dmg);
+                updateBars();
+                triggerBlood(def);
+
+                if (dmg > 15) {
+                    addComment(`🔥 Potężny OVERHAND! ${att.name} ciężko trafia rywala! (-${dmg} HP)`, "crit");
+                } else {
+                    addComment(`🥊 ${att.name} trafia szybkim lewym prostym. (-${dmg} HP)`, "hit");
+                }
+                
+                await delay(250);
+                if(def.state === "hit") def.state = "idle";
+
+            } else {
+                def.state = "dodge";
+                addComment(`💨 Genialny unik! ${def.name} schodzi z linii ciosu!`, "miss");
+                await delay(300);
+                if(def.state === "dodge") def.state = "idle";
+            }
+
+            att.targetX = att.startX;
+            def.targetX = def.startX;
+            await delay(900);
+        }
+        
+        if (b1.hp > 0 && b2.hp > 0) {
+            addComment(`🔔 Koniec rundy ${round}. Odpoczynek w narożnikach.`, "system");
+            await delay(1500);
+        }
+    }
+
+    addComment("=== KONIEC WALKII! ===", "system");
+    if (b1.hp <= 0) {
+        addComment(`🏆 ORZEŁ WYGRYWA PRZEZ NOKAUT (KO)!`, "crit");
+    } else if (b2.hp <= 0) {
+        addComment(`🏆 GROM WYGRYWA PRZEZ NOKAUT (KO)!`, "crit");
+    } else {
+        if (b1.hp > b2.hp) {
+            addComment(`🏆 Na punkty wygrywa GROM!`, "system");
+        } else if (b2.hp > b1.hp) {
+            addComment(`🏆 Na punkty wygrywa ORZEŁ!`, "system");
+        } else {
+            addComment(`⚖️ Remis po morderczej walce!`, "system");
+        }
+    }
+
+    document.getElementById("actionBtn").disabled = false;
+}
+
+drawScene();
