@@ -2,16 +2,16 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Test Animacji Sprite 16-bit</title>
+    <title>Prosty Test Animacji Boksera</title>
     <style>
         body { background: #1a1a1a; color: white; text-align: center; font-family: monospace; padding-top: 50px; }
-        canvas { background: #333; border: 4px solid #555; display: block; margin: 20px auto; }
+        canvas { background: #222; border: 4px solid #555; display: block; margin: 20px auto; }
     </style>
 </head>
 <body>
 
-    <h1>TEST ANIMAJI BOXER SPRITE</h1>
-    <p>Poniższy bokserski duszek animuje się w pętli (pozycja spoczynkowa / idle)</p>
+    <h1>TEST ANIMACJI BOKSERA</h1>
+    <p>Postać wykonuje teraz płynny ruch w stylu retro (bujanie i garda)</p>
     
     <canvas id="canvas" width="400" height="300"></canvas>
 
@@ -19,55 +19,64 @@
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
 
-        // Tworzymy obiekt grafiki
-        const spriteSheet = new Image();
-        
-        // Darmowy, pixel-artowy arkusz bokserski w formacie Base64 (wczyta się wszędzie bez błędów CORS)
-        spriteSheet.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAABkBAMAAAC62v4VAAAAMFBMVEUAAAD///8zMwBmMwCZmQCZmZmZmZnMzJmZzPdmZgAzMzMzMpmZmczMzMzMzMz///8EskdaAAAAAXRSTlMAQObYZgAAAK1JREFUeNrt1LENwzAMBEEt0AruP18qXyqwC3gB968g6XInWwYIdI7g89XgA9RAnwX6CHAnwEeAL8BngC/AV4C/AF8BHgF+A9wBPAI8ArwCvAK8ArwCvAK8ArwCvAK8ArwCvAK8ApwBzoA7wBngDHAG3AH2AGfAHWAPOAPsAWfAHeAMsAecAfaAM8AecAbcA/aAM+AesAfcA86Ae8A9YA/4CHAEHAHPwEeAXwG+Auw99w9E6Z3bAAAAAElFTkSuQmCC";
+        let time = 0;
 
-        // Konfiguracja klatek z arkusza (Siatka 4 klatek w jednej linii, każda po 36x50 pikseli)
-        const frameWidth = 36;
-        const frameHeight = 50;
-        let currentFrame = 0;
-        let frameTimer = 0;
-        const animationSpeed = 8; // Im mniejsza liczba, tym szybsza animacja (zmiana klatki co X odświeżeń)
+        function drawBoxer(x, y) {
+            ctx.save();
+            // Efekt delikatnego bujania (idle/bouncy retro)
+            let bounce = Math.sin(time) * 4;
+            
+            // Buty
+            ctx.fillStyle = "#111";
+            ctx.fillRect(x + 15, y + 110 + bounce, 20, 15);
+            ctx.fillRect(x + 45, y + 110 + bounce, 20, 15);
 
-        function updateAndDraw() {
-            // Czyszczenie tła
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Nogi
+            ctx.fillStyle = "#ffdbac";
+            ctx.fillRect(x + 18, y + 80 + bounce, 14, 35);
+            ctx.fillRect(x + 48, y + 80 + bounce, 14, 35);
 
-            // Zmiana klatki animacji
-            frameTimer++;
-            if (frameTimer >= animationSpeed) {
-                currentFrame = (currentFrame + 1) % 4; // zapętlamy 4 klatki (0, 1, 2, 3)
-                frameTimer = 0;
-            }
+            // Spodenki
+            ctx.fillStyle = "#3366ff";
+            ctx.fillRect(x + 10, y + 60 + bounce, 60, 25);
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(x + 10, y + 60 + bounce, 60, 6);
 
-            // Pozycja wycinania klatki z obrazka źródłowego
-            let sourceX = currentFrame * frameWidth;
-            let sourceY = 0;
+            // Tors
+            ctx.fillStyle = "#ffdbac";
+            ctx.fillRect(x + 15, y + 25 + bounce, 50, 40);
 
-            // Pozycja i rozmiar rysowania na naszym płótnie (skalujemy x3, żeby postać była większa)
-            let targetX = 150;
-            let targetY = 70;
-            let targetWidth = frameWidth * 3;
-            let targetHeight = frameHeight * 3;
+            // Głowa
+            ctx.fillRect(x + 23, y - 5 + bounce, 34, 32);
+            ctx.fillStyle = "#4a3728"; // Włosy
+            ctx.fillRect(x + 23, y - 5 + bounce, 34, 8);
 
-            // Rysowanie wyciętego fragmentu sprite-sheetu
-            ctx.imageSmoothingEnabled = false; // Zachowuje ostre piksele retro
-            ctx.drawImage(
-                spriteSheet, 
-                sourceX, sourceY, frameWidth, frameHeight, // Skąd wycinamy (z arkusza)
-                targetX, targetY, targetWidth, targetHeight // Gdzie rysujemy (na ekranie)
-            );
+            // Oko
+            ctx.fillStyle = "#000";
+            ctx.fillRect(x + 45, y + 6 + bounce, 4, 4);
 
-            requestAnimationFrame(updateAndDraw);
+            // Rękawice w gardzie
+            ctx.fillStyle = "#ff3333";
+            ctx.fillRect(x + 8, y + 20 + bounce, 20, 22);
+            ctx.fillRect(x + 52, y + 20 + bounce, 20, 22);
+
+            ctx.restore();
         }
 
-        // Uruchamiamy po załadowaniu grafiki
-        spriteSheet.onload = () => {
-            updateAndDraw();
-        };
+        function gameLoop() {
+            // Czyszczenie płótna
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Zwiększanie licznika czasu do animacji
+            time += 0.12;
+
+            // Rysowanie animowanego boksera na środku ekranu
+            drawBoxer(160, 80);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
     </script>
 </body>
 </html>
