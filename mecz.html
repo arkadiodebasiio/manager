@@ -1,5 +1,7 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 public class BoxingMatch {
 
@@ -15,14 +17,12 @@ public class BoxingMatch {
         String nickname;
         Stance stance;
         Style style;
-        
         int hp = 100;
         int stamina = 100;
         int power;
         int speed;
         int chin; 
         int defense;
-
         int roundPoints = 0;
         int totalScore = 0;
 
@@ -51,18 +51,36 @@ public class BoxingMatch {
     }
 
     public static void main(String[] args) {
-        // Usunieto polskie znaki z nazwisk dla bezpieczenstwa kodowania stron www
         Boxer tadek = new Boxer("Tomasz Majewski", "Grom", Stance.SOUTHPAW, Style.SLUGGER, 88, 70, 90, 85);
         Boxer damian = new Boxer("Damian Orlowski", "Orzel", Stance.ORTHODOX, Style.OUT_BOXER, 75, 92, 78, 80);
 
-        System.out.println("=== WALKA O PAS MISTRZOWSKI WAGI CIEZKIEJ ===\n");
-        System.out.println(tadek.getFullName() + " VS " + damian.getFullName() + "\n");
-        System.out.println("---------------------------------------------------\n");
+        StringBuilder html = new StringBuilder();
+        
+        // Naglowek HTML z wbudowanymi stylami CSS dla idealnej czytelnosci
+        html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
+        html.append("<title>Wynik Walki Bokserskiej</title>");
+        html.append("<style>");
+        html.append("body { font-family: Arial, sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }");
+        html.append("h1, h2 { text-align: center; color: #ff4d4d; }");
+        html.append(".container { max-width: 800px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }");
+        html.append("table { width: 100%; border-collapse: collapse; margin-top: 20px; }");
+        html.append("th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }");
+        html.append("th { background-color: #ff4d4d; color: white; }");
+        html.append(".alert { color: #ff3333; font-weight: bold; background: #3a1a1a; padding: 8px; border-left: 4px solid #ff3333; }");
+        html.append(".success { color: #33cc33; font-weight: bold; }");
+        html.append(".stats { font-size: 0.9em; color: #aaa; }");
+        html.append("</style></head><body>");
+        
+        html.append("<div class='container'>");
+        html.append("<h1>GALA BOKSU: WALKA O MISTRZOSTWO</h1>");
+        html.append("<h2>").append(tadek.getFullName()).append(" vs ").append(damian.getFullName()).append("</h2>");
 
         int totalRounds = 3; 
 
         for (int round = 1; round <= totalRounds; round++) {
-            System.out.println("--- RUNDA " + round + " ---\n");
+            html.append("<h3 style='color:#ffb3b3; margin-top:30px;'>--- RUNDA ").append(round).append(" ---</h3>");
+            html.append("<table><tr><th>Akcja w ringu</th><th>Status Zawodnikow</th></tr>");
+            
             tadek.roundPoints = 10;
             damian.roundPoints = 10;
 
@@ -70,94 +88,95 @@ public class BoxingMatch {
                 if (tadek.isKnockedOut() || damian.isKnockedOut()) break;
 
                 if (random.nextBoolean()) {
-                    simulateExchange(tadek, damian);
+                    simulateExchangeHtml(tadek, damian, html);
                 } else {
-                    simulateExchange(damian, tadek);
+                    simulateExchangeHtml(damian, tadek, html);
                 }
-                sleep(1000); // Zwiekszono pauze, aby tekst nie "lecial" za szybko
             }
+
+            html.append("</table>");
 
             if (tadek.isKnockedOut() || damian.isKnockedOut()) break;
 
-            System.out.println("\n>> Koniec rundy " + round + ". Zawodnicy wracaja do naroznikow. <<\n");
             tadek.totalScore += tadek.roundPoints;
             damian.totalScore += damian.roundPoints;
             
             tadek.regenerateStamina();
             damian.regenerateStamina();
-            System.out.printf("Stan zdrowia -> %s: %d%% HP | %s: %d%% HP\n", tadek.name, tadek.hp, damian.name, damian.hp);
-            System.out.println("---------------------------------------------------\n");
-            sleep(1500);
+            
+            html.append("<p class='stats'><b>Koniec rundy ").append(round).append(".</b> Stan zdrowia -> ")
+                .append(tadek.name).append(": ").append(tadek.hp).append("% HP | ")
+                .append(damian.name).append(": ").append(damian.hp).append("% HP</p>");
         }
 
-        System.out.println("\n================= WERDYKT WALKI =================");
+        // Podsumowanie i werdykt
+        html.append("<div style='margin-top: 30px; padding: 20px; background: #2a2a2a; border-radius: 6px;'>");
+        html.append("<h2>ORZECZENIE KONCOWE</h2>");
         if (tadek.isKnockedOut()) {
-            System.out.println("KONIEC PRZED CZASEM! KO! Zwyciezca zostaje: " + damian.getFullName() + "!");
+            html.append("<p class='alert'>KO! Zwyciezca przez Nokaut zostaje: ").append(damian.getFullName()).append("!</p>");
         } else if (damian.isKnockedOut()) {
-            System.out.println("KONIEC PRZED CZASEM! KO! Zwyciezca zostaje: " + tadek.getFullName() + "!");
+            html.append("<p class='alert'>KO! Zwyciezca przez Nokaut zostaje: ").append(tadek.getFullName()).append("!</p>");
         } else {
-            System.out.println("Walka dotrwala do decyzji sedziow!");
-            System.out.printf("Punkty sedziowskie: %s [%d] vs [%d] %s\n", tadek.name, tadek.totalScore, damian.totalScore, damian.name);
+            html.append("<p>Walka dotrwala do decyzji sedziow.</p>");
+            html.append("<p>Punkty: ").append(tadek.name).append(" [").append(tadek.totalScore).append("] vs [")
+                .append(damian.totalScore).append("] ").append(damian.name).append("</p>");
             if (tadek.totalScore > damian.totalScore) {
-                System.out.println("Jednoglosna decyzja sedziow wygrywa: " + tadek.getFullName() + "!");
+                html.append("<p class='success'>Jednoglosna decyzja wygrywa: ").append(tadek.getFullName()).append("!</p>");
             } else if (damian.totalScore > tadek.totalScore) {
-                System.out.println("Jednoglosna decyzja sedziow wygrywa: " + damian.getFullName() + "!");
+                html.append("<p class='success'>Jednoglosna decyzja wygrywa: ").append(damian.getFullName()).append("!</p>");
             } else {
-                System.out.println("Mamy remis!");
+                html.append("<p>Mamy remis!</p>");
             }
+        }
+        html.append("</div></div></body></html>");
+
+        // Zapisywanie calosci do pliku HTML, ktory mozesz otworzyc w przegladarce
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("walka.html"))) {
+            writer.write(html.toString());
+            System.out.println("SUKCES! Wygenerowano plik 'walka.html'. Otworz go w przegladarce, aby zobaczyc czytelny wynik!");
+        } catch (IOException e) {
+            System.out.println("Blad zapisu pliku: " + e.getMessage());
         }
     }
 
-    private static void simulateExchange(Boxer attacker, Boxer defender) {
+    private static void simulateExchangeHtml(Boxer attacker, Boxer defender, StringBuilder html) {
         PunchType punch = PunchType.values()[random.nextInt(PunchType.values().length)];
         HitZone zone = HitZone.values()[random.nextInt(HitZone.values().length)];
 
         attacker.stamina = Math.max(10, attacker.stamina - (8 + random.nextInt(7)));
-
         int attackRoll = attacker.speed + random.nextInt(40) + (attacker.stamina / 5);
         int defenseRoll = defender.defense + random.nextInt(40) + (defender.stamina / 5);
 
-        if (attacker.stance != defender.stance) {
-            attackRoll += 5; 
-        }
+        if (attacker.stance != defender.stance) { attackRoll += 5; }
 
-        // Kazdy podpunkt logowania konczy sie teraz jawnym znakiem nowej linii \n
+        html.append("<tr><td>");
         if (attackRoll > defenseRoll) {
             int baseDamage = (attacker.power / 4) + random.nextInt(15);
-            
             if (attacker.style == Style.SLUGGER && punch == PunchType.OVERHAND) baseDamage += 10;
             if (attacker.style == Style.OUT_BOXER && punch == PunchType.JAB) baseDamage += 5;
 
             int finalDamage = Math.max(2, baseDamage - (defender.chin / 15));
             defender.hp = Math.max(0, defender.hp - finalDamage);
 
-            System.out.printf("[%s] trafia poteznym %s na %s! (%d obrazen)\n", 
-                    attacker.nickname, punch, zone, finalDamage);
+            html.append("[").append(attacker.nickname).append("] trafia potężnym ").append(punch).append(" na ").append(zone).append("! (").append(finalDamage).append(" dmg)");
 
             if (finalDamage > 18 && random.nextInt(100) < 25) {
-                System.out.printf(" !!! ALERT: %s laduje na deskach! Sedzia zaczyna liczenie! !!!\n", defender.name);
-                defender.roundPoints -= 2; 
+                html.append("<div class='alert'>!!! NOKDAUN !!! ").append(defender.name).append(" ląduje na deskach!</div>");
+                defender.roundPoints -= 2;
                 defender.stamina = Math.max(20, defender.stamina - 30);
                 
                 if (defender.hp <= 10 && random.nextInt(100) > defender.chin) {
-                    defender.hp = 0; 
-                    System.out.printf("...Osiem... Dziewiec... Dziesiec! Koniec! %s zostaje znokautowany!\n", defender.name);
+                    defender.hp = 0;
+                    html.append("<div class='alert'>Koniec! Odliczany zawodnik nie wstaje!</div>");
                 } else {
-                    System.out.println("...Bokser podnosi sie na 'osiem' i walczy dalej!\n");
+                    html.append("<br>...Bokser podnosi sie i walczy dalej.");
                 }
             }
         } else if (defenseRoll - attackRoll < 10) {
-            System.out.printf("[%s] blokuje cios, klincz! Sedzia rozrywa pozycje.\n", defender.nickname);
+            html.append("[").append(defender.nickname).append("] blokuje cios, zawodnicy wchodza w klincz.");
         } else {
-            System.out.printf("[%s] robi genialny unik! %s przestrzeliwuje.\n", defender.nickname, attacker.nickname);
+            html.append("[").append(defender.nickname).append("] robi piekny unik! Cios ").append(attacker.nickname).append(" mija cel.");
         }
-    }
-
-    private static void sleep(int millis) {
-        try {
-            TimeUnit.MILLISECONDS.sleep(millis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        html.append("</td><td class='stats'>HP: ").append(attacker.name).append(" (").append(attacker.hp).append("%) | ").append(defender.name).append(" (").append(defender.hp).append("%)</td></tr>");
     }
 }
