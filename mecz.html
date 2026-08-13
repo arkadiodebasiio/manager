@@ -2,41 +2,166 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Test Ekranu</title>
+    <title>Retro Athletics AI - Stabilna Wersja</title>
     <style>
         body {
-            background-color: #222;
+            background-color: #111;
             color: #fff;
             font-family: sans-serif;
             text-align: center;
-            padding-top: 50px;
+            padding-top: 30px;
+        }
+        #ui-box {
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 18px;
+            background: #222;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
         }
         canvas {
-            background-color: #5c94fc; /* Jawny, mocny kolor tła w CSS */
+            background-color: #5c94fc; /* Błękitne niebo retro */
             border: 4px solid #fff;
             display: inline-block;
+            image-rendering: pixelated;
+        }
+        .btn-reset {
+            margin-top: 15px;
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <h2>Test widoczności Canvas</h2>
-    <canvas id="testCanvas" width="256" height="240"></canvas>
+    <div id="ui-box">Mecz Lekkoatletyczny Pegasusa</div>
+    <br>
+    <canvas id="gameCanvas" width="300" height="240"></canvas>
+    <br>
+    <button class="btn-reset" onclick="resetRace()">START NOWEGO BIEGU</button>
 
 <script>
-const canvas = document.getElementById("testCanvas");
+const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Awaryjne, natychmiastowe malowanie bez pętli requestAnimationFrame
-ctx.fillStyle = "#c84c0c";
-ctx.fillRect(0, 100, 256, 140); // Bieżnia
+// Definicje zawodników i ich ukrytych statystyk
+let runners = [
+    { name: "ALEX", x: 10, y: 110, color: "#00a8cc", shirt: "#ffcc00", speed: 1.2, progress: 0, time: 0, finished: false },
+    { name: "BOB",  x: 10, y: 170, color: "#e60012", shirt: "#ffffff", speed: 1.15, progress: 0, time: 0, finished: false }
+];
 
-ctx.fillStyle = "#ffff00";
-ctx.fillRect(50, 120, 16, 20);  // Żółty kwadrat (postać)
+let globalTimer = 0;
+let raceOver = false;
 
-ctx.fillStyle = "#ffffff";
-ctx.font = "12px monospace";
-ctx.fillText("JEŚLI TO WIDZISZ, DZIAŁA", 30, 40);
+function resetRace() {
+    runners[0].progress = 0; runners[0].time = 0; runners[0].finished = false;
+    runners[1].progress = 0; runners[1].time = 0; runners[1].finished = false;
+    // Losowanie formy (statystyk) na dany bieg
+    runners[0].speed = 1.0 + Math.random() * 0.4;
+    runners[1].speed = 1.0 + Math.random() * 0.4;
+    globalTimer = 0;
+    raceOver = false;
+}
+
+function updateAndRender() {
+    if (!raceOver) {
+        globalTimer += 1/60;
+        
+        runners.forEach(r => {
+            if (!r.finished) {
+                // Ruch oparty na prędkości postaci i losowym mikro-kroku
+                r.progress += r.speed * 0.8 + (Math.random() * 0.3);
+                
+                // Meta na 250 pikselu
+                if (r.progress >= 240) {
+                    r.finished = true;
+                    r.time = globalTimer;
+                }
+            }
+        });
+
+        if (runners[0].finished && runners[1].finished) {
+            raceOver = true;
+        }
+    }
+
+    // --- RYSOWANIE GRAFIKI ---
+    // Czyszczenie i rysowanie nieba
+    ctx.fillStyle = "#5c94fc";
+    ctx.fillRect(0, 0, 300, 240);
+
+    // Zielona murawa stadionu
+    ctx.fillStyle = "#008800";
+    ctx.fillRect(0, 70, 300, 20);
+
+    // Czerwona bieżnia
+    ctx.fillStyle = "#c84c0c";
+    ctx.fillRect(0, 90, 300, 130);
+
+    // Białe linie torów
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 90, 300, 2);
+    ctx.fillRect(0, 150, 300, 2);
+    ctx.fillRect(0, 210, 300, 2);
+
+    // Linia mety
+    ctx.fillRect(250, 90, 4, 120);
+
+    // Tablica wyników (Styl retro)
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(15, 10, 270, 50);
+    ctx.strokeStyle = "#ffffff";
+    ctx.strokeRect(15, 10, 270, 50);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "11px monospace";
+    
+    let t1 = runners[0].finished ? runners[0].time.toFixed(2) + "s" : "BIEGNIE...";
+    let t2 = runners[1].finished ? runners[1].time.toFixed(2) + "s" : "BIEGNIE...";
+    ctx.fillText(`TOR 1 - ${runners[0].name}: ${t1} (Szybkość: ${runners[0].speed.toFixed(2)})`, 25, 30);
+    ctx.fillText(`TOR 2 - ${runners[1].name}: ${t2} (Szybkość: ${runners[1].speed.toFixed(2)})`, 25, 48);
+
+    // Rysowanie zawodników (Klimat prawdziwego 8-bit)
+    runners.forEach(r => {
+        let drawX = Math.floor(r.x + r.progress);
+        let drawY = r.y;
+
+        // Efekt animacji nóg w locie (poruszanie góra/dół o 1 piksel)
+        if (!r.finished && Math.floor(globalTimer * 10) % 2 === 0) {
+            drawY -= 1;
+        }
+
+        // Kask / Włosy
+        ctx.fillStyle = r.color;
+        ctx.fillRect(drawX + 4, drawY, 8, 5);
+        // Twarz
+        ctx.fillStyle = "#ffcc99";
+        ctx.fillRect(drawX + 5, drawY + 5, 6, 4);
+        // Koszulka sportowa
+        ctx.fillStyle = r.shirt;
+        ctx.fillRect(drawX + 2, drawY + 9, 12, 10);
+        // Spodenki
+        ctx.fillStyle = "#111111";
+        ctx.fillRect(drawX + 4, drawY + 19, 8, 4);
+        // Buty
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(drawX + 3, drawY + 23, 3, 3);
+        ctx.fillRect(drawX + 10, drawY + 23, 3, 3);
+    });
+
+    requestAnimationFrame(updateAndRender);
+}
+
+// Pierwsze uruchomienie pętli gry
+updateAndRender();
 </script>
 
 </body>
