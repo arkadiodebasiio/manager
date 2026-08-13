@@ -2,113 +2,131 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Tenis AI - Nowoczesny Styl</title>
+    <title>Modern Human Tennis AI</title>
     <style>
         body {
-            background-color: #0f172a;
+            background: #090d16;
             color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden;
         }
-        #scoreboard {
-            font-size: 20px;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-            background: #1e293b;
-            padding: 10px 24px;
-            border-radius: 9999px;
-            border: 1px solid #334155;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        #ui-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 960px;
+            margin-bottom: 24px;
+            padding: 16px 32px;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
+        .player-card { display: flex; align-items: center; gap: 12px; }
+        .avatar-dot { width: 12px; height: 12px; border-radius: 50%; }
+        #dot-a { background: #60a5fa; box-shadow: 0 0 12px #3b82f6; }
+        #dot-b { background: #f43f5e; box-shadow: 0 0 12px #e11d48; }
+        .name { font-size: 14px; font-weight: 600; color: #94a3b8; }
+        #score-display { font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #ffffff; }
         canvas {
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-            border: 2px solid #334155;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
     </style>
 </head>
 <body>
 
-    <div id="scoreboard"><span id="p1Name">Alex</span>: <span id="p1Score">0</span> &nbsp;|&nbsp; <span id="p2Name">Bob</span>: <span id="p2Score">0</span></div>
-    <canvas id="tennisCanvas" width="900" height="550"></canvas>
+    <div id="ui-container">
+        <div class="player-card">
+            <div class="avatar-dot" id="dot-a"></div>
+            <div class="name">ALEX</div>
+        </div>
+        <div id="score-display"><span id="p1Score">0</span> : <span id="p2Score">0</span></div>
+        <div class="player-card">
+            <div class="name">BOB</div>
+            <div class="avatar-dot" id="dot-b"></div>
+        </div>
+    </div>
+    <canvas id="tennisCanvas" width="960" height="540"></canvas>
 
 <script>
 const canvas = document.getElementById("tennisCanvas");
 const ctx = canvas.getContext("2d");
 
-// --- STATYSTYKI ZAWODNIKÓW ---
 const PlayerA = {
-    x: 50, y: canvas.height / 2 - 45, width: 22, height: 80, score: 0,
-    speed: 4.8, reaction: 0.18, power: 1.1, color: "#38bdf8", name: "Alex"
+    x: 60, y: canvas.height / 2 - 45, width: 20, height: 90, score: 0,
+    speed: 5.2, reaction: 0.20, power: 1.12, color: "#60a5fa", hitAnim: 0
 };
 const PlayerB = {
-    x: canvas.width - 72, y: canvas.height / 2 - 45, width: 22, height: 80, score: 0,
-    speed: 4.2, reaction: 0.22, power: 1.2, color: "#f43f5e", name: "Bob"
+    x: canvas.width - 80, y: canvas.height / 2 - 45, width: 20, height: 90, score: 0,
+    speed: 4.8, reaction: 0.24, power: 1.18, color: "#f43f5e", hitAnim: 0
 };
 
-// --- PIŁKA I ŚLAD (TRAIL) ---
 const ball = {
-    x: canvas.width / 2, y: canvas.height / 2, vx: 5.5, vy: 3, radius: 9, speed: 6,
-    history: []
+    x: canvas.width / 2, y: canvas.height / 2, vx: 5.5, vy: 2.8, radius: 7, speed: 6.0,
+    trail: []
 };
 
 function moveAI(player) {
     let targetY = ball.y - player.height / 2;
     let diff = targetY - player.y;
-    if (Math.abs(diff) > 6) {
+    if (Math.abs(diff) > 4) {
         player.y += Math.min(player.speed, Math.abs(diff) * player.reaction * 10) * (diff > 0 ? 1 : -1);
     }
-    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+    player.y = Math.max(20, Math.min(canvas.height - player.height - 20, player.y));
+    if (player.hitAnim > 0) player.hitAnim -= 0.1;
 }
 
 function update() {
     moveAI(PlayerA);
     moveAI(PlayerB);
 
-    // Zapis pozycji do efektu smugi
-    ball.history.push({x: ball.x, y: ball.y});
-    if (ball.history.length > 8) ball.history.shift();
+    ball.trail.push({x: ball.x, y: ball.y});
+    if (ball.trail.length > 16) ball.trail.shift();
 
     ball.x += ball.vx;
     ball.y += ball.vy;
 
-    // Odbicia od ścian
-    if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+    if (ball.y - ball.radius < 20 || ball.y + ball.radius > canvas.height - 20) {
         ball.vy = -ball.vy;
-        ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
     }
 
-    // Kolizja z PlayerA
-    if (ball.x - ball.radius < PlayerA.x + PlayerA.width && ball.x > PlayerA.x - 5) {
+    // Kolizje - Player A
+    if (ball.x - ball.radius < PlayerA.x + PlayerA.width + 10 && ball.x > PlayerA.x - 5) {
         if (ball.y > PlayerA.y && ball.y < PlayerA.y + PlayerA.height) {
             let hitFactor = (ball.y - (PlayerA.y + PlayerA.height / 2)) / (PlayerA.height / 2);
-            let angle = hitFactor * (Math.PI / 3);
+            let angle = hitFactor * (Math.PI / 3.5);
             ball.vx = Math.cos(angle) * ball.speed * PlayerA.power;
             ball.vy = Math.sin(angle) * ball.speed * PlayerA.power;
-            ball.x = PlayerA.x + PlayerA.width + ball.radius;
-        } else if (ball.x < PlayerA.x) {
+            ball.x = PlayerA.x + PlayerA.width + 12;
+            PlayerA.hitAnim = 1.0; // wyzwolenie animacji uderzenia
+        } else if (ball.x < 0) {
             PlayerB.score++;
-            updateScoreboard();
+            syncUI();
             resetBall();
         }
     }
 
-    // Kolizja z PlayerB
-    if (ball.x + ball.radius > PlayerB.x && ball.x < PlayerB.x + PlayerB.width + 5) {
+    // Kolizje - Player B
+    if (ball.x + ball.radius > PlayerB.x - 10 && ball.x < PlayerB.x + PlayerB.width + 5) {
         if (ball.y > PlayerB.y && ball.y < PlayerB.y + PlayerB.height) {
             let hitFactor = (ball.y - (PlayerB.y + PlayerB.height / 2)) / (PlayerB.height / 2);
-            let angle = hitFactor * (Math.PI / 3);
+            let angle = hitFactor * (Math.PI / 3.5);
             ball.vx = -Math.cos(angle) * ball.speed * PlayerB.power;
             ball.vy = Math.sin(angle) * ball.speed * PlayerB.power;
-            ball.x = PlayerB.x - ball.radius;
-        } else if (ball.x > PlayerB.x + PlayerB.width) {
+            ball.x = PlayerB.x - ball.radius - 2;
+            PlayerB.hitAnim = 1.0; // wyzwolenie animacji uderzenia
+        } else if (ball.x > canvas.width) {
             PlayerA.score++;
-            updateScoreboard();
+            syncUI();
             resetBall();
         }
     }
@@ -117,103 +135,94 @@ function update() {
 function resetBall() {
     ball.x = canvas.width / 2;
     ball.y = canvas.height / 2;
-    ball.history = [];
+    ball.trail = [];
     let dir = Math.random() > 0.5 ? 1 : -1;
     ball.vx = dir * ball.speed;
-    ball.vy = (Math.random() * 2 - 1) * 3;
+    ball.vy = (Math.random() * 2 - 1) * 2;
 }
 
-function updateScoreboard() {
+function syncUI() {
     document.getElementById("p1Score").innerText = PlayerA.score;
     document.getElementById("p2Score").innerText = PlayerB.score;
 }
 
-// --- RENDEROWANIE GRAFIKI ---
-function drawCourt() {
-    // Tło kortu (ciepła zieleń z gradientem)
-    let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, "#14532d");
-    grad.addColorStop(1, "#166534");
-    ctx.fillStyle = grad;
+function drawScene() {
+    ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Linie boiska
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.02)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
-    // Środek (linia)
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 25);
-    ctx.lineTo(canvas.width / 2, canvas.height - 25);
+    ctx.moveTo(canvas.width / 2, 20);
+    ctx.lineTo(canvas.width / 2, canvas.height - 20);
     ctx.stroke();
-
-    // Siatka (teksturowana, półprzezroczysta)
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-    ctx.lineWidth = 4;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 25);
-    ctx.lineTo(canvas.width / 2, canvas.height - 25);
-    ctx.stroke();
-    ctx.setLineDash([]);
 }
 
-function drawPlayer(p, isRight) {
+function drawHumanPlayer(p, isRight) {
     ctx.save();
-    // Cień postaci
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.beginPath();
-    ctx.ellipse(p.x + p.width/2, p.y + p.height - 2, p.width/1.5, 6, 0, 0, Math.PI*2);
-    ctx.fill();
-
-    // Zaokrąglone ciało (tułów)
     ctx.fillStyle = p.color;
+
+    // Tułów
     ctx.beginPath();
-    ctx.roundRect(p.x, p.y + 16, p.width, p.height - 24, 6);
+    ctx.roundRect(p.x, p.y + 22, p.width, p.height - 35, 6);
     ctx.fill();
 
     // Głowa
-    ctx.fillStyle = "#fef08a";
+    ctx.fillStyle = "#f8fafc";
     ctx.beginPath();
-    ctx.arc(p.x + p.width / 2, p.y + 10, 9, 0, Math.PI * 2);
+    ctx.arc(p.x + p.width / 2, p.y + 12, 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // Elegancka rakieta
-    ctx.fillStyle = "#cbd5e1";
-    let rx = isRight ? p.x - 7 : p.x + p.width + 1;
-    ctx.fillRect(rx, p.y + 22, 6, 42);
+    // Nogi (dwa paski na dole)
+    ctx.fillRect(p.x + 2, p.y + p.height - 13, 5, 13);
+    ctx.fillRect(p.x + p.width - 7, p.y + p.height - 13, 5, 13);
+
+    // Ręka z rakietą (animowana przy uderzeniu wychodzi do przodu)
+    let swingOffset = p.hitAnim * 14;
+    ctx.fillStyle = p.color;
+    if (isRight) {
+        ctx.fillRect(p.x - 8 - swingOffset, p.y + 26, 8, 22); // ramię
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillRect(p.x - 12 - swingOffset, p.y + 20, 4, 34); // rakieta
+    } else {
+        ctx.fillRect(p.x + p.width + swingOffset, p.y + 26, 8, 22); // ramię
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillRect(p.x + p.width + 8 + swingOffset, p.y + 20, 4, 34); // rakieta
+    }
+
     ctx.restore();
 }
 
-function drawBall() {
-    // Smuga piłki
-    for (let i = 0; i < ball.history.length; i++) {
-        let pos = ball.history[i];
-        let alpha = i / ball.history.length * 0.4;
-        ctx.fillStyle = `rgba(250, 204, 21, ${alpha})`;
+function drawModernBall() {
+    for (let i = 0; i < ball.trail.length; i++) {
+        let pos = ball.trail[i];
+        let alpha = (i / 16) * 0.12;
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, ball.radius * (i / ball.history.length), 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, ball.radius * (i / 16), 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Główna piłka
-    ctx.fillStyle = "#facc15";
+    ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
     ctx.fill();
 }
 
-function gameLoop() {
+function mainLoop() {
     update();
-    drawCourt();
-    drawPlayer(PlayerA, false);
-    drawPlayer(PlayerB, true);
-    drawBall();
-    requestAnimationFrame(gameLoop);
+    drawScene();
+    drawHumanPlayer(PlayerA, false);
+    drawHumanPlayer(PlayerB, true);
+    drawModernBall();
+    requestAnimationFrame(mainLoop);
 }
 
-gameLoop();
+mainLoop();
 </script>
 </body>
 </html>
