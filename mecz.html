@@ -2,75 +2,151 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Boxing Manager Mini</title>
+    <title>Boxing Manager - Modułowy Szkielet</title>
     <style>
-        body { background: #0f172a; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #panel { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; width: 300px; border: 1px solid #475569; }
-        .row { display: flex; justify-content: space-between; margin: 6px 0; font-weight: bold; }
-        button { background: #2563eb; color: #fff; border: none; padding: 4px 10px; cursor: pointer; border-radius: 6px; font-weight: bold; }
-        #fight-btn { background: #059669; width: 100%; padding: 10px; margin-top: 8px; font-size: 14px; border-radius: 8px; }
-        canvas { border-radius: 12px; border: 2px solid #fff; background: #1e1b4b; }
+        body { background: #020617; color: #f8fafc; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #panel { background: #0f172a; padding: 18px; border-radius: 14px; margin-bottom: 20px; width: 340px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .row { display: flex; justify-content: space-between; margin: 8px 0; font-weight: 600; font-size: 14px; align-items: center; }
+        button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        button:hover { background: #3b82f6; }
+        #fight-btn { background: #059669; width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        canvas { border-radius: 14px; border: 1px solid rgba(255,255,255,0.15); background: #1e1b4b; }
     </style>
 </head>
 <body>
 
     <div id="panel">
-        <div class="row"><span>Punkty Trenera:</span><span id="pts" style="color:#38bdf8">5</span></div>
-        <div class="row"><span>SIŁA (<span id="v-pow">12</span>):</span><button onclick="train('pow')">+</button></div>
-        <div class="row"><span>SZYBKOŚĆ (<span id="v-spd">6</span>):</span><button onclick="train('spd')">+</button></div>
-        <button id="fight-btn" onclick="startFight()">START WALKID</button>
+        <div class="row"><span>Punkty Trenera:</span><span id="pts" style="color:#38bdf8; font-family:monospace; font-size:16px;">5</span></div>
+        <div class="row"><span>SIŁA (<span id="v-pow">12</span>):</span><button onclick="trainFighter('power', 4)">+</button></div>
+        <div class="row"><span>SZYBKOŚĆ (<span id="v-spd">6</span>):</span><button onclick="trainFighter('speed', 0.02)">+</button></div>
+        <button id="fight-btn" onclick="startMatch()">Start Walki</button>
     </div>
 
-    <canvas id="stage" width="400" height="200"></canvas>
+    <canvas id="ring" width="400" height="220"></canvas>
 
 <script>
-const canvas = document.getElementById("stage");
+// --- MODUŁ 1: DANE POSTACI (Łatwe do modyfikacji i rozbudowy) ---
+const fighters = {
+    player: { name: "ALEX", x: 120, y: 100, hp: 100, maxHp: 100, power: 12, speed: 0.05, color: "#0ea5e9", gloves: "#f59e0b", state: "IDLE", timer: 0 },
+    enemy:  { name: "BOB",  x: 240, y: 100, hp: 100, maxHp: 100, power: 14, speed: 0.06, color: "#f43f5e", gloves: "#f8fafc", state: "IDLE", timer: 0 }
+};
+
+let coachPoints = 5;
+let matchActive = false;
+let matchOver = false;
+let messageText = "ZAPLANUJ TRENING I RUSZAJ NA RING";
+
+const canvas = document.getElementById("ring");
 const ctx = canvas.getContext("2d");
 
-let points = 5, active = false, over = false, txt = "TRENUJ I ROZPOCZNIJ WALKĘ";
-let bA = { name: "ALEX", x: 130, y: 80, hp: 100, color: "#38bdf8", gloves: "#f59e0b", state: "IDLE", timer: 0, speed: 0.05, power: 12 };
-let bB = { name: "BOB",  x: 240, y: 80, hp: 100, color: "#f43f5e", gloves: "#ffffff", state: "IDLE", timer: 0, speed: 0.06, power: 14 };
-
-function train(type) {
-    if (points <= 0) return;
-    points--; document.getElementById("pts").innerText = points;
-    if (type === 'pow') { bA.power += 4; document.getElementById("v-pow").innerText = bA.power; }
-    else { bA.speed += 0.02; document.getElementById("v-spd").innerText = Math.round(bA.speed * 100); }
-}
-
-function startFight() { bA.hp = 100; bB.hp = 100; over = false; active = true; txt = "RUNDA 1 - GONG!"; }
-
-function runAI(p, enemy, isLeft) {
-    if (!active || over) return; p.timer++;
-    if ((p.state === "PUNCH" || p.state === "HIT") && p.timer > 10) p.state = "IDLE";
-    if (p.state === "IDLE" && Math.random() < p.speed) {
-        p.state = "PUNCH"; p.timer = 0; enemy.state = "HIT"; enemy.timer = 0; enemy.hp -= p.power;
-        txt = `${p.name} TRAFIA ZA -${p.power} HP!`;
-        if (enemy.hp <= 0) { enemy.hp = 0; over = true; txt = `K.O.! WYGRYWA ${p.name}!`; }
+// --- MODUŁ 2: LOGIKA MENEDŻERA (Trening) ---
+function trainFighter(stat, value) {
+    if (coachPoints <= 0) return;
+    coachPoints--;
+    document.getElementById("pts").innerText = coachPoints;
+    
+    if (stat === 'power') {
+        fighters.player.power += value;
+        document.getElementById("v-pow").innerText = fighters.player.power;
+    } else if (stat === 'speed') {
+        fighters.player.speed += value;
+        document.getElementById("v-spd").innerText = Math.round(fighters.player.speed * 100);
     }
 }
 
-function drawBoxer(p, isLeft) {
-    let dx = p.x; if (p.state === "PUNCH") dx += isLeft ? 15 : -15; if (p.state === "HIT") dx += isLeft ? -6 : 6;
-    ctx.fillStyle = p.color; ctx.fillRect(dx, dy = p.y + 14, 24, 30); // Tors i spodenki
-    ctx.fillStyle = "#ffcc99"; ctx.fillRect(dx + 3, p.y, 18, 14); // Twarz
-    ctx.fillStyle = p.gloves; // Rękawice
-    if (p.state === "PUNCH") ctx.fillRect(isLeft ? dx + 20 : dx - 10, p.y + 6, 12, 12);
-    else { ctx.fillRect(dx - 4, p.y + 10, 8, 10); ctx.fillRect(dx + 20, p.y + 10, 8, 10); }
-    ctx.fillStyle = "#ef4444"; ctx.fillRect(p.x - 2, p.y - 10, 28, 4); // Paski życia
-    ctx.fillStyle = "#10b981"; ctx.fillRect(p.x - 2, p.y - 10, (p.hp / 100) * 28, 4);
+function startMatch() {
+    fighters.player.hp = fighters.player.maxHp;
+    fighters.enemy.hp = fighters.enemy.maxHp;
+    matchOver = false;
+    matchActive = true;
+    messageText = "GONG! WALKA TRWA!";
 }
 
-function render() {
-    ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0, 0, 400, 200); // Widownia
-    ctx.fillStyle = "#475569"; ctx.fillRect(40, 50, 320, 120); // Ring
-    ctx.fillStyle = "#ef4444"; ctx.fillRect(40, 46, 320, 4); // Lina ringu
-    runAI(bA, bB, true); runAI(bB, bA, false); drawBoxer(bA, true); drawBoxer(bB, false);
-    ctx.fillStyle = "rgba(0,0,0,0.8)"; ctx.fillRect(50, 145, 300, 22); // Panel tekstu
-    ctx.fillStyle = "#fbbf24"; ctx.font = "11px monospace"; ctx.fillText(txt, 60, 159);
-    requestAnimationFrame(render);
+// --- MODUŁ 3: SILNIK WALKI (AI) ---
+function updateAI(actor, target, isPlayer) {
+    if (!matchActive || matchOver) return;
+    actor.timer++;
+
+    if ((actor.state === "PUNCH" || actor.state === "HIT") && actor.timer > 12) {
+        actor.state = "IDLE";
+    }
+
+    if (actor.state === "IDLE" && Math.random() < actor.speed) {
+        actor.state = "PUNCH";
+        actor.timer = 0;
+        target.state = "HIT";
+        target.timer = 0;
+        target.hp -= actor.power;
+
+        messageText = `${actor.name} TRAFIA ZA -${actor.power} HP!`;
+
+        if (target.hp <= 0) {
+            target.hp = 0;
+            matchOver = true;
+            matchActive = false;
+            messageText = `MISTRZOWSKIE K.O.! WYGRYWA ${actor.name}!`;
+        }
+    }
 }
-render();
+
+// --- MODUŁ 4: RENDEROWANIE GRAFIKI ---
+function drawFighter(f, isLeft) {
+    let dx = f.x;
+    let dy = f.y;
+    if (f.state === "PUNCH") dx += isLeft ? 18 : -18;
+    if (f.state === "HIT") dx += isLeft ? -6 : 6;
+
+    // Cień
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.fillRect(dx, dy + 45, 26, 8);
+
+    // Tors / Spodenki
+    ctx.fillStyle = f.color;
+    ctx.fillRect(dx + 2, dy + 15, 22, 24);
+
+    // Głowa
+    ctx.fillStyle = "#f4a261";
+    ctx.fillRect(dx + 5, dy, 16, 15);
+
+    // Rękawice
+    ctx.fillStyle = f.gloves;
+    if (f.state === "PUNCH") {
+        ctx.fillRect(isLeft ? dx + 18 : dx - 8, dy + 12, 12, 10);
+    } else {
+        ctx.fillRect(dx - 4, dy + 12, 7, 9);
+        ctx.fillRect(dx + 19, dy + 12, 7, 9);
+    }
+
+    // Pasek zdrowia nad postacią
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(dx - 3, dy - 12, 32, 4);
+    ctx.fillStyle = "#10b981";
+    ctx.fillRect(dx - 3, dy - 12, (f.hp / f.maxHp) * 32, 4);
+}
+
+function gameLoop() {
+    updateAI(fighters.player, fighters.enemy, true);
+    updateAI(fighters.enemy, fighters.player, false);
+
+    // Tło ringu
+    ctx.fillStyle = "#1e1b4b"; ctx.fillRect(0, 0, 400, 220);
+    ctx.fillStyle = "#334155"; ctx.fillRect(30, 40, 340, 130);
+    ctx.fillStyle = "#ef4444"; ctx.fillRect(30, 36, 340, 3); // Liny
+
+    drawFighter(fighters.player, true);
+    drawFighter(fighters.enemy, false);
+
+    // Komunikaty tekstowe na dole
+    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+    ctx.fillRect(40, 180, 320, 26);
+    ctx.fillStyle = "#f59e0b"; ctx.font = "bold 11px system-ui"; ctx.textAlign = "center";
+    ctx.fillText(messageText, 200, 197);
+    ctx.textAlign = "left";
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
 </script>
 </body>
 </html>
