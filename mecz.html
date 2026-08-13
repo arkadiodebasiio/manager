@@ -2,12 +2,12 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Modern Human Tennis AI</title>
+    <title>Pseudo-3D Tennis Simulation</title>
     <style>
         body {
-            background: #090d16;
-            color: #f8fafc;
-            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #050b14;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -16,213 +16,188 @@
             margin: 0;
             overflow: hidden;
         }
-        #ui-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 960px;
-            margin-bottom: 24px;
-            padding: 16px 32px;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(16px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        #ui {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            background: rgba(30, 41, 59, 0.7);
+            padding: 10px 28px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .player-card { display: flex; align-items: center; gap: 12px; }
-        .avatar-dot { width: 12px; height: 12px; border-radius: 50%; }
-        #dot-a { background: #60a5fa; box-shadow: 0 0 12px #3b82f6; }
-        #dot-b { background: #f43f5e; box-shadow: 0 0 12px #e11d48; }
-        .name { font-size: 14px; font-weight: 600; color: #94a3b8; }
-        #score-display { font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #ffffff; }
         canvas {
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: #0f172a;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            border: 2px solid #1e293b;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-container">
-        <div class="player-card">
-            <div class="avatar-dot" id="dot-a"></div>
-            <div class="name">ALEX</div>
-        </div>
-        <div id="score-display"><span id="p1Score">0</span> : <span id="p2Score">0</span></div>
-        <div class="player-card">
-            <div class="name">BOB</div>
-            <div class="avatar-dot" id="dot-b"></div>
-        </div>
-    </div>
-    <canvas id="tennisCanvas" width="960" height="540"></canvas>
+    <div id="ui">ALEX <span id="scoreA">0</span> : <span id="scoreB">0</span> BOB</div>
+    <canvas id="court" width="800" height="600"></canvas>
 
 <script>
-const canvas = document.getElementById("tennisCanvas");
+const canvas = document.getElementById("court");
 const ctx = canvas.getContext("2d");
 
-const PlayerA = {
-    x: 60, y: canvas.height / 2 - 45, width: 20, height: 90, score: 0,
-    speed: 5.2, reaction: 0.20, power: 1.12, color: "#60a5fa", hitAnim: 0
-};
-const PlayerB = {
-    x: canvas.width - 80, y: canvas.height / 2 - 45, width: 20, height: 90, score: 0,
-    speed: 4.8, reaction: 0.24, power: 1.18, color: "#f43f5e", hitAnim: 0
+// Statystyki postaci
+const pA = { x: 400, targetX: 400, score: 0, speed: 6, color: "#38bdf8" };
+const pB = { x: 400, targetX: 400, score: 0, speed: 4.5, color: "#f43f5e" };
+
+// Piłka w przestrzeni 3D (x, y - płaszczyzna kortu, z - wysokość nad ziemią)
+let ball = {
+    x: 400, y: 300, z: 0,
+    vx: 3, vy: 4, vz: 2,
+    active: true
 };
 
-const ball = {
-    x: canvas.width / 2, y: canvas.height / 2, vx: 5.5, vy: 2.8, radius: 7, speed: 6.0,
-    trail: []
-};
+let scoreA = 0;
+let scoreB = 0;
 
-function moveAI(player) {
-    let targetY = ball.y - player.height / 2;
-    let diff = targetY - player.y;
-    if (Math.abs(diff) > 4) {
-        player.y += Math.min(player.speed, Math.abs(diff) * player.reaction * 10) * (diff > 0 ? 1 : -1);
-    }
-    player.y = Math.max(20, Math.min(canvas.height - player.height - 20, player.y));
-    if (player.hitAnim > 0) player.hitAnim -= 0.1;
+function resetBall(servingToB) {
+    ball.x = 400;
+    ball.y = 300;
+    ball.z = 0;
+    ball.vy = servingToB ? 3.5 : -3.5;
+    ball.vx = (Math.random() - 0.5) * 4;
+    ball.vz = 2.5;
 }
 
 function update() {
-    moveAI(PlayerA);
-    moveAI(PlayerB);
-
-    ball.trail.push({x: ball.x, y: ball.y});
-    if (ball.trail.length > 16) ball.trail.shift();
-
+    // Ruch piłki w 3D
     ball.x += ball.vx;
     ball.y += ball.vy;
+    ball.z += ball.vz;
+    ball.vz -= 0.12; // Grawitacja
 
-    if (ball.y - ball.radius < 20 || ball.y + ball.radius > canvas.height - 20) {
-        ball.vy = -ball.vy;
+    // Odbicie od ziemi (z <= 0)
+    if (ball.z < 0) {
+        ball.z = 0;
+        ball.vz = -ball.vz * 0.75; // Tłumienie odbicia
     }
 
-    // Kolizje - Player A
-    if (ball.x - ball.radius < PlayerA.x + PlayerA.width + 10 && ball.x > PlayerA.x - 5) {
-        if (ball.y > PlayerA.y && ball.y < PlayerA.y + PlayerA.height) {
-            let hitFactor = (ball.y - (PlayerA.y + PlayerA.height / 2)) / (PlayerA.height / 2);
-            let angle = hitFactor * (Math.PI / 3.5);
-            ball.vx = Math.cos(angle) * ball.speed * PlayerA.power;
-            ball.vy = Math.sin(angle) * ball.speed * PlayerA.power;
-            ball.x = PlayerA.x + PlayerA.width + 12;
-            PlayerA.hitAnim = 1.0; // wyzwolenie animacji uderzenia
-        } else if (ball.x < 0) {
-            PlayerB.score++;
-            syncUI();
-            resetBall();
+    // AI Gracza A (dół ekranu, y w okolicach 520)
+    let destAx = ball.x;
+    pA.targetX += (destAx - pA.targetX) * 0.1;
+    pA.x = Math.max(200, Math.min(600, pA.targetX));
+
+    // AI Gracza B (góra ekranu, y w okolicach 100)
+    let destBx = ball.x;
+    pB.targetX += (destBx - pB.targetX) * 0.08;
+    pB.x = Math.max(250, Math.min(550, pB.targetX));
+
+    // Kolizja z rakietą Gracza A (dół)
+    if (ball.y > 500 && ball.y < 530 && ball.z < 25) {
+        if (Math.abs(ball.x - pA.x) < 55) {
+            ball.vy = -Math.abs(ball.vy) - 1.5;
+            ball.vz = 3.5 + Math.random() * 2;
+            ball.vx += (ball.x - pA.x) * 0.08;
         }
     }
 
-    // Kolizje - Player B
-    if (ball.x + ball.radius > PlayerB.x - 10 && ball.x < PlayerB.x + PlayerB.width + 5) {
-        if (ball.y > PlayerB.y && ball.y < PlayerB.y + PlayerB.height) {
-            let hitFactor = (ball.y - (PlayerB.y + PlayerB.height / 2)) / (PlayerB.height / 2);
-            let angle = hitFactor * (Math.PI / 3.5);
-            ball.vx = -Math.cos(angle) * ball.speed * PlayerB.power;
-            ball.vy = Math.sin(angle) * ball.speed * PlayerB.power;
-            ball.x = PlayerB.x - ball.radius - 2;
-            PlayerB.hitAnim = 1.0; // wyzwolenie animacji uderzenia
-        } else if (ball.x > canvas.width) {
-            PlayerA.score++;
-            syncUI();
-            resetBall();
+    // Kolizja z rakietą Gracza B (góra)
+    if (ball.y > 90 && ball.y < 120 && ball.z < 25) {
+        if (Math.abs(ball.x - pB.x) < 55) {
+            ball.vy = Math.abs(ball.vy) + 1.5;
+            ball.vz = 3.5 + Math.random() * 2;
+            ball.vx += (ball.x - pB.x) * 0.08;
         }
+    }
+
+    // Punkty (przelot poza kort)
+    if (ball.y > 580) {
+        scoreB++;
+        document.getElementById("scoreB").innerText = scoreB;
+        resetBall(false);
+    } else if (ball.y < 60) {
+        scoreA++;
+        document.getElementById("scoreA").innerText = scoreA;
+        resetBall(true);
     }
 }
 
-function resetBall() {
-    ball.x = canvas.width / 2;
-    ball.y = canvas.height / 2;
-    ball.trail = [];
-    let dir = Math.random() > 0.5 ? 1 : -1;
-    ball.vx = dir * ball.speed;
-    ball.vy = (Math.random() * 2 - 1) * 2;
-}
+function draw() {
+    ctx.clearRect(0, 0, 800, 600);
 
-function syncUI() {
-    document.getElementById("p1Score").innerText = PlayerA.score;
-    document.getElementById("p2Score").innerText = PlayerB.score;
-}
-
-function drawScene() {
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.02)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-    ctx.lineWidth = 2;
+    // Kąt perspektywy kortu (trapez)
+    ctx.fillStyle = "#166534";
     ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 20);
-    ctx.lineTo(canvas.width / 2, canvas.height - 20);
+    ctx.moveTo(150, 60); ctx.lineTo(650, 60);
+    ctx.lineTo(750, 540); ctx.lineTo(50, 540);
+    ctx.closePath();
+    ctx.fill();
+
+    // Linie kortu w perspektywie
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.lineWidth = 3;
     ctx.stroke();
+
+    // Siatka na środku (y = 300)
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.beginPath();
+    ctx.moveTo(100, 300); ctx.lineTo(700, 300);
+    ctx.stroke();
+
+    // Skala głębi (im wyżej na ekranie, tym mniejszy obiekt)
+    let scaleB = 0.5 + (ball.y / 600) * 0.5;
+    let ballScreenY = ball.y - (ball.z * 3);
+
+    // Cień piłki na trapezie kortu
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, 7 * scaleB, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Zawodnik B (Góra - mniejszy, bo dalej)
+    drawPlayer(pB.x, 100, 0.65, pB.color);
+
+    // Zawodnik A (Dół - większy, bo blisko)
+    drawPlayer(pA.x, 520, 1.0, pA.color);
+
+    // Piłka właściwa
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath();
+    ctx.arc(ball.x, ballScreenY, 8 * scaleB, 0, Math.PI * 2);
+    ctx.fill();
 }
 
-function drawHumanPlayer(p, isRight) {
+function drawPlayer(x, y, scale, color) {
     ctx.save();
-    ctx.fillStyle = p.color;
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
 
-    // Tułów
+    // Cień postaci
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
-    ctx.roundRect(p.x, p.y + 22, p.width, p.height - 35, 6);
+    ctx.ellipse(0, 35, 30, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ciało
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(-20, -10, 40, 50, 8);
     ctx.fill();
 
     // Głowa
-    ctx.fillStyle = "#f8fafc";
+    ctx.fillStyle = "#fde047";
     ctx.beginPath();
-    ctx.arc(p.x + p.width / 2, p.y + 12, 10, 0, Math.PI * 2);
+    ctx.arc(0, -22, 14, 0, Math.PI * 2);
     ctx.fill();
-
-    // Nogi (dwa paski na dole)
-    ctx.fillRect(p.x + 2, p.y + p.height - 13, 5, 13);
-    ctx.fillRect(p.x + p.width - 7, p.y + p.height - 13, 5, 13);
-
-    // Ręka z rakietą (animowana przy uderzeniu wychodzi do przodu)
-    let swingOffset = p.hitAnim * 14;
-    ctx.fillStyle = p.color;
-    if (isRight) {
-        ctx.fillRect(p.x - 8 - swingOffset, p.y + 26, 8, 22); // ramię
-        ctx.fillStyle = "#94a3b8";
-        ctx.fillRect(p.x - 12 - swingOffset, p.y + 20, 4, 34); // rakieta
-    } else {
-        ctx.fillRect(p.x + p.width + swingOffset, p.y + 26, 8, 22); // ramię
-        ctx.fillStyle = "#94a3b8";
-        ctx.fillRect(p.x + p.width + 8 + swingOffset, p.y + 20, 4, 34); // rakieta
-    }
 
     ctx.restore();
 }
 
-function drawModernBall() {
-    for (let i = 0; i < ball.trail.length; i++) {
-        let pos = ball.trail[i];
-        let alpha = (i / 16) * 0.12;
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, ball.radius * (i / 16), 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-function mainLoop() {
+function loop() {
     update();
-    drawScene();
-    drawHumanPlayer(PlayerA, false);
-    drawHumanPlayer(PlayerB, true);
-    drawModernBall();
-    requestAnimationFrame(mainLoop);
+    draw();
+    requestAnimationFrame(loop);
 }
 
-mainLoop();
+resetBall(true);
+loop();
 </script>
 </body>
 </html>
