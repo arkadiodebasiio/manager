@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CM4 Mini 1v1 Physics Engine</title>
+    <title>CM4 Attack vs Defense 1v1</title>
     <style>
         body { background: #08120b; color: #fff; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 5px; overflow: hidden; }
         canvas { background: #0f3d1c; border: 3px solid #fff; display: block; margin: 5px auto; width: 620px; height: 380px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
@@ -12,33 +12,29 @@
 <body>
     <div id="scoreboard">🟥 TEAM A <span id="sa">0</span> - <span id="sb">0</span> TEAM B 🟦</div>
     <canvas id="cmCanvas" width="640" height="400"></canvas>
-    <div id="commentary">> Inicjalizacja pojedynku mistrzów 1v1...</div>
+    <div id="commentary">> Przygotowanie murawy do pojedynku Atak vs Obrona...</div>
 
     <script>
         const canvas = document.getElementById("cmCanvas"); const ctx = canvas.getContext("2d");
         const comment = document.getElementById("commentary");
         let scoreA = 0; let scoreB = 0;
 
-        // BAZA 1v1 (Jeden napastnik vs Jeden obrońca/bramkarz)
+        // DWAJ ZAWODNICY Z BALANSEM STATYSTYK (Atakujący vs Obrońca)
         let players = [
-            // TEAM A (Czerwony) - Atakuje w prawo
             { id: "A1", team: "A", nr: 9, role: "ATT", bx: 150, by: 200, pas: 10, sho: 19, def: 5, name: "Lewandowski" },
-
-            // TEAM B (Niebieski) - Atakuje w lewo / Broni dostępu
             { id: "B1", team: "B", nr: 1, role: "GK",  bx: 490, by: 200, pas: 12, sho: 5,  def: 18, name: "Buffon" }
         ];
 
-        // Konfiguracja fizyki ruchu zawodników
+        // Wyzerowanie wektorów prędkości fizycznej (pędu)
         players.forEach(p => { 
             p.x = p.bx; p.y = p.by; p.tx = p.bx; p.ty = p.by; 
             p.vx = 0; p.vy = 0; p.speed = 0.35; 
         });
 
-        // Fizyka piłki (pęd + tarcie murawy) oraz system zapobiegania zacięciom
+        // Piłka czeka na środku boiska na losowanie pierwszego posiadacza
         let ball = { x: 320, y: 200, vx: 0, vy: 0, friction: 0.965, owner: null };
-        let lockPossessionTimer = 0; // Zapobiega natychmiastowemu odbieraniu klatka po klatce
+        let lockPossessionTimer = 0; 
         
-        let pPosiadajacy = players.find(p => p.id === "A11" || p.id === "A1"); ball.owner = pPosiadajacy;
         let fazaMeczu = "DECYZJA"; let czasDecyzji = 0;
 
         function wypiszKomentarz(tekst, kolor = "#00ff66") {
@@ -48,15 +44,15 @@
         function resetPoBramce() {
             players.forEach(p => { p.x = p.bx; p.y = p.by; p.tx = p.bx; p.ty = p.by; p.vx = 0; p.vy = 0; });
             ball.x = 320; ball.y = 200; ball.vx = 0; ball.vy = 0; ball.owner = null;
-            fazaMeczu = "DECYZJA"; czasDecyzji = 30; lockPossessionTimer = 0;
+            fazaMeczu = "DECYZJA"; czasDecyzji = 0; lockPossessionTimer = 0;
         }
-        // PĘTLA LOGICZNA SILNIKA MECZOWEGO 1v1
+        // LOGIKA MECZOWA: ATAK KONTRA OBRONA
         function silnikMeczowyTick() {
-            // Aktualizacja pozycji piłki na bazie jej wektora prędkości
+            // Ruch piłki na bazie wektorów prędkości i tarcia trawy
             if (!ball.owner) {
                 ball.x += ball.vx;
                 ball.y += ball.vy;
-                ball.vx *= ball.friction; // Tarcie trawy
+                ball.vx *= ball.friction;
                 ball.vy *= ball.friction;
             } else {
                 ball.x = ball.owner.x;
@@ -67,101 +63,94 @@
 
             if (lockPossessionTimer > 0) lockPossessionTimer--;
 
-            // REAKCJA AI I DECYZJE TAKTYCZNE W POJEDYNKU 1v1
+            // SYSTEM DECYZYJNY AI
             if (czasDecyzji <= 0) {
                 czasDecyzji = 25 + Math.floor(Math.random() * 25);
                 
+                // SYSTEM LOSOWANIA STARTU (Jeśli nikt jeszcze nie ma piłki na początku)
+                if (!ball.owner && ball.x === 320 && ball.y === 200 && lockPossessionTimer === 0) {
+                    let losowyStart = players[Math.floor(Math.random() * players.length)];
+                    ball.owner = losowyStart;
+                    wypiszKomentarz(`Losowanie: ruszamy! Przy piłce ${losowyStart.name}.`, "#ffff00");
+                }
+
                 if (ball.owner) {
                     let p = ball.owner;
                     let przeciwnik = players.find(pl => pl.team !== p.team);
                     let kierunek = p.team === "A" ? 1 : -1;
                     let los = Math.random();
 
-                    // DECYZJA 1: POTĘŻNY STRZAŁ NA BRAMKĘ
+                    // ROLA 1: KULKA PRZY PIŁCE (ATAKUJĄCY)
+                    let celX = p.team === "A" ? 635 : 5;
                     let wStrefieStrzalu = p.team === "A" ? p.x > 380 : p.x < 260;
-                    if (wStrefieStrzalu && los < 0.50) {
-                        let celX = p.team === "A" ? 635 : 5;
-                        let celY = 175 + Math.random() * 50;
 
-                        let dx = celX - p.x;
-                        let dy = celY - p.y;
+                    if (wStrefieStrzalu && los < 0.55) {
+                        let celY = 175 + Math.random() * 50;
+                        let dx = celX - p.x; let dy = celY - p.y;
                         let dystans = Math.sqrt(dx * dx + dy * dy);
                         
                         ball.owner = null;
-                        lockPossessionTimer = 15; // Blokada przechwytu w trakcie lotu strzału
-                        ball.vx = (dx / dystans) * 13;
-                        ball.vy = (dy / dystans) * 13;
+                        lockPossessionTimer = 20; 
+                        ball.vx = (dx / dystans) * 13.5;
+                        ball.vy = (dy / dystans) * 13.5;
 
                         let silaStrzalu = (p.sho / 20) * Math.random();
                         let obronaGK = (przeciwnik.def / 20) * Math.random();
 
                         if (silaStrzalu > obronaGK) {
-                            wypiszKomentarz(`GOOOOL! Fantastyczne wykończenie! Akcja mistrza: ${p.name}!`, "#ffff00");
+                            wypiszKomentarz(`GOOOOL! Niezrównany strzał! Trafia ${p.name}!`, "#ffff00");
                             fazaMeczu = p.team === "A" ? "GOL_A" : "GOL_B";
                         } else {
-                            wypiszKomentarz(`Cóż za obrona! ${przeciwnik.name} ratuje swój zespół przed utratą bramki!`, "#ff00e1");
+                            wypiszKomentarz(`Parada klasy światowej! ${przeciwnik.name} blokuje strzał!`, "#ff00e1");
                             setTimeout(() => { ball.owner = przeciwnik; }, 300);
                         }
+                    } else {
+                        p.tx = p.x + (kierunek * 85);
+                        p.ty = p.y + (Math.random() * 60 - 30);
+                        wypiszKomentarz(`${p.name} sunie z dymem na bramkę przeciwnika!`, "#00ff66");
                     }
-                    // DECYZJA 2: DRYBLING / ZWÓD (Bieg omijający przeciwnika po łuku)
-                    else {
-                        p.tx = p.x + (kierunek * 80);
-                        // Jeśli przeciwnik jest blisko, gracz ucieka w górę lub w dół ekranu
-                        if (Math.abs(p.x - przeciwnik.x) < 100) {
-                            p.ty = przeciwnik.y > p.y ? p.y - 60 : p.y + 60;
-                            wypiszKomentarz(`${p.name} popisuje się genialnym zwodem i mija rywala!`, "#00e5ff");
-                        } else {
-                            p.ty = p.y + (Math.random() * 80 - 40);
-                            wypiszKomentarz(`${p.name} kontroluje piłkę i pewnie rusza do przodu.`, "#00ff66");
-                        }
-                    }
+
+                    // ROLA 2: KULKA BEZ PIŁKI (OBROŃCA COFA SIĘ DO BLOKU)
+                    przeciwnik.tx = celX - (kierunek * 60);
+                    przeciwnik.ty = ball.y + (Math.random() * 20 - 10);
                 } else {
-                    // JEŚLI PIŁKA JEST WOLNA: Obaj ruszają do niej z pełną prędkością
-                    players.forEach(pl => {
-                        pl.tx = ball.x;
-                        pl.ty = ball.y;
-                    });
+                    players.forEach(pl => { pl.tx = ball.x; pl.ty = ball.y; });
                 }
             }
             czasDecyzji--;
-            // PHYSICS ENGINE & TACKLE SYSTEM (NO OVERLAPS / NO FREEZES)
-            players.forEach(p => {
+
+            // FIZYKA PĘDU I SPRAWIEDLIWEGO PRZECHWYTU PIŁKI
+            let kolejnosccSprawdzania = [...players].sort(() => Math.random() - 0.5);
+
+            kolejnosccSprawdzania.forEach(p => {
                 let dx = p.tx - p.x;
                 let dy = p.ty - p.y;
                 let dystans = Math.sqrt(dx * dx + dy * dy);
 
-                // Movement vector calculation with acceleration and mass simulation
                 if (dystans > 5) {
                     let ax = (dx / dystans) * p.speed;
                     let ay = (dy / dystans) * p.speed;
-                    p.vx += ax;
-                    p.vy += ay;
+                    p.vx += ax; p.vy += ay;
                 }
 
-                p.vx *= 0.82; // Natural drag to prevent infinite sliding
-                p.vy *= 0.82;
-                p.x += p.vx;
-                p.y += p.vy;
+                p.vx *= 0.82; p.vy *= 0.82;
+                p.x += p.vx; p.y += p.vy;
 
-                // Restrict movement to valid pitch bounds
                 if (p.x < 15) p.x = 15; if (p.x > 625) p.x = 625;
                 if (p.y < 15) p.y = 15; if (p.y > 385) p.y = 385;
 
-                // SAFE BALL POSSESSION CAPTURE
                 if (!ball.owner && lockPossessionTimer <= 0 && fazaMeczu === "DECYZJA") {
-                    let bdx = ball.x - p.x;
-                    let bdy = ball.y - p.y;
+                    let bdx = ball.x - p.x; let bdy = ball.y - p.y;
                     let bdystans = Math.sqrt(bdx * bdx + bdy * bdy);
 
                     if (bdystans < 12) {
                         ball.owner = p;
-                        lockPossessionTimer = 8; // Prevents back-and-forth instant flipping
+                        lockPossessionTimer = 8;
                         czasDecyzji = 5; 
                     }
                 }
             });
 
-            // SCORING DETECTOR (Goal-line crossing validation)
             if (fazaMeczu === "GOL_A" && ball.x >= 630) {
                 scoreA++; document.getElementById("sa").innerText = scoreA;
                 fazaMeczu = "CELEBRACJA"; setTimeout(resetPoBramce, 2000);
@@ -171,35 +160,29 @@
                 fazaMeczu = "CELEBRACJA"; setTimeout(resetPoBramce, 2000);
             }
             
-            // Clean rebound off bounds if loose ball goes wide
             if (!ball.owner) {
                 if (ball.y < 12 || ball.y > 388) ball.vy *= -1;
                 if ((ball.x < 12 || ball.x > 628) && !fazaMeczu.startsWith("GOL")) ball.vx *= -1;
             }
         }
 
-        // 1v1 ENHANCED TEXTURE GRAPHICS RENDERING
+        // GRAFIKA 2D BOISKA
         function renderujMecz() {
-            // Pitch background
             ctx.fillStyle = "#0f3d1c"; ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Visual field grass stripes
             ctx.fillStyle = "rgba(255,255,255,0.02)";
             for (let i = 0; i < canvas.width; i += 40) {
                 if ((i / 40) % 2 === 0) ctx.fillRect(i, 10, 40, canvas.height - 20);
             }
 
-            // Line markers
             ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 2;
             ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20); 
             ctx.beginPath(); ctx.moveTo(canvas.width / 2, 10); ctx.lineTo(canvas.width / 2, canvas.height - 10); ctx.stroke(); 
             ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2); ctx.stroke(); 
             
-            // Goals and penalty spots
             ctx.strokeRect(10, 100, 75, 200); ctx.strokeRect(canvas.width - 85, 100, 75, 200); 
             ctx.fillStyle = "#05170b"; ctx.fillRect(2, 170, 8, 60); ctx.fillRect(canvas.width - 10, 170, 8, 60); 
 
-            // Render players with drop-shadow layers
             players.forEach(p => {
                 ctx.beginPath(); ctx.arc(p.x, p.y + 3, 7, 0, Math.PI * 2);
                 ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fill();
@@ -212,19 +195,15 @@
                 ctx.fillStyle = "#ffffff"; ctx.font = "bold 9px Arial";
                 ctx.fillText(p.nr, p.x - 4, p.y + 3);
 
-                // Highlight labels
                 ctx.font = "bold 9px Courier New"; ctx.fillStyle = "#ffffff";
                 ctx.fillText(p.name, p.x - 22, p.y - 13);
             });
 
-            // Match ball layer
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, 4.5, 0, Math.PI * 2);
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, 4.5, 0, Math.PI * 2);
             ctx.fillStyle = "#ffffff"; ctx.fill();
             ctx.strokeStyle = "#000000"; ctx.lineWidth = 1; ctx.stroke();
         }
 
-        // Main game cycle frame trigger (smooth 60Hz)
         function petlaGry() {
             silnikMeczowyTick();
             renderujMecz();
