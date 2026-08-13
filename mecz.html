@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prawdziwy Silnik Bokserski 2D</title>
+    <title>Retro Boxing Arena</title>
     <style>
         body {
             margin: 0;
-            background: #1a1a1a;
+            background: #111;
             color: #fff;
             font-family: 'Arial Black', Gadget, sans-serif;
             display: flex;
@@ -25,13 +25,13 @@
             background-size: 100% 100%;
             background-repeat: no-repeat;
             border: 6px solid #ffd700;
-            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+            box-shadow: 0 0 30px rgba(255,215,0,0.4);
             overflow: hidden;
         }
         .ui-panel {
             position: absolute;
             top: 20px;
-            width: 300px;
+            width: 280px;
             padding: 12px;
             background: rgba(0, 0, 0, 0.85);
             border: 3px solid #555;
@@ -50,7 +50,7 @@
         }
         .hp { background: linear-gradient(90deg, #ff3333, #ff6666); width: 100%; transition: width 0.1s; }
         .stamina { background: linear-gradient(90deg, #33ff33, #66ff66); width: 100%; transition: width 0.1s; }
-        .state-text { font-size: 11px; font-family: monospace; color: #ffeb3b; letter-spacing: 1px; }
+        .state-text { font-size: 11px; font-family: monospace; color: #ffeb3b; }
         
         .boxer {
             position: absolute;
@@ -65,14 +65,11 @@
         #player1 { left: 150px; }
         #player2 { left: 510px; }
         
-        .hit-flash {
-            animation: flash 0.1s steps(2) 2;
-        }
+        .hit-flash { animation: flash 0.1s steps(2) 2; }
         @keyframes flash {
             0% { filter: brightness(3) sepia(1) hue-rotate(-50deg); }
             100% { filter: none; }
         }
-
         #controls-info {
             margin-top: 15px;
             text-align: center;
@@ -107,153 +104,117 @@
     </div>
 
     <div id="controls-info">
-        <strong>BALROG (Niebieski):</strong> A / D - Krok w tył/przód | W - Blok | G - Lewy Prosty | H - Sierpowy K.O.<br>
-        <strong>LITTLE MAC (Czerwony):</strong> ← / → - Krok w tył/przód | ↑ - Blok | 1 - Lewy Prosty | 2 - Sierpowy K.O.
+        <strong>BALROG:</strong> A / D - Ruch | W - Blok | G - Lewy | H - Sierpowy<br>
+        <strong>LITTLE MAC:</strong> ← / → - Ruch | ↑ - Blok | 1 - Lewy | 2 - Sierpowy
     </div>
 
-    <!-- Podłączenie skryptu z logiką -->
-    <script src="script.js"></script>
+<script>
+    const P1_SPRITES = {
+        idle: 'https://fightersgeneration.com',
+        punch: 'https://fightersgeneration.com',
+        block: 'https://fightersgeneration.com',
+        hit: 'https://fightersgeneration.com'
+    };
+
+    const P2_SPRITES = {
+        idle: 'https://fightersgeneration.com',
+        punch: 'https://fightersgeneration.com',
+        block: 'https://fightersgeneration.com',
+        hit: 'https://fightersgeneration.com'
+    };
+
+    const CONFIG = { speed: 6, jabDist: 85, hookDist: 65, staminaRegen: 0.7 };
+
+    const p1 = {
+        id: 1, el: document.getElementById('player1'), sprites: P1_SPRITES,
+        hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
+        x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+    };
+
+    const p2 = {
+        id: 2, el: document.getElementById('player2'), sprites: P2_SPRITES,
+        hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
+        x: 480, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+    };
+
+    const keys = {};
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function punch(attacker, defender, type) {
+        if (attacker.state !== 'idle' || attacker.stamina < 20) return;
+        attacker.state = type;
+        attacker.stateTimer = type === 'jab' ? 15 : 25; 
+        attacker.stamina -= type === 'jab' ? 15 : 30;
+
+        const distance = Math.abs(attacker.x - defender.x);
+        const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
+        const damage = type === 'jab' ? 8 : 18;
+
+        if (distance <= reach + 90) { 
+            setTimeout(() => {
+                if (defender.state === 'blocking') {
+                    defender.stamina = Math.max(0, defender.stamina - (damage / 2));
+                } else {
+                    defender.hp = Math.max(0, defender.hp - damage);
+                    defender.state = 'hit';
+                    defender.stateTimer = 15; 
+                    defender.el.classList.add('hit-flash');
+                    setTimeout(() => defender.el.classList.remove('hit-flash'), 200);
+                }
+            }, 100);
+        }
+    }
+
+    function drawPlayer(player, isP2 = false) {
+        player.el.style.left = player.x + 'px';
+        if (player.state === 'jab' || player.state === 'hook') player.el.style.backgroundImage = `url('${player.sprites.punch}')`;
+        else if (player.state === 'blocking') player.el.style.backgroundImage = `url('${player.sprites.block}')`;
+        else if (player.state === 'hit') player.el.style.backgroundImage = `url('${player.sprites.hit}')`;
+        else player.el.style.backgroundImage = `url('${player.sprites.idle}')`;
+        player.el.style.transform = isP2 ? "scaleX(-1)" : "scaleX(1)";
+    }
+
+    function update() {
+        [p1, p2].forEach(p => {
+            if (p.stateTimer > 0) p.stateTimer--;
+            else if (p.state !== 'blocking') p.state = 'idle';
+            if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
+        });
+
+        if (p1.state === 'idle' || p1.state === 'blocking') {
+            if (keys['KeyW']) p1.state = 'blocking';
+            else if (p1.state === 'blocking') p1.state = 'idle';
+            if (p1.state === 'idle') {
+                if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
+                if (keys['KeyD']) p1.x = Math.min(p2.x - 85, p1.x + CONFIG.speed); 
+                if (keys['KeyG']) punch(p1, p2, 'jab');
+                if (keys['KeyH']) punch(p1, p2, 'hook');
+            }
+        }
+
+        if (p2.state === 'idle' || p2.state === 'blocking') {
+            if (keys['ArrowUp']) p2.state = 'blocking';
+            else if (p2.state === 'blocking') p2.state = 'idle';
+            if (p2.state === 'idle') {
+                if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 85, p2.x - CONFIG.speed);
+                if (keys['ArrowRight']) p2.x = Math.min(680, p2.x + CONFIG.speed);
+                if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
+                if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
+            }
+        }
+
+        drawPlayer(p1, false); drawPlayer(p2, true);
+        p1.hpEl.style.width = p1.hp + '%'; p1.stamEl.style.width = p1.stamina + '%'; p1.stateEl.innerText = `STATUS: ${p1.state.toUpperCase()}`;
+        p2.hpEl.style.width = p2.hp + '%'; p2.stamEl.style.width = p2.stamina + '%'; p2.stateEl.innerText = `STATUS: ${p2.state.toUpperCase()}`;
+
+        if (p1.hp <= 0 || p2.hp <= 0) {
+            alert(p1.hp <= 0 ? "K.O.! LITTLE MAC WYGRYWA!" : "K.O.! BALROG WYGRYWA!");
+            p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 480; p1.stamina = 100; p2.stamina = 100;
+        }
+        requestAnimationFrame(update);
+    }
+    update();
+</script>
 </body>
 </html>
-// Linki do stanów grafik prawdziwych bokserów
-const P1_SPRITES = {
-    idle: 'https://fightersgeneration.com',
-    punch: 'https://fightersgeneration.com',
-    block: 'https://fightersgeneration.com',
-    hit: 'https://fightersgeneration.com'
-};
-
-const P2_SPRITES = {
-    idle: 'https://fightersgeneration.com',
-    punch: 'https://fightersgeneration.com',
-    block: 'https://fightersgeneration.com',
-    hit: 'https://fightersgeneration.com'
-};
-
-const CONFIG = {
-    speed: 6,
-    jabDist: 85,
-    hookDist: 65,
-    staminaRegen: 0.7
-};
-
-const p1 = {
-    id: 1, el: document.getElementById('player1'), sprites: P1_SPRITES,
-    hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
-    x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-};
-
-const p2 = {
-    id: 2, el: document.getElementById('player2'), sprites: P2_SPRITES,
-    hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
-    x: 480, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-};
-
-const keys = {};
-
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
-
-function punch(attacker, defender, type) {
-    if (attacker.state !== 'idle' || attacker.stamina < 20) return;
-
-    attacker.state = type;
-    attacker.stateTimer = type === 'jab' ? 15 : 25; 
-    attacker.stamina -= type === 'jab' ? 15 : 30;
-
-    const distance = Math.abs(attacker.x - defender.x);
-    const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
-    const damage = type === 'jab' ? 8 : 18;
-
-    if (distance <= reach + 90) { 
-        setTimeout(() => {
-            if (defender.state === 'blocking') {
-                defender.stamina = Math.max(0, defender.stamina - (damage / 2));
-            } else {
-                defender.hp = Math.max(0, defender.hp - damage);
-                defender.state = 'hit';
-                defender.stateTimer = 15; 
-                defender.el.classList.add('hit-flash');
-                setTimeout(() => defender.el.classList.remove('hit-flash'), 200);
-            }
-        }, 100);
-    }
-}
-
-function drawPlayer(player, isP2 = false) {
-    player.el.style.left = player.x + 'px';
-    
-    if (player.state === 'jab' || player.state === 'hook') {
-        player.el.style.backgroundImage = `url('${player.sprites.punch}')`;
-    } else if (player.state === 'blocking') {
-        player.el.style.backgroundImage = `url('${player.sprites.block}')`;
-    } else if (player.state === 'hit') {
-        player.el.style.backgroundImage = `url('${player.sprites.hit}')`;
-    } else {
-        player.el.style.backgroundImage = `url('${player.sprites.idle}')`;
-    }
-
-    if (isP2) {
-        player.el.style.transform = "scaleX(-1)";
-    } else {
-        player.el.style.transform = "scaleX(1)";
-    }
-}
-
-function update() {
-    [p1, p2].forEach(p => {
-        if (p.stateTimer > 0) {
-            p.stateTimer--;
-        } else {
-            if (p.state !== 'blocking') p.state = 'idle';
-        }
-        if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
-    });
-
-    // Sterowanie Balrog (P1)
-    if (p1.state === 'idle' || p1.state === 'blocking') {
-        if (keys['KeyW']) p1.state = 'blocking';
-        else if (p1.state === 'blocking') p1.state = 'idle';
-
-        if (p1.state === 'idle') {
-            if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
-            if (keys['KeyD']) p1.x = Math.min(p2.x - 85, p1.x + CONFIG.speed); 
-            if (keys['KeyG']) punch(p1, p2, 'jab');
-            if (keys['KeyH']) punch(p1, p2, 'hook');
-        }
-    }
-
-    // Sterowanie Little Mac (P2)
-    if (p2.state === 'idle' || p2.state === 'blocking') {
-        if (keys['ArrowUp']) p2.state = 'blocking';
-        else if (p2.state === 'blocking') p2.state = 'idle';
-
-        if (p2.state === 'idle') {
-            if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 85, p2.x - CONFIG.speed);
-            if (keys['ArrowRight']) p2.x = Math.min(680, p2.x + CONFIG.speed);
-            if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
-            if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
-        }
-    }
-
-    drawPlayer(p1, false);
-    drawPlayer(p2, true);
-
-    p1.hpEl.style.width = p1.hp + '%';
-    p1.stamEl.style.width = p1.stamina + '%';
-    p1.stateEl.innerText = `STATUS: ${p1.state.toUpperCase()}`;
-
-    p2.hpEl.style.width = p2.hp + '%';
-    p2.stamEl.style.width = p2.stamina + '%';
-    p2.stateEl.innerText = `STATUS: ${p2.state.toUpperCase()}`;
-
-    if (p1.hp <= 0 || p2.hp <= 0) {
-        alert(p1.hp <= 0 ? "K.O.! LITTLE MAC WYGRYWA STRZELAJĄC NA DESKI!" : "K.O.! BALROG ROZNOSI PRZECIWNIKA W PYŁ!");
-        p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 480;
-        p1.stamina = 100; p2.stamina = 100;
-    }
-
-    requestAnimationFrame(update);
-}
-
-update();
