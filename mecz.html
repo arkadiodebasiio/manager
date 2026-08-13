@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prawdziwy Silnik Bokserski 2D - Canvas</title>
+    <title>Top-Down Boxing Simulation</title>
     <style>
         body {
             margin: 0;
-            background: #111;
+            background: #0f0f0f;
             color: #fff;
-            font-family: 'Arial Black', Gadget, sans-serif;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,273 +17,153 @@
             height: 100vh;
             overflow: hidden;
         }
-        #game-container {
-            position: relative;
-            width: 800px;
-            height: 400px;
-            background: #2b2b2b;
-            border: 6px solid #ffd700;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            overflow: hidden;
+        #ui {
+            display: flex;
+            justify-content: space-between;
+            width: 700px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 14px;
         }
-        /* Płótno gry, na którym skrypt rysuje bokserów */
-        #gameCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        .ui-panel {
-            position: absolute;
-            top: 15px;
-            width: 300px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.85);
-            border: 2px solid #555;
-            border-radius: 5px;
-            z-index: 10;
-        }
-        #p1-ui { left: 15px; border-color: #3388ff; }
-        #p2-ui { right: 15px; text-align: right; border-color: #ff3333; }
-        .bar {
-            height: 14px;
-            margin: 5px 0;
+        .p1-color { color: #3388ff; }
+        .p2-color { color: #ff3333; }
+        canvas {
             background: #222;
-            border: 1px solid #444;
+            border: 6px solid #c9a000;
+            box-shadow: 0 0 25px rgba(201, 160, 0, 0.4);
         }
-        .hp { background: #ff3333; width: 100%; transition: width 0.1s; }
-        .stamina { background: #33ff33; width: 100%; transition: width 0.1s; }
-        .state-text { font-size: 11px; color: #aaa; font-family: monospace; }
-        
-        #controls-info {
-            margin-top: 15px;
+        #info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
             text-align: center;
-            font-size: 13px;
-            line-height: 1.5;
-            background: rgba(0,0,0,0.6);
-            padding: 10px 20px;
-            border-radius: 5px;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <!-- Interfejs UI -->
-        <div class="ui-panel" id="p1-ui">
-            <strong style="color: #3388ff;">MIGUEL (P1)</strong>
-            <div class="bar"><div id="p1-hp" class="hp"></div></div>
-            <div class="bar"><div id="p1-stamina" class="stamina"></div></div>
-            <div id="p1-state" class="state-text">STAN: READY</div>
-        </div>
+<div id="ui">
+    <div><span class="p1-color">NIEBIESKI (P1) HP:</span> <span id="p1-hp">100</span></div>
+    <div><span class="p2-color">CZERWONY (P2) HP:</span> <span id="p2-hp">100</span></div>
+</div>
 
-        <div class="ui-panel" id="p2-ui">
-            <strong style="color: #ff3333;">ROCKY (P2)</strong>
-            <div class="bar"><div id="p2-hp" class="hp"></div></div>
-            <div class="bar"><div id="p2-stamina" class="stamina"></div></div>
-            <div id="p2-state" class="state-text">STAN: READY</div>
-        </div>
+<canvas id="ring" width="700" height="400"></canvas>
 
-        <!-- Główny ekran graficzny ringu -->
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
-    </div>
+<div id="info">
+    <strong>GRACZ 1 (Niebieski):</strong> Ruch: W, A, S, D | Cios: <strong>Spacja</strong><br>
+    <strong>GRACZ 2 (Czerwony):</strong> Ruch: Strzałki (← ↑ → ↓) | Cios: <strong>Enter</strong>
+</div>
 
-    <div id="controls-info">
-        <strong>MIGUEL (P1):</strong> A/D - Ruch | W - Blok | G - Lewy Prosty | H - Prawy Sierpowy<br>
-        <strong>ROCKY (P2):</strong> ←/→ - Ruch | ↑ - Blok | 1 - Lewy Prosty | 2 - Prawy Sierpowy
-    </div>
+<script>
+    const canvas = document.getElementById('ring');
+    const ctx = canvas.getContext('2d');
 
-    <script src="script.js"></script>
+    const p1 = { x: 200, y: 200, radius: 18, color: '#3388ff', hp: 100, punchCooldown: 0, face: 'right' };
+    const p2 = { x: 500, y: 200, radius: 18, color: '#ff3333', hp: 100, punchCooldown: 0, face: 'left' };
+
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.code] = true; });
+    window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    function update() {
+        // Ruch P1 (WSAD)
+        if (keys['KeyW']) p1.y -= 3;
+        if (keys['KeyS']) p1.y += 3;
+        if (keys['KeyA']) { p1.x -= 3; p1.face = 'left'; }
+        if (keys['KeyD']) { p1.x += 3; p1.face = 'right'; }
+
+        // Ruch P2 (Strzałki)
+        if (keys['ArrowUp']) p2.y -= 3;
+        if (keys['ArrowDown']) p2.y += 3;
+        if (keys['ArrowLeft']) { p2.x -= 3; p2.face = 'left'; }
+        if (keys['ArrowRight']) { p2.x += 3; p2.face = 'right'; }
+
+        // Ograniczenie do ringu
+        p1.x = Math.max(30, Math.min(canvas.width - 30, p1.x));
+        p1.y = Math.max(30, Math.min(canvas.height - 30, p1.y));
+        p2.x = Math.max(30, Math.min(canvas.width - 30, p2.x));
+        p2.y = Math.max(30, Math.min(canvas.height - 30, p2.y));
+
+        // Cooldowny ciosów
+        if (p1.punchCooldown > 0) p1.punchCooldown--;
+        if (p2.punchCooldown > 0) p2.punchCooldown--;
+
+        // Cios P1 (Spacja)
+        if (keys['Space'] && p1.punchCooldown === 0) {
+            p1.punchCooldown = 25;
+            let dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+            if (dist < 45) {
+                p2.hp = Math.max(0, p2.hp - 10);
+            }
+        }
+
+        // Cios P2 (Enter)
+        if (keys['Enter'] && p2.punchCooldown === 0) {
+            p2.punchCooldown = 25;
+            let dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+            if (dist < 45) {
+                p1.hp = Math.max(0, p1.hp - 10);
+            }
+        }
+
+        // Aktualizacja pasków tekstowych UI
+        document.getElementById('p1-hp').innerText = p1.hp;
+        document.getElementById('p2-hp').innerText = p2.hp;
+
+        // Warunek K.O.
+        if (p1.hp <= 0 || p2.hp <= 0) {
+            alert(p1.hp <= 0 ? "K.O.! CZERWONYY WYGRYWA!" : "K.O.! NIEBIESKI WYGRYWA!");
+            p1.hp = 100; p2.hp = 100; p1.x = 200; p2.x = 500;
+        }
+    }
+
+    function draw() {
+        // Tło ringu (widok z góry)
+        ctx.fillStyle = '#1b1b1b';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Linie ringu z góry
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+        // Rysowanie P1
+        ctx.beginPath();
+        ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p1.color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Rękawica P1 / wskaźnik ataku
+        ctx.fillStyle = '#ff1e56';
+        ctx.beginPath();
+        ctx.arc(p1.x + (p1.face === 'right' ? 18 : -18), p1.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rysowanie P2
+        ctx.beginPath();
+        ctx.arc(p2.x, p2.y, p2.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p2.color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Rękawica P2 / wskaźnik ataku
+        ctx.fillStyle = '#ff1e56';
+        ctx.beginPath();
+        ctx.arc(p2.x + (p2.face === 'right' ? 18 : -18), p2.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+</script>
 </body>
 </html>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-const CONFIG = {
-    speed: 5,
-    jabDist: 80,
-    hookDist: 60,
-    staminaRegen: 0.6
-};
-
-// Dodane kolory rysowania bezpośrednio do obiektów zawodników
-const p1 = {
-    id: 1, color: '#3388ff', gloveColor: '#1155cc', skinColor: '#ffdbac',
-    hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
-    x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-};
-
-const p2 = {
-    id: 2, color: '#ff3333', gloveColor: '#cc1111', skinColor: '#e0a96d',
-    hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
-    x: 540, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-};
-
-const keys = {};
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
-
-function punch(attacker, defender, type) {
-    if (attacker.state !== 'idle' || attacker.stamina < 20) return;
-
-    attacker.state = type;
-    attacker.stateTimer = type === 'jab' ? 12 : 20; 
-    attacker.stamina -= type === 'jab' ? 15 : 25;
-
-    const distance = Math.abs(attacker.x - defender.x);
-    const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
-    const damage = type === 'jab' ? 7 : 16;
-
-    if (distance <= reach + 70) { 
-        setTimeout(() => {
-            if (defender.state === 'blocking') {
-                defender.stamina = Math.max(0, defender.stamina - (damage / 2));
-            } else {
-                defender.hp = Math.max(0, defender.hp - damage);
-                defender.state = 'hit';
-                defender.stateTimer = 12; 
-            }
-        }, 60);
-    }
-}
-
-// CAŁKOWICIE NOWA FUNKCJA RYSOWANIA BOKSERÓW (Zastępuje puste klocki)
-function drawBoxer(p, facingRight) {
-    ctx.save();
-    
-    // Efekt wstrząsu/migania po otrzymaniu ciosu
-    if (p.state === 'hit') {
-        ctx.translate((Math.random() - 0.5) * 10, 0);
-        ctx.filter = 'brightness(1.8)';
-    }
-
-    const groundY = 355; // Wysokość podłogi ringu
-
-    // Rysowanie Nóg / Spodenek bokserskich
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - 20, groundY - 40, 40, 40);
-    ctx.fillStyle = '#111';
-    ctx.fillRect(p.x - 20, groundY, 15, -10); // Lewy but
-    ctx.fillRect(p.x + 5, groundY, 15, -10);  // Prawy but
-
-    // Rysowanie Torsu (Klatka piersiowa)
-    ctx.fillStyle = p.skinColor;
-    ctx.fillRect(p.x - 25, groundY - 90, 50, 50);
-
-    // Rysowanie Głowy
-    ctx.beginPath();
-    ctx.arc(p.x, groundY - 110, 20, 0, Math.PI * 2);
-    ctx.fillStyle = p.skinColor;
-    ctx.fill();
-    ctx.closePath();
-
-    // Rysowanie Oczu/Włosów w zależności od kierunku patrzenia
-    ctx.fillStyle = '#000';
-    const eyeOffset = facingRight ? 8 : -12;
-    ctx.fillRect(p.x + eyeOffset, groundY - 115, 4, 4); // Oko
-
-    // Rysowanie Rąk i Rękawic (Dynamiczne stany animacji)
-    let glove1X = facingRight ? p.x + 15 : p.x - 35;
-    let glove1Y = groundY - 75;
-    let glove2X = facingRight ? p.x + 25 : p.x - 45;
-    let glove2Y = groundY - 60;
-
-    if (p.state === 'jab' || p.state === 'hook') {
-        // Wyprowadzenie ciosu - rękawica leci do przodu
-        const punchExtension = p.state === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
-        glove2X = facingRight ? p.x + punchExtension : p.x - punchExtension;
-        glove2Y = groundY - 80;
-    } else if (p.state === 'blocking') {
-        // Garda - rękawice zasłaniają twarz
-        glove1X = facingRight ? p.x + 12 : p.x - 32;
-        glove1Y = groundY - 110;
-        glove2X = facingRight ? p.x + 20 : p.x - 40;
-        glove2Y = groundY - 105;
-    }
-
-    // Rysowanie Rękawicy tylnej
-    ctx.beginPath();
-    ctx.arc(glove1X, glove1Y, 11, 0, Math.PI * 2);
-    ctx.fillStyle = p.gloveColor;
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.stroke();
-
-    // Rysowanie Rękawicy przedniej
-    ctx.beginPath();
-    ctx.arc(glove2X, glove2Y, 13, 0, Math.PI * 2);
-    ctx.fillStyle = p.gloveColor;
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-function update() {
-    [p1, p2].forEach(p => {
-        if (p.stateTimer > 0) {
-            p.stateTimer--;
-        } else {
-            if (p.state !== 'blocking') p.state = 'idle';
-        }
-        if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
-    });
-
-    // Sterowanie P1
-    if (p1.state === 'idle' || p1.state === 'blocking') {
-        if (keys['KeyW']) p1.state = 'blocking';
-        else if (p1.state === 'blocking') p1.state = 'idle';
-
-        if (p1.state === 'idle') {
-            if (keys['KeyA']) p1.x = Math.max(25, p1.x - CONFIG.speed);
-            if (keys['KeyD']) p1.x = Math.min(p2.x - 50, p1.x + CONFIG.speed); // Modyfikacja szerokości kolizji ciał
-            if (keys['KeyG']) punch(p1, p2, 'jab');
-            if (keys['KeyH']) punch(p1, p2, 'hook');
-        }
-    }
-
-    // Sterowanie P2
-    if (p2.state === 'idle' || p2.state === 'blocking') {
-        if (keys['ArrowUp']) p2.state = 'blocking';
-        else if (p2.state === 'blocking') p2.state = 'idle';
-
-        if (p2.state === 'idle') {
-            if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 50, p2.x - CONFIG.speed);
-            if (keys['ArrowRight']) p2.x = Math.min(775, p2.x + CONFIG.speed);
-            if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
-            if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
-        }
-    }
-
-    // CZYSZCZENIE I RENDEROWANIE SCENY RYSOWANEJ (Canvas)
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Rysowanie lin i podłogi ringu z kodu
-    ctx.fillStyle = '#3a3a5e';
-    ctx.fillRect(0, 350, canvas.width, 50);
-    ctx.fillStyle = '#e94560';
-    ctx.fillRect(0, 345, canvas.width, 5);
-
-    // Renderowanie wygenerowanych ciał bokserów
-    drawBoxer(p1, true);  // Gracz 1 patrzy w prawo
-    drawBoxer(p2, false); // Gracz 2 patrzy w lewo
-
-    // UI Aktualizacja barów
-    p1.hpEl.style.width = p1.hp + '%';
-    p1.stamEl.style.width = p1.stamina + '%';
-    p1.stateEl.innerText = `STAN: ${p1.state.toUpperCase()}`;
-
-    p2.hpEl.style.width = p2.hp + '%';
-    p2.stamEl.style.width = p2.stamina + '%';
-    p2.stateEl.innerText = `STAN: ${p2.state.toUpperCase()}`;
-
-    if (p1.hp <= 0 || p2.hp <= 0) {
-        alert(p1.hp <= 0 ? "K.O.! ROCKY WYGRYWA!" : "K.O.! MIGUEL WYGRYWA!");
-        p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 540;
-        p1.stamina = 100; p2.stamina = 100;
-    }
-
-    requestAnimationFrame(update);
-}
-
-update();
