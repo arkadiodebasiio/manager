@@ -2,39 +2,192 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Prawdziwy Sprite Boksera</title>
+    <title>Symulacja Tenisa AI vs AI</title>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: monospace; padding-top: 50px; }
-        canvas { background: #111; border: 4px solid #555; display: block; margin: 20px auto; image-rendering: pixelated; }
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 4px solid #fff;
+            background-color: #2e8b57; /* Kolor kortu */
+            box-shadow: 0px 0px 20px rgba(0,0,0,0.5);
+        }
+        #scoreboard {
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <h1>KLASYCZNY SPRITE BOKSERA</h1>
-    <p>Ładowanie gotowego duszka postaci z zewnętrznego pliku</p>
+    <div id="scoreboard">Gracz A: 0 | Gracz B: 0</div>
+    <canvas id="tennisCanvas" width="800" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("tennisCanvas");
+const ctx = canvas.getContext("2d");
+const scoreboard = document.getElementById("scoreboard");
+
+// --- STATYSTYKI POSTACI (To będziemy modyfikować w przyszłości) ---
+const PlayerA = {
+    y: canvas.height / 2 - 40,
+    score: 0,
+    // Statystyki:
+    speed: 4.5,       // Jak szybko się porusza
+    reaction: 0.15,   // Czas reakcji (im mniej, tym lepiej reaguje na piłkę)
+    power: 1.0        // Mnożnik siły uderzenia
+};
+
+const PlayerB = {
+    y: canvas.height / 2 - 40,
+    score: 0,
+    // Statystyki:
+    speed: 4.2,       // Nieco wolniejszy od Gracza A
+    reaction: 0.20,   // Wolniejsza reakcja
+    power: 1.1        // Uderza nieco mocniej
+};
+
+// --- PARAMETRY OBIEKTÓW ---
+const paddleWidth = 12;
+const paddleHeight = 80;
+const ballRadius = 8;
+
+const ball = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    vx: 4,
+    vy: 2,
+    speed: 5
+};
+
+// --- LOGIKA SZTUCZNEJ INTELIGENCJI (AI) ---
+function moveAI(player) {
+    // AI śledzi pozycję piłki z uwzględnieniem swojego parametru reakcji
+    let targetY = ball.y - paddleHeight / 2;
     
-    <canvas id="canvas" width="400" height="300"></canvas>
+    // Prosty algorytm pościgu (Interpolacja liniowa oparta na statystykach)
+    let diff = targetY - player.y;
+    
+    if (Math.abs(diff) > 10) { // Margines błędu martwej strefy
+        if (diff > 0) {
+            player.y += Math.min(player.speed, diff * player.reaction * 10);
+        } else {
+            player.y -= Math.min(player.speed, Math.abs(diff) * player.reaction * 10);
+        }
+    }
 
-    <script>
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
+    // Ograniczenie, aby paletka nie wyleciała poza kort
+    if (player.y < 0) player.y = 0;
+    if (player.y > canvas.height - paddleHeight) player.y = canvas.height - paddleHeight;
+}
 
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        // Używamy przykładowego, stabilnego adresu URL z duszkiem postaci w stylu retro pixel-art
-        img.src = "https://opengameart.org";
+// --- SILNIK FIZYCZNY I AKTUALIZACJA GRY ---
+function update() {
+    // Ruch sztucznej inteligencji
+    moveAI(PlayerA);
+    moveAI(PlayerB);
 
-        img.onload = function() {
-            ctx.imageSmoothingEnabled = false;
-            // Rysujemy powiększonego sprite'a na środku płótna
-            ctx.drawImage(img, 120, 60, img.width * 2, img.height * 2);
-        };
-        
-        img.onerror = function() {
-            ctx.fillStyle = "red";
-            ctx.font = "16px monospace";
-            ctx.fillText("Błąd ładowania pliku graficznego", 50, 150);
-        };
-    </script>
+    // Ruch piłki
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // Odbicie od górnej i dolnej ściany
+    if (ball.y - ballRadius < 0 || ball.y + ballRadius > canvas.height) {
+        ball.vy = -ball.vy;
+    }
+
+    // Wykrywanie kolizji z paletką Gracza A (Lewa strona)
+    if (ball.x - ballRadius < paddleWidth) {
+        if (ball.y > PlayerA.y && ball.y < PlayerA.y + paddleHeight) {
+            // Obliczanie punktu uderzenia (wpływa na kąt odbicia)
+            let collidePoint = (ball.y - (PlayerA.y + paddleHeight / 2)) / (paddleHeight / 2);
+            let angleRad = (Math.PI / 4) * collidePoint;
+            
+            // Zmiana kierunku z uwzględnieniem siły uderzenia (power)
+            ball.vx = Math.cos(angleRad) * ball.speed * PlayerA.power;
+            ball.vy = Math.sin(angleRad) * ball.speed * PlayerA.power;
+        } else if (ball.x < 0) {
+            // Punkt dla Gracza B
+            PlayerB.score++;
+            resetBall();
+        }
+    }
+
+    // Wykrywanie kolizji z paletką Gracza B (Prawa strona)
+    if (ball.x + ballRadius > canvas.width - paddleWidth) {
+        if (ball.y > PlayerB.y && ball.y < PlayerB.y + paddleHeight) {
+            let collidePoint = (ball.y - (PlayerB.y + paddleHeight / 2)) / (paddleHeight / 2);
+            let angleRad = (Math.PI / 4) * collidePoint;
+            
+            ball.vx = -Math.cos(angleRad) * ball.speed * PlayerB.power;
+            ball.vy = Math.sin(angleRad) * ball.speed * PlayerB.power;
+        } else if (ball.x > canvas.width) {
+            // Punkt dla Gracza A
+            PlayerA.score++;
+            resetBall();
+        }
+    }
+
+    // Aktualizacja wyniku tekstowego
+    scoreboard.innerHTML = `Gracz A (Szybki): ${PlayerA.score} | Gracz B (Silny): ${PlayerB.score}`;
+}
+
+// Resetowanie piłki po zdobyciu punktu
+function resetBall() {
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+    ball.vx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+    ball.vy = (Math.random() * 2 - 1) * ball.speed;
+}
+
+// --- RENDEROWANIE GRAFIKI (Canvas) ---
+function draw() {
+    // Czyszczenie kortu
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Rysowanie siatki na środku kortu
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 4;
+    ctx.setLineDash([10, 10]);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset linii przerywanej
+
+    // Gracz A (Niebieski)
+    ctx.fillStyle = "#3498db";
+    ctx.fillRect(0, PlayerA.y, paddleWidth, paddleHeight);
+
+    // Gracz B (Czerwony)
+    ctx.fillStyle = "#e74c3c";
+    ctx.fillRect(canvas.width - paddleWidth, PlayerB.y, paddleWidth, paddleHeight);
+
+    // Piłka (Żółta)
+    ctx.fillStyle = "#f1c40f";
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// Główna pętla gry (60 klatek na sekundę)
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Uruchomienie symulacji
+gameLoop();
+</script>
 </body>
 </html>
