@@ -2,10 +2,10 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Pegasus Retro Athletics AI</title>
+    <title>Pegasus Retro Athletics - HD Sprite Style</title>
     <style>
         body {
-            background-color: #050505;
+            background-color: #030303;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
@@ -17,19 +17,19 @@
             overflow: hidden;
         }
         #nes-frame {
-            border: 6px solid #3a3a3a;
+            border: 6px solid #444;
             background-color: #000;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
         }
         canvas {
             width: 512px;
             height: 480px;
-            image-rendering: pixelated; /* Ostrość rodem z kineskopu i NES */
+            image-rendering: pixelated;
         }
         .hud {
             margin-top: 12px;
             font-size: 14px;
-            color: #aaa;
+            color: #888;
         }
     </style>
 </head>
@@ -38,39 +38,31 @@
     <div id="nes-frame">
         <canvas id="nesCanvas" width="256" height="240"></canvas>
     </div>
-    <div class="hud">Naciśnij R, aby zresetować bieg</div>
+    <div class="hud">Naciśnij [R] aby zresetować bieg</div>
 
 <script>
 const canvas = document.getElementById("nesCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
-// --- STATYSTYKI RETRO ZAWODNIKÓW (AI vs AI) ---
+// Statystyki i pozycje biegaczy (Bogatsze duszki)
 const runners = [
-    { id: 1, name: "ALEX", x: 10, y: 115, color: "#38bdf8", speed: 1.1, jumpSkill: 0.85, progress: 0, state: "RUN", timer: 0, time: 0 },
-    { id: 2, name: "BOB",  x: 10, y: 165, color: "#f43f5e", speed: 1.05, jumpSkill: 0.95, progress: 0, state: "RUN", timer: 0, time: 0 }
+    { id: 1, name: "ALEX", x: 14, y: 105, color: "#00a8cc", shirt: "#ffcc00", speed: 1.15, jumpSkill: 0.90, progress: 0, state: "RUN", timer: 0, time: 0 },
+    { id: 2, name: "BOB",  x: 14, y: 155, color: "#e60012", shirt: "#ffffff", speed: 1.08, jumpSkill: 0.96, progress: 0, state: "RUN", timer: 0, time: 0 }
 ];
 
-// Pozycje płotków na trasie (w pikselach od startu)
-const hurdles = [60, 110, 160, 210];
-const finishLine = 240;
+const hurdles =;
+const finishLine = 215;
 let raceOver = false;
 let globalTimer = 0;
 
 function resetRace() {
-    runners.forEach(r => {
-        r.progress = 0;
-        r.state = "RUN";
-        r.timer = 0;
-        r.time = 0;
-    });
+    runners.forEach(r => { r.progress = 0; r.state = "RUN"; r.timer = 0; r.time = 0; });
     raceOver = false;
     globalTimer = 0;
 }
 
-window.addEventListener("keydown", e => {
-    if (e.key === "r" || e.key === "R") resetRace();
-});
+window.addEventListener("keydown", e => { if (e.code === "KeyR") resetRace(); });
 
 function update() {
     if (raceOver) return;
@@ -79,142 +71,127 @@ function update() {
     runners.forEach(r => {
         if (r.state === "FINISHED") return;
 
-        // 1. Logika biegu i symulacja zmęczenia/losowości (Pegasus style)
         if (r.state === "RUN") {
-            let randomBurst = Math.random() * 0.2;
-            r.progress += (r.speed + randomBurst);
+            r.progress += r.speed + (Math.random() * 0.15);
         }
-
-        // 2. Obsługa skoku (Stan JUMP)
         if (r.state === "JUMP") {
-            r.timer += 0.08;
-            if (r.timer >= Math.PI) { // Koniec trajektorii skoku
-                r.state = "RUN";
-                r.timer = 0;
-            }
+            r.timer += 0.09;
+            if (r.timer >= Math.PI) { r.state = "RUN"; r.timer = 0; }
         }
-
-        // 3. Obsługa potknięcia (Stan STUMBLE)
         if (r.state === "STUMBLE") {
             r.timer++;
-            if (r.timer > 35) { // Czas trwania kary za uderzenie w płotek
-                r.state = "RUN";
-                r.timer = 0;
-            }
+            if (r.timer > 30) { r.state = "RUN"; r.timer = 0; }
         }
 
-        // 4. AI: Wykrywanie zbliżającego się płotka
         hurdles.forEach(hX => {
-            let distance = hX - r.progress;
-            // AI decyduje o skoku na bazie parametru celności/jumpSkill
-            if (distance > 6 && distance < 18 && r.state === "RUN") {
-                if (Math.random() < r.jumpSkill) {
-                    r.state = "JUMP";
-                    r.timer = 0;
-                }
+            let dist = hX - r.progress;
+            if (dist > 5 && dist < 16 && r.state === "RUN") {
+                if (Math.random() < r.jumpSkill) { r.state = "JUMP"; r.timer = 0; }
             }
-            // Kolizja z płotkiem (jeśli gracz nie skoczył lub skoczył za późno)
-            if (Math.abs(distance) < 3 && r.state === "RUN") {
-                r.state = "STUMBLE";
-                r.timer = 0;
-            }
+            if (Math.abs(dist) < 2 && r.state === "RUN") { r.state = "STUMBLE"; r.timer = 0; }
         });
 
-        // 5. Linia mety
-        if (r.progress >= finishLine) {
-            r.state = "FINISHED";
-            r.time = globalTimer;
-        }
+        if (r.progress >= finishLine) { r.state = "FINISHED"; r.time = globalTimer; }
     });
 
-    // Sprawdzenie czy wszyscy ukończyli bieg
-    if (runners.every(r => r.state === "FINISHED")) {
-        raceOver = true;
+    if (runners.every(r => r.state === "FINISHED")) raceOver = true;
+}
+
+function drawSprite(r) {
+    let drawX = Math.floor(r.x + r.progress);
+    let drawY = Math.floor(r.y);
+
+    if (r.state === "JUMP") drawY -= Math.floor(Math.sin(r.timer) * 16);
+    if (r.state === "STUMBLE") drawY += 5;
+
+    // Kask / Głowa
+    ctx.fillStyle = r.color;
+    ctx.fillRect(drawX + 2, drawY, 8, 5); // kask
+    ctx.fillStyle = "#ffcc99";
+    ctx.fillRect(drawX + 3, drawY + 4, 6, 4); // twarz
+
+    // Koszulka (Zimowy/Sportowy T-shirt)
+    ctx.fillStyle = r.shirt;
+    ctx.fillRect(drawX + 1, drawY + 8, 10, 8);
+
+    // Spodenki
+    ctx.fillStyle = "#111111";
+    ctx.fillRect(drawX + 2, drawY + 16, 8, 4);
+
+    // Animacja nóg (Bieg z wykresami klatek sprite)
+    ctx.fillStyle = "#ffcc99";
+    let frame = Math.floor(globalTimer * 12) % 4;
+    if (r.state === "JUMP") {
+        ctx.fillRect(drawX + 2, drawY + 20, 3, 5);
+        ctx.fillRect(drawX + 7, drawY + 20, 3, 5);
+    } else if (frame === 0) {
+        ctx.fillRect(drawX + 1, drawY + 20, 3, 6);
+        ctx.fillRect(drawX + 8, drawY + 19, 3, 4);
+    } else if (frame === 1) {
+        ctx.fillRect(drawX + 2, drawY + 20, 3, 5);
+        ctx.fillRect(drawX + 7, drawY + 20, 5, 5);
+    } else if (frame === 2) {
+        ctx.fillRect(drawX + 3, drawY + 19, 3, 4);
+        ctx.fillRect(drawX + 8, drawY + 20, 3, 6);
+    } else {
+        ctx.fillRect(drawX + 1, drawY + 20, 5, 5);
+        ctx.fillRect(drawX + 6, drawY + 20, 3, 5);
     }
 }
 
 function draw() {
-    // Tło stadionu (Retro paleta NES)
-    ctx.fillStyle = "#008800"; // Zielona trawa
+    // Tło nieba i trybun
+    ctx.fillStyle = "#5c94fc";
     ctx.fillRect(0, 0, 256, 240);
 
-    ctx.fillStyle = "#0000aa"; // Niebieskie trybuny/tablica na górze
-    ctx.fillRect(0, 0, 256, 80);
+    ctx.fillStyle = "#d88800"; // dach / trybuny
+    ctx.fillRect(0, 0, 256, 50);
+    ctx.fillStyle = "#f88800";
+    for(let i=0; i<256; i+=16) ctx.fillRect(i, 45, 10, 5);
 
-    // Tor biegowy (Czerwona mączka)
-    ctx.fillStyle = "#b84000";
-    ctx.fillRect(0, 100, 256, 100);
+    // Płyta stadionu i tory (Bieżnia)
+    ctx.fillStyle = "#c84c0c";
+    ctx.fillRect(0, 90, 256, 110);
 
-    // Białe linie torów
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 100, 256, 2);
-    ctx.fillRect(0, 150, 256, 2);
-    ctx.fillRect(0, 200, 256, 2);
+    // Linie rozdzielające tory
+    ctx.fillStyle = "#fcfcfc";
+    ctx.fillRect(0, 90, 256, 2);
+    ctx.fillRect(0, 140, 256, 2);
+    ctx.fillRect(0, 190, 256, 2);
 
-    // Tablica wyników (Czcionka pikselowa)
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "8px monospace";
-    ctx.fillText("NES OLYMPICS 1990", 10, 20);
-    
-    runners.forEach((r, idx) => {
-        let displayTime = r.time > 0 ? r.time.toFixed(2) + "S" : "RUNNING";
-        ctx.fillText(`${r.name}: ${displayTime}`, 10, 40 + (idx * 15));
+    // Tablica wyników w stylu NES
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(16, 58, 224, 26);
+    ctx.strokeStyle = "#fcfcfc";
+    ctx.strokeRect(16, 58, 224, 26);
+    ctx.fillStyle = "#fcfcfc";
+    ctx.font = "7px monospace";
+    runners.forEach((r, i) => {
+        let st = r.time > 0 ? r.time.toFixed(2) + "s" : r.state;
+        ctx.fillText(`${r.name} [${st}]`, 22, 74 + (i*9));
     });
 
-    // Rysowanie płotków (Hurdles)
+    // Płotki
     hurdles.forEach(hX => {
-        ctx.fillStyle = "#ffffff"; // Górna belka płotka
-        ctx.fillRect(hX, 115, 3, 10);
-        ctx.fillRect(hX, 165, 3, 10);
-        ctx.fillStyle = "#000000"; // Nóżki płotka
-        ctx.fillRect(hX, 125, 3, 2);
-        ctx.fillRect(hX, 175, 3, 2);
+        ctx.fillStyle = "#fcfcfc";
+        ctx.fillRect(hX, 102, 3, 10);
+        ctx.fillRect(hX, 152, 3, 10);
+        ctx.fillStyle = "#b8f818";
+        ctx.fillRect(hX - 1, 102, 5, 3);
+        ctx.fillRect(hX - 1, 152, 5, 3);
     });
 
-    // Rysowanie zawodników (Ludziki z kwadratowych bloków 8-bit)
-    runners.forEach(r => {
-        let drawX = r.x + r.progress;
-        let drawY = r.y;
-
-        // Modyfikacja wysokości Y w zależności od stanu skoku
-        if (r.state === "JUMP") {
-            drawY -= Math.sin(r.timer) * 14; 
-        }
-
-        // Efekt potknięcia (pochylenie/obniżenie postaci)
-        if (r.state === "STUMBLE") {
-            drawY += 4;
-        }
-
-        // Korpus (ubranie sportowe)
-        ctx.fillStyle = r.color;
-        ctx.fillRect(drawX, drawY + 8, 8, 12);
-
-        // Głowa (kolor skóry z palety NES)
-        ctx.fillStyle = "#ffcc99";
-        ctx.fillRect(drawX + 1, drawY, 6, 6);
-
-        // Oczy / Włosy (prosty piksel)
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(drawX + 4, drawY + 1, 2, 2);
-
-        // Animacja nóg (Zwykłe naprzemienne migotanie pikseli podczas biegu)
-        ctx.fillStyle = "#ffffff";
-        if (r.state === "RUN" && Math.floor(globalTimer * 10) % 2 === 0) {
-            ctx.fillRect(drawX, drawY + 20, 3, 5); // Noga 1
-        } else {
-            ctx.fillRect(drawX + 5, drawY + 20, 3, 5); // Noga 2
-        }
-    });
+    // Rysowanie zawodników
+    runners.forEach(drawSprite);
 }
 
-function gameLoop() {
+function loop() {
     update();
     draw();
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(loop);
 }
 
-gameLoop();
+loop();
 </script>
 </body>
 </html>
