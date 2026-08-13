@@ -2,34 +2,33 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Pegasus Retro Athletics - HD Sprite Style</title>
+    <title>Pegasus Retro Athletics - Fix Screen</title>
     <style>
         body {
-            background-color: #030303;
+            background-color: #111;
             color: #fff;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden;
         }
         #nes-frame {
-            border: 6px solid #444;
+            border: 4px solid #fff;
             background-color: #000;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
         }
         canvas {
             width: 512px;
             height: 480px;
             image-rendering: pixelated;
+            display: block;
         }
-        .hud {
-            margin-top: 12px;
-            font-size: 14px;
-            color: #888;
+        .info {
+            margin-top: 10px;
+            color: #aaa;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -38,21 +37,21 @@
     <div id="nes-frame">
         <canvas id="nesCanvas" width="256" height="240"></canvas>
     </div>
-    <div class="hud">Naciśnij [R] aby zresetować bieg</div>
+    <div class="info">Naciśnij [R] aby zresetować bieg</div>
 
 <script>
 const canvas = document.getElementById("nesCanvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
-// Statystyki i pozycje biegaczy (Bogatsze duszki)
+// Biegacze
 const runners = [
-    { id: 1, name: "ALEX", x: 14, y: 105, color: "#00a8cc", shirt: "#ffcc00", speed: 1.15, jumpSkill: 0.90, progress: 0, state: "RUN", timer: 0, time: 0 },
-    { id: 2, name: "BOB",  x: 14, y: 155, color: "#e60012", shirt: "#ffffff", speed: 1.08, jumpSkill: 0.96, progress: 0, state: "RUN", timer: 0, time: 0 }
+    { id: 1, name: "ALEX", x: 10, y: 100, color: "#00a8cc", shirt: "#ffcc00", speed: 1.1, jumpSkill: 0.9, progress: 0, state: "RUN", timer: 0, time: 0 },
+    { id: 2, name: "BOB",  x: 10, y: 150, color: "#e60012", shirt: "#ffffff", speed: 1.0, jumpSkill: 0.95, progress: 0, state: "RUN", timer: 0, time: 0 }
 ];
 
 const hurdles =;
-const finishLine = 215;
+const finishLine = 200;
 let raceOver = false;
 let globalTimer = 0;
 
@@ -62,7 +61,9 @@ function resetRace() {
     globalTimer = 0;
 }
 
-window.addEventListener("keydown", e => { if (e.code === "KeyR") resetRace(); });
+window.addEventListener("keydown", e => {
+    if (e.code === "KeyR") resetRace();
+});
 
 function update() {
     if (raceOver) return;
@@ -72,117 +73,91 @@ function update() {
         if (r.state === "FINISHED") return;
 
         if (r.state === "RUN") {
-            r.progress += r.speed + (Math.random() * 0.15);
-        }
-        if (r.state === "JUMP") {
-            r.timer += 0.09;
+            r.progress += r.speed + (Math.random() * 0.1);
+        } else if (r.state === "JUMP") {
+            r.timer += 0.1;
             if (r.timer >= Math.PI) { r.state = "RUN"; r.timer = 0; }
-        }
-        if (r.state === "STUMBLE") {
+        } else if (r.state === "STUMBLE") {
             r.timer++;
-            if (r.timer > 30) { r.state = "RUN"; r.timer = 0; }
+            if (r.timer > 25) { r.state = "RUN"; r.timer = 0; }
         }
 
         hurdles.forEach(hX => {
             let dist = hX - r.progress;
-            if (dist > 5 && dist < 16 && r.state === "RUN") {
+            if (dist > 4 && dist < 14 && r.state === "RUN") {
                 if (Math.random() < r.jumpSkill) { r.state = "JUMP"; r.timer = 0; }
             }
-            if (Math.abs(dist) < 2 && r.state === "RUN") { r.state = "STUMBLE"; r.timer = 0; }
+            if (Math.abs(dist) < 2 && r.state === "RUN") {
+                r.state = "STUMBLE"; r.timer = 0;
+            }
         });
 
-        if (r.progress >= finishLine) { r.state = "FINISHED"; r.time = globalTimer; }
+        if (r.progress >= finishLine) {
+            r.state = "FINISHED";
+            r.time = globalTimer;
+        }
     });
 
     if (runners.every(r => r.state === "FINISHED")) raceOver = true;
 }
 
-function drawSprite(r) {
-    let drawX = Math.floor(r.x + r.progress);
-    let drawY = Math.floor(r.y);
-
-    if (r.state === "JUMP") drawY -= Math.floor(Math.sin(r.timer) * 16);
-    if (r.state === "STUMBLE") drawY += 5;
-
-    // Kask / Głowa
-    ctx.fillStyle = r.color;
-    ctx.fillRect(drawX + 2, drawY, 8, 5); // kask
-    ctx.fillStyle = "#ffcc99";
-    ctx.fillRect(drawX + 3, drawY + 4, 6, 4); // twarz
-
-    // Koszulka (Zimowy/Sportowy T-shirt)
-    ctx.fillStyle = r.shirt;
-    ctx.fillRect(drawX + 1, drawY + 8, 10, 8);
-
-    // Spodenki
-    ctx.fillStyle = "#111111";
-    ctx.fillRect(drawX + 2, drawY + 16, 8, 4);
-
-    // Animacja nóg (Bieg z wykresami klatek sprite)
-    ctx.fillStyle = "#ffcc99";
-    let frame = Math.floor(globalTimer * 12) % 4;
-    if (r.state === "JUMP") {
-        ctx.fillRect(drawX + 2, drawY + 20, 3, 5);
-        ctx.fillRect(drawX + 7, drawY + 20, 3, 5);
-    } else if (frame === 0) {
-        ctx.fillRect(drawX + 1, drawY + 20, 3, 6);
-        ctx.fillRect(drawX + 8, drawY + 19, 3, 4);
-    } else if (frame === 1) {
-        ctx.fillRect(drawX + 2, drawY + 20, 3, 5);
-        ctx.fillRect(drawX + 7, drawY + 20, 5, 5);
-    } else if (frame === 2) {
-        ctx.fillRect(drawX + 3, drawY + 19, 3, 4);
-        ctx.fillRect(drawX + 8, drawY + 20, 3, 6);
-    } else {
-        ctx.fillRect(drawX + 1, drawY + 20, 5, 5);
-        ctx.fillRect(drawX + 6, drawY + 20, 3, 5);
-    }
-}
-
 function draw() {
-    // Tło nieba i trybun
+    // 1. Tło nieba (Jasny błękit NES)
     ctx.fillStyle = "#5c94fc";
     ctx.fillRect(0, 0, 256, 240);
 
-    ctx.fillStyle = "#d88800"; // dach / trybuny
-    ctx.fillRect(0, 0, 256, 50);
-    ctx.fillStyle = "#f88800";
-    for(let i=0; i<256; i+=16) ctx.fillRect(i, 45, 10, 5);
-
-    // Płyta stadionu i tory (Bieżnia)
+    // 2. Tło bieżni (Czerwień mączki)
     ctx.fillStyle = "#c84c0c";
-    ctx.fillRect(0, 90, 256, 110);
+    ctx.fillRect(0, 80, 256, 120);
 
-    // Linie rozdzielające tory
-    ctx.fillStyle = "#fcfcfc";
-    ctx.fillRect(0, 90, 256, 2);
-    ctx.fillRect(0, 140, 256, 2);
-    ctx.fillRect(0, 190, 256, 2);
+    // Białe linie torów
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 80, 256, 2);
+    ctx.fillRect(0, 130, 256, 2);
+    ctx.fillRect(0, 180, 256, 2);
 
-    // Tablica wyników w stylu NES
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(16, 58, 224, 26);
-    ctx.strokeStyle = "#fcfcfc";
-    ctx.strokeRect(16, 58, 224, 26);
-    ctx.fillStyle = "#fcfcfc";
-    ctx.font = "7px monospace";
-    runners.forEach((r, i) => {
-        let st = r.time > 0 ? r.time.toFixed(2) + "s" : r.state;
-        ctx.fillText(`${r.name} [${st}]`, 22, 74 + (i*9));
-    });
-
-    // Płotki
+    // 3. Płotki
     hurdles.forEach(hX => {
-        ctx.fillStyle = "#fcfcfc";
-        ctx.fillRect(hX, 102, 3, 10);
-        ctx.fillRect(hX, 152, 3, 10);
-        ctx.fillStyle = "#b8f818";
-        ctx.fillRect(hX - 1, 102, 5, 3);
-        ctx.fillRect(hX - 1, 152, 5, 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(hX, 92, 3, 10);
+        ctx.fillRect(hX, 142, 3, 10);
+        ctx.fillStyle = "#f8f8f8";
+        ctx.fillRect(hX - 1, 92, 5, 3);
+        ctx.fillRect(hX - 1, 142, 5, 3);
     });
 
-    // Rysowanie zawodników
-    runners.forEach(drawSprite);
+    // 4. Zawodnicy
+    runners.forEach(r => {
+        let drawX = Math.floor(r.x + r.progress);
+        let drawY = Math.floor(r.y);
+
+        if (r.state === "JUMP") drawY -= Math.floor(Math.sin(r.timer) * 14);
+        if (r.state === "STUMBLE") drawY += 4;
+
+        // Kask
+        ctx.fillStyle = r.color;
+        ctx.fillRect(drawX + 2, drawY, 8, 4);
+        // Twarz
+        ctx.fillStyle = "#ffcc99";
+        ctx.fillRect(drawX + 3, drawY + 4, 6, 4);
+        // Koszulka
+        ctx.fillStyle = r.shirt;
+        ctx.fillRect(drawX + 1, drawY + 8, 10, 7);
+        // Spodenki
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(drawX + 2, drawY + 15, 8, 3);
+        // Nogi
+        ctx.fillStyle = "#ffcc99";
+        ctx.fillRect(drawX + 2, drawY + 18, 3, 4);
+        ctx.fillRect(drawX + 7, drawY + 18, 3, 4);
+    });
+
+    // 5. Panel tekstowy u góry
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(10, 10, 236, 20);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "8px monospace";
+    ctx.fillText("BIEG PRZEZ PŁOTKI - RETRO", 18, 23);
 }
 
 function loop() {
