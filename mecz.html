@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Boxing Arena</title>
+    <title>Prawdziwy Silnik Bokserski 2D</title>
     <style>
         body {
             margin: 0;
@@ -20,201 +20,278 @@
         #game-container {
             position: relative;
             width: 800px;
-            height: 450px;
-            background-image: url('https://nocookie.net');
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
+            height: 400px;
+            background: #2b2b2b;
             border: 6px solid #ffd700;
-            box-shadow: 0 0 30px rgba(255,215,0,0.4);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
             overflow: hidden;
+        }
+        #ring-floor {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            background: #3a3a5e;
+            border-top: 5px solid #e94560;
         }
         .ui-panel {
             position: absolute;
-            top: 20px;
-            width: 280px;
-            padding: 12px;
+            top: 15px;
+            width: 300px;
+            padding: 10px;
             background: rgba(0, 0, 0, 0.85);
-            border: 3px solid #555;
-            border-radius: 8px;
+            border: 2px solid #555;
+            border-radius: 5px;
             z-index: 10;
         }
-        #p1-ui { left: 20px; border-color: #00eeff; }
-        #p2-ui { right: 20px; text-align: right; border-color: #ff3333; }
+        #p1-ui { left: 15px; border-color: #3388ff; }
+        #p2-ui { right: 15px; text-align: right; border-color: #ff3333; }
         .bar {
-            height: 16px;
-            margin: 6px 0;
-            background: #333;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid #000;
+            height: 14px;
+            margin: 5px 0;
+            background: #222;
+            border: 1px solid #444;
         }
-        .hp { background: linear-gradient(90deg, #ff3333, #ff6666); width: 100%; transition: width 0.1s; }
-        .stamina { background: linear-gradient(90deg, #33ff33, #66ff66); width: 100%; transition: width 0.1s; }
-        .state-text { font-size: 11px; font-family: monospace; color: #ffeb3b; }
+        .hp { background: #ff3333; width: 100%; transition: width 0.1s; }
+        .stamina { background: #33ff33; width: 100%; transition: width 0.1s; }
+        .state-text { font-size: 11px; color: #aaa; font-family: monospace; }
         
+        /* GENEROWANIE GRAFIKI BOKSERA PRZEZ CSS (Niezawodne) */
         .boxer {
             position: absolute;
-            bottom: 30px;
-            width: 140px; 
-            height: 190px; 
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: bottom center;
-            image-rendering: pixelated;
+            bottom: 45px;
+            width: 70px;
+            height: 130px;
+            transition: transform 0.1s;
         }
-        #player1 { left: 150px; }
-        #player2 { left: 510px; }
         
-        .hit-flash { animation: flash 0.1s steps(2) 2; }
-        @keyframes flash {
-            0% { filter: brightness(3) sepia(1) hue-rotate(-50deg); }
-            100% { filter: none; }
+        /* Elementy ciała generowane z kodu */
+        .head {
+            position: absolute;
+            top: 0; left: 15px; width: 40px; height: 40px;
+            background: #ffdbac; border-radius: 50%;
         }
+        .body-trunk {
+            position: absolute;
+            top: 40px; left: 5px; width: 60px; height: 90px;
+            border-radius: 10px 10px 0 0;
+        }
+        .glove-l, .glove-r {
+            position: absolute;
+            width: 24px; height: 24px;
+            background: #ff1e56; border-radius: 50%;
+            border: 2px solid #fff;
+            transition: all 0.05s;
+        }
+
+        /* Ustawienia fabryczne rąk */
+        .glove-l { top: 50px; right: -10px; }
+        .glove-r { top: 65px; right: -15px; }
+
+        /* Style specyficzne dla stron */
+        #player1 .body-trunk { background: #3388ff; } /* Niebieskie spodenki/tors */
+        #player1 .glove-l, #player1 .glove-r { background: #1155cc; }
+
+        #player2 .body-trunk { background: #ff3333; } /* Czerwone spodenki/tors */
+        #player2 .glove-l, #player2 .glove-r { background: #cc1111; }
+        
+        /* Animacje ciosów w CSS sterowane klasami skryptu */
+        .punching .glove-r {
+            transform: translateX(45px);
+            width: 28px; height: 28px;
+        }
+        .blocking .glove-l { transform: translate(-10px, -25px); }
+        .blocking .glove-r { transform: translate(-25px, -35px); }
+
+        /* Efekt zebrania hita */
+        .hit-effect {
+            animation: shake 0.1s infinite;
+            filter: brightness(2);
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(-10px); }
+            100% { transform: translateX(10px); }
+        }
+
         #controls-info {
             margin-top: 15px;
             text-align: center;
             font-size: 13px;
-            background: rgba(0,0,0,0.7);
-            padding: 12px 25px;
-            border-radius: 8px;
-            border: 1px solid #444;
             line-height: 1.5;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
 
     <div id="game-container">
+        <div id="ring-floor"></div>
+
         <div class="ui-panel" id="p1-ui">
-            <span style="color: #00eeff;">BALROG (P1)</span>
+            <strong style="color: #3388ff;">MIGUEL (P1)</strong>
             <div class="bar"><div id="p1-hp" class="hp"></div></div>
             <div class="bar"><div id="p1-stamina" class="stamina"></div></div>
-            <div id="p1-state" class="state-text">STATUS: WALKA</div>
+            <div id="p1-state" class="state-text">STAN: READY</div>
         </div>
 
         <div class="ui-panel" id="p2-ui">
-            <span style="color: #ff3333;">LITTLE MAC (P2)</span>
+            <strong style="color: #ff3333;">ROCKY (P2)</strong>
             <div class="bar"><div id="p2-hp" class="hp"></div></div>
             <div class="bar"><div id="p2-stamina" class="stamina"></div></div>
-            <div id="p2-state" class="state-text">STATUS: WALKA</div>
+            <div id="p2-state" class="state-text">STAN: READY</div>
         </div>
 
-        <div id="player1" class="boxer"></div>
-        <div id="player2" class="boxer"></div>
+        <!-- Struktura anatomiczna postaci wygenerowana w HTML -->
+        <div id="player1" class="boxer">
+            <div class="head"></div>
+            <div class="body-trunk"></div>
+            <div class="glove-l"></div>
+            <div class="glove-r"></div>
+        </div>
+
+        <div id="player2" class="boxer">
+            <div class="head"></div>
+            <div class="body-trunk"></div>
+            <div class="glove-l"></div>
+            <div class="glove-r"></div>
+        </div>
     </div>
 
     <div id="controls-info">
-        <strong>BALROG:</strong> A / D - Ruch | W - Blok | G - Lewy | H - Sierpowy<br>
-        <strong>LITTLE MAC:</strong> ← / → - Ruch | ↑ - Blok | 1 - Lewy | 2 - Sierpowy
+        <strong>BALROG (P1):</strong> A/D - Ruch | W - Blok | G - Lewy Prosty | H - Prawy Sierpowy<br>
+        <strong>LITTLE MAC (P2):</strong> ←/→ - Ruch | ↑ - Blok | 1 - Lewy Prosty | 2 - Prawy Sierpowy
     </div>
 
-<script>
-    const P1_SPRITES = {
-        idle: 'https://fightersgeneration.com',
-        punch: 'https://fightersgeneration.com',
-        block: 'https://fightersgeneration.com',
-        hit: 'https://fightersgeneration.com'
-    };
-
-    const P2_SPRITES = {
-        idle: 'https://fightersgeneration.com',
-        punch: 'https://fightersgeneration.com',
-        block: 'https://fightersgeneration.com',
-        hit: 'https://fightersgeneration.com'
-    };
-
-    const CONFIG = { speed: 6, jabDist: 85, hookDist: 65, staminaRegen: 0.7 };
-
-    const p1 = {
-        id: 1, el: document.getElementById('player1'), sprites: P1_SPRITES,
-        hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
-        x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-    };
-
-    const p2 = {
-        id: 2, el: document.getElementById('player2'), sprites: P2_SPRITES,
-        hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
-        x: 480, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
-    };
-
-    const keys = {};
-    window.addEventListener('keydown', e => keys[e.code] = true);
-    window.addEventListener('keyup', e => keys[e.code] = false);
-
-    function punch(attacker, defender, type) {
-        if (attacker.state !== 'idle' || attacker.stamina < 20) return;
-        attacker.state = type;
-        attacker.stateTimer = type === 'jab' ? 15 : 25; 
-        attacker.stamina -= type === 'jab' ? 15 : 30;
-
-        const distance = Math.abs(attacker.x - defender.x);
-        const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
-        const damage = type === 'jab' ? 8 : 18;
-
-        if (distance <= reach + 90) { 
-            setTimeout(() => {
-                if (defender.state === 'blocking') {
-                    defender.stamina = Math.max(0, defender.stamina - (damage / 2));
-                } else {
-                    defender.hp = Math.max(0, defender.hp - damage);
-                    defender.state = 'hit';
-                    defender.stateTimer = 15; 
-                    defender.el.classList.add('hit-flash');
-                    setTimeout(() => defender.el.classList.remove('hit-flash'), 200);
-                }
-            }, 100);
-        }
-    }
-
-    function drawPlayer(player, isP2 = false) {
-        player.el.style.left = player.x + 'px';
-        if (player.state === 'jab' || player.state === 'hook') player.el.style.backgroundImage = `url('${player.sprites.punch}')`;
-        else if (player.state === 'blocking') player.el.style.backgroundImage = `url('${player.sprites.block}')`;
-        else if (player.state === 'hit') player.el.style.backgroundImage = `url('${player.sprites.hit}')`;
-        else player.el.style.backgroundImage = `url('${player.sprites.idle}')`;
-        player.el.style.transform = isP2 ? "scaleX(-1)" : "scaleX(1)";
-    }
-
-    function update() {
-        [p1, p2].forEach(p => {
-            if (p.stateTimer > 0) p.stateTimer--;
-            else if (p.state !== 'blocking') p.state = 'idle';
-            if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
-        });
-
-        if (p1.state === 'idle' || p1.state === 'blocking') {
-            if (keys['KeyW']) p1.state = 'blocking';
-            else if (p1.state === 'blocking') p1.state = 'idle';
-            if (p1.state === 'idle') {
-                if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
-                if (keys['KeyD']) p1.x = Math.min(p2.x - 85, p1.x + CONFIG.speed); 
-                if (keys['KeyG']) punch(p1, p2, 'jab');
-                if (keys['KeyH']) punch(p1, p2, 'hook');
-            }
-        }
-
-        if (p2.state === 'idle' || p2.state === 'blocking') {
-            if (keys['ArrowUp']) p2.state = 'blocking';
-            else if (p2.state === 'blocking') p2.state = 'idle';
-            if (p2.state === 'idle') {
-                if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 85, p2.x - CONFIG.speed);
-                if (keys['ArrowRight']) p2.x = Math.min(680, p2.x + CONFIG.speed);
-                if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
-                if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
-            }
-        }
-
-        drawPlayer(p1, false); drawPlayer(p2, true);
-        p1.hpEl.style.width = p1.hp + '%'; p1.stamEl.style.width = p1.stamina + '%'; p1.stateEl.innerText = `STATUS: ${p1.state.toUpperCase()}`;
-        p2.hpEl.style.width = p2.hp + '%'; p2.stamEl.style.width = p2.stamina + '%'; p2.stateEl.innerText = `STATUS: ${p2.state.toUpperCase()}`;
-
-        if (p1.hp <= 0 || p2.hp <= 0) {
-            alert(p1.hp <= 0 ? "K.O.! LITTLE MAC WYGRYWA!" : "K.O.! BALROG WYGRYWA!");
-            p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 480; p1.stamina = 100; p2.stamina = 100;
-        }
-        requestAnimationFrame(update);
-    }
-    update();
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
+const CONFIG = {
+    speed: 5,
+    jabDist: 80,
+    hookDist: 60,
+    staminaRegen: 0.6
+};
+
+const p1 = {
+    id: 1, el: document.getElementById('player1'),
+    hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
+    x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+};
+
+const p2 = {
+    id: 2, el: document.getElementById('player2'),
+    hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
+    x: 540, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+};
+
+const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function punch(attacker, defender, type) {
+    if (attacker.state !== 'idle' || attacker.stamina < 20) return;
+
+    attacker.state = type;
+    attacker.stateTimer = type === 'jab' ? 12 : 20; 
+    attacker.stamina -= type === 'jab' ? 15 : 25;
+
+    const distance = Math.abs(attacker.x - defender.x);
+    const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
+    const damage = type === 'jab' ? 7 : 16;
+
+    if (distance <= reach + 70) { 
+        setTimeout(() => {
+            if (defender.state === 'blocking') {
+                defender.stamina = Math.max(0, defender.stamina - (damage / 2));
+            } else {
+                defender.hp = Math.max(0, defender.hp - damage);
+                defender.state = 'hit';
+                defender.stateTimer = 12; 
+            }
+        }, 60);
+    }
+}
+
+function updateVisuals(player, isP2 = false) {
+    player.el.style.left = player.x + 'px';
+
+    // Reset klas animacji
+    player.el.classList.remove('punching', 'blocking', 'hit-effect');
+
+    // Nadawanie klas na podstawie maszyn stanowych JavaScript
+    if (player.state === 'jab' || player.state === 'hook') {
+        player.el.classList.add('punching');
+    } else if (player.state === 'blocking') {
+        player.el.classList.add('blocking');
+    } else if (player.state === 'hit') {
+        player.el.classList.add('hit-effect');
+    }
+
+    // Obracanie graczy do siebie twarzami
+    if (isP2) {
+        player.el.style.transform = "scaleX(-1)";
+    } else {
+        player.el.style.transform = "scaleX(1)";
+    }
+}
+
+function update() {
+    [p1, p2].forEach(p => {
+        if (p.stateTimer > 0) {
+            p.stateTimer--;
+        } else {
+            if (p.state !== 'blocking') p.state = 'idle';
+        }
+        if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
+    });
+
+    // Sterowanie P1
+    if (p1.state === 'idle' || p1.state === 'blocking') {
+        if (keys['KeyW']) p1.state = 'blocking';
+        else if (p1.state === 'blocking') p1.state = 'idle';
+
+        if (p1.state === 'idle') {
+            if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
+            if (keys['KeyD']) p1.x = Math.min(p2.x - 70, p1.x + CONFIG.speed);
+            if (keys['KeyG']) punch(p1, p2, 'jab');
+            if (keys['KeyH']) punch(p1, p2, 'hook');
+        }
+    }
+
+    // Sterowanie P2
+    if (p2.state === 'idle' || p2.state === 'blocking') {
+        if (keys['ArrowUp']) p2.state = 'blocking';
+        else if (p2.state === 'blocking') p2.state = 'idle';
+
+        if (p2.state === 'idle') {
+            if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 70, p2.x - CONFIG.speed);
+            if (keys['ArrowRight']) p2.x = Math.min(730, p2.x + CONFIG.speed);
+            if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
+            if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
+        }
+    }
+
+    updateVisuals(p1, false);
+    updateVisuals(p2, true);
+
+    p1.hpEl.style.width = p1.hp + '%';
+    p1.stamEl.style.width = p1.stamina + '%';
+    p1.stateEl.innerText = `STAN: ${p1.state.toUpperCase()}`;
+
+    p2.hpEl.style.width = p2.hp + '%';
+    p2.stamEl.style.width = p2.stamina + '%';
+    p2.stateEl.innerText = `STAN: ${p2.state.toUpperCase()}`;
+
+    if (p1.hp <= 0 || p2.hp <= 0) {
+        alert(p1.hp <= 0 ? "K.O.! ROCKY WYGRYWA!" : "K.O.! MIGUEL WYGRYWA!");
+        p1.hp = 100; p2.hp = 100; p1.x = 180; p2.x = 540;
+        p1.stamina = 100; p2.stamina = 100;
+    }
+
+    requestAnimationFrame(update);
+}
+
+update();
