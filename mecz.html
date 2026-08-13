@@ -2,75 +2,258 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Test Boksu</title>
+    <title>Retro Boxing Manager 2D</title>
     <style>
-        body { background: #111; color: #fff; text-align: center; font-family: sans-serif; padding-top: 20px; }
-        canvas { background: #222; border: 4px solid #555; display: block; margin: 20px auto; }
+        body { background: #1a1a1a; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .wrapper { max-width: 800px; margin: 0 auto; }
+        canvas { background: #2d2d2d; border: 5px solid #d4af37; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: block; margin: 20px auto; }
+        .hud { display: flex; justify-content: space-between; width: 700px; margin: 0 auto; font-size: 18px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .bar-bg { background: #444; border-radius: 4px; width: 250px; height: 20px; border: 2px solid #666; overflow: hidden; margin-top: 5px; }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.1s ease; }
+        #commentary { background: #000; border: 1px solid #444; color: #00ff44; font-family: monospace; padding: 12px; height: 90px; overflow-y: auto; text-align: left; border-radius: 4px; width: 676px; margin: 10px auto; }
     </style>
 </head>
 <body>
-    <h1>TEST WIDOCZNOSCI KULEK</h1>
-    <canvas id="ring" width="600" height="400"></canvas>
+    <div class="wrapper">
+        <h1>RETRO 2D BOXING MANAGER</h1>
+        
+        <div class="hud">
+            <div>
+                <span style="color: #ff3333;">MISTRZ CZERWONY</span>
+                <div class="bar-bg"><div id="hp1" class="bar-fill" style="background: #ff3333;"></div></div>
+            </div>
+            <div>
+                <span style="color: #3388ff;">MISTRZ NIEBIESKI</span>
+                <div class="bar-bg"><div id="hp2" class="bar-fill" style="background: #3388ff;"></div></div>
+            </div>
+        </div>
 
-    <script>
-        const canvas = document.getElementById("ring");
-        const ctx = canvas.getContext("2d");
+        <canvas id="boxingRing" width="700" height="350"></canvas>
+        <div id="commentary"></div>
+    </div>
 
-        // Pozycje startowe na środku płótna
-        let b1 = { x: 150, y: 200, color: "#ff5555", angle: 0 };
-        let b2 = { x: 450, y: 200, color: "#5555ff", angle: Math.PI };
-
-        function drawBoxer(b) {
-            ctx.save();
-            ctx.translate(b.x, b.y);
-            ctx.rotate(b.angle);
-
-            // GŁOWA / KORPUS (widoczna kula, promień 25)
-            ctx.beginPath();
-            ctx.arc(0, 0, 25, 0, Math.PI * 2);
-            ctx.fillStyle = b.color;
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "#ffffff";
-            ctx.stroke();
-
-            // RĘCE I RĘKAWICE Z BOKU
-            for (let side of [-35, 35]) {
-                // Ramię
-                ctx.beginPath();
-                ctx.moveTo(0, side * 0.5);
-                ctx.lineTo(40, side);
-                ctx.strokeStyle = "#aaaaaa";
-                ctx.lineWidth = 6;
-                ctx.stroke();
-
-                // Rękawica (ogromna, promień 28)
-                ctx.beginPath();
-                ctx.arc(40, side, 28, 0, Math.PI * 2);
-                ctx.fillStyle = "#ffffff";
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = b.color;
-                ctx.stroke();
-            }
-
-            ctx.restore();
-        }
-
-        function loop() {
-            // Czyszczenie i rysowanie ringu
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "#444";
-            ctx.lineWidth = 4;
-            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-            // Rysowanie obu zawodników
-            drawBoxer(b1);
-            drawBoxer(b2);
-        }
-
-        // Uruchomienie pętli rysującej
-        loop();
-    </script>
+    <!-- Podłączenie logiki z osobnego pliku -->
+    <script src="boks_logika.js"></script>
 </body>
 </html>
+const canvas = document.getElementById("boxingRing");
+const ctx = canvas.getContext("2d");
+const commBox = document.getElementById("commentary");
+
+function logEvent(text, color = "#00ff44") {
+    commBox.innerHTML += `<span style="color: ${color}">[RUNDA 1] ${text}</span><br>`;
+    commBox.scrollTop = commBox.scrollHeight;
+}
+
+let p1 = {
+    x: 150, baseRealY: 280, hp: 100, color: "#ff3333", name: "Czerwony",
+    facing: 1, punching: false, punchProgress: 0, punchStage: "out",
+    state: "move", timer: 0, targetX: 150
+};
+
+let p2 = {
+    x: 550, baseRealY: 280, hp: 100, color: "#3388ff", name: "Niebieski",
+    facing: -1, punching: false, punchProgress: 0, punchStage: "out",
+    state: "move", timer: 0, targetX: 550
+};
+
+let endOfGame = false;
+
+function drawFighter(f) {
+    ctx.save();
+    let groundY = f.baseRealY;
+
+    // 1. NOGI
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(f.x - 10, groundY);
+    ctx.lineTo(f.x, groundY - 40);
+    ctx.moveTo(f.x + 15, groundY);
+    ctx.lineTo(f.x, groundY - 40);
+    ctx.stroke();
+
+    // 2. TUŁÓW
+    ctx.strokeStyle = f.color;
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(f.x, groundY - 40);
+    ctx.lineTo(f.x - (5 * f.facing), groundY - 100);
+    ctx.stroke();
+
+    // 3. GŁOWA
+    let headX = f.x - (5 * f.facing);
+    let headY = groundY - 118;
+    ctx.beginPath();
+    ctx.arc(headX, headY, 15, 0, Math.PI * 2);
+    ctx.fillStyle = "#e0a96d";
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = f.color;
+    ctx.stroke();
+
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(headX + (4 * f.facing), headY - 2);
+    ctx.lineTo(headX + (10 * f.facing), headY - 2);
+    ctx.stroke();
+
+    // 4. WYSUWANE RAMIĘ I GIGANTYCZNA RĘKAWICA
+    let shoulderX = f.x - (5 * f.facing);
+    let shoulderY = groundY - 90;
+    
+    let currentReach = 20; 
+    if (f.punching) {
+        currentReach = 20 + (f.punchProgress * 75);
+    }
+
+    let gloveX = shoulderX + (currentReach * f.facing);
+    let gloveY = shoulderY - 10;
+
+    ctx.strokeStyle = "#cccccc";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(shoulderX, shoulderY);
+    ctx.lineTo(gloveX - (10 * f.facing), gloveY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(gloveX, gloveY, 18, 0, Math.PI * 2);
+    ctx.fillStyle = f.punching ? "#ffffff" : f.color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#fff";
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function AI(self, enemy) {
+    self.timer--;
+    self.facing = (enemy.x > self.x) ? 1 : -1;
+
+    if (self.punching) return;
+
+    let dist = Math.abs(enemy.x - self.x);
+
+    if (self.timer <= 0) {
+        let r = Math.random();
+        if (r < 0.45 && dist > 130) {
+            self.state = "forward";
+            self.targetX = enemy.x - (110 * self.facing);
+            self.timer = 20;
+        } else if (r < 0.85 && dist < 150) {
+            self.state = "backward";
+            self.targetX = self.x - (70 * self.facing);
+            self.timer = 15;
+        } else {
+            self.state = "idle";
+            self.timer = 10;
+        }
+    }
+
+    if (self.state === "forward" || self.state === "backward") {
+        let dx = self.targetX - self.x;
+        if (Math.abs(dx) > 4) {
+            self.x += (dx > 0 ? 1 : -1) * 2.5;
+        }
+    }
+
+    if (!self.punching && dist >= 95 && dist <= 135 && Math.random() > 0.94) {
+        self.punching = true;
+        self.punchProgress = 0;
+        self.punchStage = "out";
+    }
+}
+
+function handlePunchLogic(self, enemy) {
+    if (!self.punching) return;
+
+    if (self.punchStage === "out") {
+        self.punchProgress += 0.15; 
+        if (self.punchProgress >= 1) {
+            self.punchProgress = 1;
+            self.punchStage = "return";
+
+            let shoulderX = self.x - (5 * self.facing);
+            let myGloveGlobalX = shoulderX + (95 * self.facing);
+            let enemyHeadX = enemy.x - (5 * enemy.facing);
+            
+            let hitDistance = Math.abs(enemyHeadX - myGloveGlobalX);
+
+            if (hitDistance <= 25) {
+                enemy.hp -= 10;
+                if (enemy.hp < 0) enemy.hp = 0;
+
+                document.getElementById("hp1").style.width = p1.hp + "%";
+                document.getElementById("hp2").style.width = p2.hp + "%";
+
+                logEvent(`Błyskawiczny prosty! <b style='color:${self.color}'>${self.name}</b> trafia czysto w szczękę rywala! (-10 HP)`, self.color);
+                enemy.x -= (18 * enemy.facing);
+            } else {
+                logEvent(`${self.name} przestrzelił! Brakło centymetrów do głowy wroga.`, "#888");
+            }
+        }
+    } else if (self.punchStage === "return") {
+        self.punchProgress -= 0.10; 
+        if (self.punchProgress <= 0) {
+            self.punchProgress = 0;
+            self.punching = false;
+        }
+    }
+}
+
+function updateGame() {
+    if (endOfGame) return;
+
+    AI(p1, p2);
+    AI(p2, p1);
+
+    handlePunchLogic(p1, p2);
+    handlePunchLogic(p2, p1);
+
+    [p1, p2].forEach(p => {
+        p.x = Math.max(80, Math.min(620, p.x));
+    });
+
+    if (p1.hp <= 0 || p2.hp <= 0) {
+        endOfGame = true;
+        let winnerName = p1.hp > 0 ? p1.name : p2.name;
+        logEvent(`<b>KAPITALNY NOKAUT! Sędzia kończy walkę! Wygrywa: ${winnerName.toUpperCase()}!</b>`, "#ffff00");
+    }
+}
+
+function drawScene() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(30, 280);
+    ctx.lineTo(670, 280); 
+    ctx.stroke();
+
+    ctx.strokeStyle = "#d4af37";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(30, 160, 640, 1);
+    ctx.strokeRect(30, 200, 640, 1);
+    ctx.strokeRect(30, 240, 640, 1);
+
+    ctx.fillStyle = "#555";
+    ctx.fillRect(25, 140, 8, 140);
+    ctx.fillRect(667, 140, 8, 140);
+
+    drawFighter(p1);
+    drawFighter(p2);
+}
+
+function gameLoop() {
+    updateGame();
+    drawScene();
+    requestAnimationFrame(gameLoop);
+}
+
+logEvent("Gong! Walka rozpoczęta. Zawodnicy badają zasięg ciosów prostych.");
+gameLoop();
