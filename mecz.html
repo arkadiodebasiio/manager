@@ -5,28 +5,24 @@ public class BoxingMatch {
 
     private static final Random random = new Random();
 
-    // --- ENUMY DLA REALIZMU ---
     enum Stance { ORTHODOX, SOUTHPAW }
     enum Style { SLUGGER, OUT_BOXER, INFIGHTER }
     enum HitZone { HEAD, BODY }
     enum PunchType { JAB, HOOK, UPPERCUT, OVERHAND }
 
-    // --- KLASA BOXER ---
     static class Boxer {
         String name;
         String nickname;
         Stance stance;
         Style style;
         
-        // Statystyki bazowe (1-100)
         int hp = 100;
         int stamina = 100;
         int power;
         int speed;
-        int chin; // Odporność na ciosy
+        int chin; 
         int defense;
 
-        // Liczniki sędziowskie
         int roundPoints = 0;
         int totalScore = 0;
 
@@ -54,126 +50,109 @@ public class BoxingMatch {
         }
     }
 
-    // --- GŁÓWNA LOGIKA SYMULACJI ---
     public static void main(String[] args) {
-        // Inicjalizacja zawodników (Najwyższa jakość odwzorowania weterana i pretendenta)
+        // Usunieto polskie znaki z nazwisk dla bezpieczenstwa kodowania stron www
         Boxer tadek = new Boxer("Tomasz Majewski", "Grom", Stance.SOUTHPAW, Style.SLUGGER, 88, 70, 90, 85);
-        Boxer damian = new Boxer("Damian Orłowski", "Orzeł", Stance.ORTHODOX, Style.OUT_BOXER, 75, 92, 78, 80);
+        Boxer damian = new Boxer("Damian Orlowski", "Orzel", Stance.ORTHODOX, Style.OUT_BOXER, 75, 92, 78, 80);
 
-        System.out.println("=== WALKA O PAS MISTRZOWSKI WAGI CIĘŻKIEJ ===");
-        System.out.println(tadek.getFullName() + " VS " + damian.getFullName());
+        System.out.println("=== WALKA O PAS MISTRZOWSKI WAGI CIEZKIEJ ===\n");
+        System.out.println(tadek.getFullName() + " VS " + damian.getFullName() + "\n");
         System.out.println("---------------------------------------------------\n");
 
-        int totalRounds = 3; // Skrócone do 3 rund dla czytelności konsoli (można zmienić na 12)
+        int totalRounds = 3; 
 
         for (int round = 1; round <= totalRounds; round++) {
-            System.out.println("--- RUNDA " + round + " ---");
+            System.out.println("--- RUNDA " + round + " ---\n");
             tadek.roundPoints = 10;
             damian.roundPoints = 10;
 
-            // Każda runda ma 5 interakcji/wymian ciosów
             for (int exchange = 1; exchange <= 5; exchange++) {
                 if (tadek.isKnockedOut() || damian.isKnockedOut()) break;
 
-                // Losowanie kto atakuje w tej wymianie
                 if (random.nextBoolean()) {
                     simulateExchange(tadek, damian);
                 } else {
                     simulateExchange(damian, tadek);
                 }
-                sleep(600); // Pauza dla realizmu wyświetlania tekstu
+                sleep(1000); // Zwiekszono pauze, aby tekst nie "lecial" za szybko
             }
 
             if (tadek.isKnockedOut() || damian.isKnockedOut()) break;
 
-            // Podsumowanie rundy wg systemu 10-Point Must
-            System.out.println("\n>> Koniec rundy " + round + ". Zawodnicy wracają do narożników. <<");
+            System.out.println("\n>> Koniec rundy " + round + ". Zawodnicy wracaja do naroznikow. <<\n");
             tadek.totalScore += tadek.roundPoints;
             damian.totalScore += damian.roundPoints;
             
-            // Regeneracja między rundami
             tadek.regenerateStamina();
             damian.regenerateStamina();
-            System.out.printf("Stan zdrowia -> %s: %d%% HP | %s: %d%% HP%n", tadek.name, tadek.hp, damian.name, damian.hp);
-            System.out.println("---------------------------------------------------");
-            sleep(1000);
+            System.out.printf("Stan zdrowia -> %s: %d%% HP | %s: %d%% HP\n", tadek.name, tadek.hp, damian.name, damian.hp);
+            System.out.println("---------------------------------------------------\n");
+            sleep(1500);
         }
 
-        // --- WERDYKT KOŃCOWY ---
         System.out.println("\n================= WERDYKT WALKI =================");
         if (tadek.isKnockedOut()) {
-            System.out.println("KONIEC PRZED CZASEM! KO! Zwycięzcą zostaje: " + damian.getFullName() + "!");
+            System.out.println("KONIEC PRZED CZASEM! KO! Zwyciezca zostaje: " + damian.getFullName() + "!");
         } else if (damian.isKnockedOut()) {
-            System.out.println("KONIEC PRZED CZASEM! KO! Zwycięzcą zostaje: " + tadek.getFullName() + "!");
+            System.out.println("KONIEC PRZED CZASEM! KO! Zwyciezca zostaje: " + tadek.getFullName() + "!");
         } else {
-            System.out.println("Walka dotrwała do decyzji sędziów!");
-            System.out.printf("Punkty sędziowskie: %s [%d] vs [%d] %s%n", tadek.name, tadek.totalScore, damian.totalScore, damian.name);
+            System.out.println("Walka dotrwala do decyzji sedziow!");
+            System.out.printf("Punkty sedziowskie: %s [%d] vs [%d] %s\n", tadek.name, tadek.totalScore, damian.totalScore, damian.name);
             if (tadek.totalScore > damian.totalScore) {
-                System.out.println("Jednogłośną decyzją sędziów wygrywa: " + tadek.getFullName() + "!");
+                System.out.println("Jednoglosna decyzja sedziow wygrywa: " + tadek.getFullName() + "!");
             } else if (damian.totalScore > tadek.totalScore) {
-                System.out.println("Jednogłośną decyzją sędziów wygrywa: " + damian.getFullName() + "!");
+                System.out.println("Jednoglosna decyzja sedziow wygrywa: " + damian.getFullName() + "!");
             } else {
                 System.out.println("Mamy remis!");
             }
         }
     }
 
-    // --- SYMULACJA JEDNEJ WYMIANY CIOSÓW ---
     private static void simulateExchange(Boxer attacker, Boxer defender) {
         PunchType punch = PunchType.values()[random.nextInt(PunchType.values().length)];
         HitZone zone = HitZone.values()[random.nextInt(HitZone.values().length)];
 
-        // Koszt kondycyjny ataku
         attacker.stamina = Math.max(10, attacker.stamina - (8 + random.nextInt(7)));
 
-        // Obliczanie szansy na trafienie na podstawie statystyk i zmęczenia
         int attackRoll = attacker.speed + random.nextInt(40) + (attacker.stamina / 5);
         int defenseRoll = defender.defense + random.nextInt(40) + (defender.stamina / 5);
 
-        // Modyfikator pozycji (Mańkut vs Klasyczny)
         if (attacker.stance != defender.stance) {
-            attackRoll += 5; // Odwrotna pozycja często zaskakuje klasycznego boksera
+            attackRoll += 5; 
         }
 
+        // Kazdy podpunkt logowania konczy sie teraz jawnym znakiem nowej linii \n
         if (attackRoll > defenseRoll) {
-            // TRAFIENIE
             int baseDamage = (attacker.power / 4) + random.nextInt(15);
             
-            // Premia za styl i rodzaj ciosu
             if (attacker.style == Style.SLUGGER && punch == PunchType.OVERHAND) baseDamage += 10;
             if (attacker.style == Style.OUT_BOXER && punch == PunchType.JAB) baseDamage += 5;
 
-            // Redukcja obrażeń przez odporność (chin) obrońcy
             int finalDamage = Math.max(2, baseDamage - (defender.chin / 15));
             defender.hp = Math.max(0, defender.hp - finalDamage);
 
-            System.out.printf("[%s] trafia potężnym %s na %s! (%d obrażeń)%n", 
+            System.out.printf("[%s] trafia poteznym %s na %s! (%d obrazen)\n", 
                     attacker.nickname, punch, zone, finalDamage);
 
-            // Szansa na nokdaun (krytyczne trafienie)
             if (finalDamage > 18 && random.nextInt(100) < 25) {
-                System.out.printf(" ALERT: %s ląduje na deskach! Sędzia zaczyna liczenie!%n", defender.name);
-                defender.roundPoints -= 2; // Strata punktów za nokdaun
+                System.out.printf(" !!! ALERT: %s laduje na deskach! Sedzia zaczyna liczenie! !!!\n", defender.name);
+                defender.roundPoints -= 2; 
                 defender.stamina = Math.max(20, defender.stamina - 30);
                 
-                // Próba wstania z desek (test odporności psychofizycznej)
                 if (defender.hp <= 10 && random.nextInt(100) > defender.chin) {
-                    defender.hp = 0; // Ciężkie KO - zawodnik nie wstaje
-                    System.out.printf("...Osiem... Dziewięć... Dziesięć! Koniec! %s zostaje ciężko znokautowany!%n", defender.name);
+                    defender.hp = 0; 
+                    System.out.printf("...Osiem... Dziewiec... Dziesiec! Koniec! %s zostaje znokautowany!\n", defender.name);
                 } else {
-                    System.out.println("...Bokser podnosi się na 'osiem' i walczy dalej!");
+                    System.out.println("...Bokser podnosi sie na 'osiem' i walczy dalej!\n");
                 }
             }
         } else if (defenseRoll - attackRoll < 10) {
-            // KLINCZ LUB BLOK
-            System.out.printf("[%s] blokuje cios, zawodnicy wchodzą w klincz! Sędzia rozrywa pozycję.%n", defender.nickname);
+            System.out.printf("[%s] blokuje cios, klincz! Sedzia rozrywa pozycje.\n", defender.nickname);
         } else {
-            // CZYSTY UNIK
-            System.out.printf("[%s] robi genialny unik rotacyjny! %s przestrzeliwuje.%n", defender.nickname, attacker.nickname);
+            System.out.printf("[%s] robi genialny unik! %s przestrzeliwuje.\n", defender.nickname, attacker.nickname);
         }
     }
 
-    // Pomocnicza metoda do opóźniania tekstu w konsoli
     private static void sleep(int millis) {
         try {
             TimeUnit.MILLISECONDS.sleep(millis);
