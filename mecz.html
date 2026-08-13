@@ -2,14 +2,19 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Retro Athletics AI - Stabilna Wersja</title>
+    <title>Pegasus Retro Boxing AI</title>
     <style>
         body {
             background-color: #111;
             color: #fff;
-            font-family: sans-serif;
-            text-align: center;
-            padding-top: 30px;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
         }
         #ui-box {
             margin-bottom: 15px;
@@ -22,15 +27,15 @@
             border: 1px solid #444;
         }
         canvas {
-            background-color: #5c94fc; /* Błękitne niebo retro */
+            background-color: #38bdf8; /* Jasny błękit wokół ringu */
             border: 4px solid #fff;
             display: inline-block;
             image-rendering: pixelated;
         }
         .btn-reset {
             margin-top: 15px;
-            background: #ffcc00;
-            color: #000;
+            background: #e60012;
+            color: #fff;
             border: none;
             padding: 10px 20px;
             font-size: 14px;
@@ -42,125 +47,166 @@
 </head>
 <body>
 
-    <div id="ui-box">Mecz Lekkoatletyczny Pegasusa</div>
+    <div id="ui-box">Retro Boks AI vs AI (Styl Pegasus)</div>
     <br>
-    <canvas id="gameCanvas" width="300" height="240"></canvas>
+    <canvas id="boxingCanvas" width="300" height="240"></canvas>
     <br>
-    <button class="btn-reset" onclick="resetRace()">START NOWEGO BIEGU</button>
+    <button class="btn-reset" onclick="resetMatch()">NASTĘPNA RUNDA / RESET</button>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("boxingCanvas");
 const ctx = canvas.getContext("2d");
 
-// Definicje zawodników i ich ukrytych statystyk
-let runners = [
-    { name: "ALEX", x: 10, y: 110, color: "#00a8cc", shirt: "#ffcc00", speed: 1.2, progress: 0, time: 0, finished: false },
-    { name: "BOB",  x: 10, y: 170, color: "#e60012", shirt: "#ffffff", speed: 1.15, progress: 0, time: 0, finished: false }
-];
+// --- STATYSTYKI BOKSERÓW ---
+let boxerA = { name: "ALEX", x: 90,  y: 120, hp: 100, color: "#00a8cc", gloves: "#ffcc00", state: "IDLE", timer: 0, speed: 0.07, power: 8, dodgeSkill: 0.15 };
+let boxerB = { name: "BOB",  x: 170, y: 120, hp: 100, color: "#e60012", gloves: "#ffffff", state: "IDLE", timer: 0, speed: 0.06, power: 10, dodgeSkill: 0.10 };
 
+let matchOver = false;
 let globalTimer = 0;
-let raceOver = false;
+let logText = "WALKA URUCHOMIONA!";
 
-function resetRace() {
-    runners[0].progress = 0; runners[0].time = 0; runners[0].finished = false;
-    runners[1].progress = 0; runners[1].time = 0; runners[1].finished = false;
-    // Losowanie formy (statystyk) na dany bieg
-    runners[0].speed = 1.0 + Math.random() * 0.4;
-    runners[1].speed = 1.0 + Math.random() * 0.4;
-    globalTimer = 0;
-    raceOver = false;
+function resetMatch() {
+    boxerA.hp = 100; boxerA.state = "IDLE"; boxerA.timer = 0;
+    boxerB.hp = 100; boxerB.state = "IDLE"; boxerB.timer = 0;
+    
+    // Losowanie formy zawodników na nową rundę
+    boxerA.speed = 0.05 + Math.random() * 0.05;
+    boxerA.power = 6 + Math.floor(Math.random() * 6);
+    boxerB.speed = 0.05 + Math.random() * 0.05;
+    boxerB.power = 6 + Math.floor(Math.random() * 6);
+    
+    matchOver = false;
+    logText = "RUNDA ROZPOCZĘTA!";
+}
+
+function updateAI(p, enemy) {
+    if (matchOver) return;
+
+    p.timer++;
+
+    // Powrót do pozycji neutralnej po akcji
+    if ((p.state === "PUNCH" || p.state === "DODGE" || p.state === "HIT") && p.timer > 15) {
+        p.state = "IDLE";
+    }
+
+    // Decyzje AI podejmowane co kilka klatek
+    if (p.state === "IDLE" && Math.random() < p.speed) {
+        let action = Math.random();
+        
+        if (action < 0.65) {
+            // Decyzja o ciosie
+            p.state = "PUNCH";
+            p.timer = 0;
+            
+            // Sprawdzenie czy przeciwnik zrobił unik
+            if (enemy.state === "DODGE") {
+                logText = `${enemy.name} ROBI UNIK!`;
+            } else {
+                // Trafienie!
+                enemy.state = "HIT";
+                enemy.timer = 0;
+                enemy.hp -= p.power;
+                logText = `${p.name} TRAFIA ZA ${p.power} HP!`;
+                if (enemy.hp <= 0) {
+                    enemy.hp = 0;
+                    matchOver = true;
+                    logText = `K.O.! WYGRYWA ${p.name}!`;
+                }
+            }
+        } else if (action < 0.85) {
+            // Decyzja o uniku (przygotowanie na cios)
+            p.state = "DODGE";
+            p.timer = 0;
+        }
+    }
+}
+
+function drawBoxer(p, isLeft) {
+    let drawX = p.x;
+    let drawY = p.y;
+
+    // Przesunięcie grafiki w zależności od stanu (animacja retro duszka)
+    if (p.state === "PUNCH") {
+        drawX += isLeft ? 12 : -12; // Wypad do przodu przy ciosie
+    }
+    if (p.state === "DODGE") {
+        drawY += 8; // Kucki / Unik w dół
+    }
+    if (p.state === "HIT") {
+        drawX += isLeft ? -6 : 6; // Odrzucenie głowy po ciosie
+    }
+
+    // Korpus (Spodenki i tors)
+    ctx.fillStyle = p.color;
+    ctx.fillRect(drawX, drawY + 12, 24, 24); // Spodenki
+    ctx.fillStyle = "#ffcc99";
+    ctx.fillRect(drawX + 2, drawY, 20, 14); // Tors/Twarz
+
+    // Rękawice bokserskie (Wysunięte lub garda)
+    ctx.fillStyle = p.gloves;
+    if (p.state === "PUNCH") {
+        ctx.fillRect(isLeft ? drawX + 20 : drawX - 10, drawY + 4, 12, 12); // Wysunięta pięść
+    } else {
+        ctx.fillRect(drawX - 4, drawY + 4, 8, 10);  // Lewa rękawica w gardzie
+        ctx.fillRect(drawX + 20, drawY + 4, 8, 10); // Prawa rękawica w gardzie
+    }
+
+    // Pasek zdrowia nad głową boksera
+    ctx.fillStyle = "#e60012";
+    ctx.fillRect(p.x - 5, p.y - 15, 34, 5);
+    ctx.fillStyle = "#00ff00";
+    ctx.fillRect(p.x - 5, p.y - 15, (p.hp / 100) * 34, 5);
 }
 
 function updateAndRender() {
-    if (!raceOver) {
-        globalTimer += 1/60;
-        
-        runners.forEach(r => {
-            if (!r.finished) {
-                // Ruch oparty na prędkości postaci i losowym mikro-kroku
-                r.progress += r.speed * 0.8 + (Math.random() * 0.3);
-                
-                // Meta na 250 pikselu
-                if (r.progress >= 240) {
-                    r.finished = true;
-                    r.time = globalTimer;
-                }
-            }
-        });
-
-        if (runners[0].finished && runners[1].finished) {
-            raceOver = true;
-        }
+    globalTimer++;
+    
+    // Logika walki
+    if (!matchOver) {
+        updateAI(boxerA, boxerB);
+        updateAI(boxerB, boxerA);
     }
 
-    // --- RYSOWANIE GRAFIKI ---
-    // Czyszczenie i rysowanie nieba
-    ctx.fillStyle = "#5c94fc";
+    // --- RENDEROWANIE RETRO ---
+    // Tło ringu (Klasyczny granat/ciemny niebieski z widowni NES)
+    ctx.fillStyle = "#000088";
     ctx.fillRect(0, 0, 300, 240);
 
-    // Zielona murawa stadionu
-    ctx.fillStyle = "#008800";
-    ctx.fillRect(0, 70, 300, 20);
+    // Mata ringu (Szara / Jasnoniebieska)
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillRect(30, 60, 240, 160);
 
-    // Czerwona bieżnia
-    ctx.fillStyle = "#c84c0c";
-    ctx.fillRect(0, 90, 300, 130);
-
-    // Białe linie torów
+    // Liny ringu (Czerwono-białe paski)
+    ctx.fillStyle = "#e60012";
+    ctx.fillRect(30, 56, 240, 4);
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 90, 300, 2);
-    ctx.fillRect(0, 150, 300, 2);
-    ctx.fillRect(0, 210, 300, 2);
+    ctx.fillRect(30, 52, 240, 2);
 
-    // Linia mety
-    ctx.fillRect(250, 90, 4, 120);
+    // Narożniki ringu (Słupki)
+    ctx.fillStyle = "#111111";
+    ctx.fillRect(26, 50, 6, 170);
+    ctx.fillRect(268, 50, 6, 170);
 
-    // Tablica wyników (Styl retro)
+    // Rysowanie bokserów
+    drawBoxer(boxerA, true);
+    drawBoxer(boxerB, false);
+
+    // Górny panel tekstowy (Komentator walki)
     ctx.fillStyle = "#000000";
-    ctx.fillRect(15, 10, 270, 50);
+    ctx.fillRect(10, 10, 280, 36);
     ctx.strokeStyle = "#ffffff";
-    ctx.strokeRect(15, 10, 270, 50);
+    ctx.strokeRect(10, 10, 280, 36);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "11px monospace";
-    
-    let t1 = runners[0].finished ? runners[0].time.toFixed(2) + "s" : "BIEGNIE...";
-    let t2 = runners[1].finished ? runners[1].time.toFixed(2) + "s" : "BIEGNIE...";
-    ctx.fillText(`TOR 1 - ${runners[0].name}: ${t1} (Szybkość: ${runners[0].speed.toFixed(2)})`, 25, 30);
-    ctx.fillText(`TOR 2 - ${runners[1].name}: ${t2} (Szybkość: ${runners[1].speed.toFixed(2)})`, 25, 48);
-
-    // Rysowanie zawodników (Klimat prawdziwego 8-bit)
-    runners.forEach(r => {
-        let drawX = Math.floor(r.x + r.progress);
-        let drawY = r.y;
-
-        // Efekt animacji nóg w locie (poruszanie góra/dół o 1 piksel)
-        if (!r.finished && Math.floor(globalTimer * 10) % 2 === 0) {
-            drawY -= 1;
-        }
-
-        // Kask / Włosy
-        ctx.fillStyle = r.color;
-        ctx.fillRect(drawX + 4, drawY, 8, 5);
-        // Twarz
-        ctx.fillStyle = "#ffcc99";
-        ctx.fillRect(drawX + 5, drawY + 5, 6, 4);
-        // Koszulka sportowa
-        ctx.fillStyle = r.shirt;
-        ctx.fillRect(drawX + 2, drawY + 9, 12, 10);
-        // Spodenki
-        ctx.fillStyle = "#111111";
-        ctx.fillRect(drawX + 4, drawY + 19, 8, 4);
-        // Buty
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(drawX + 3, drawY + 23, 3, 3);
-        ctx.fillRect(drawX + 10, drawY + 23, 3, 3);
-    });
+    ctx.font = "10px monospace";
+    ctx.fillText(`HP A: ${boxerA.hp} | HP B: ${boxerB.hp}`, 20, 24);
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillText(logText, 20, 40);
 
     requestAnimationFrame(updateAndRender);
 }
 
-// Pierwsze uruchomienie pętli gry
+// Start pętli
 updateAndRender();
 </script>
 
