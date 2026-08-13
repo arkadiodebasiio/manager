@@ -2,234 +2,241 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Elite Boxing Manager 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRO BOXING MANAGER 2026</title>
     <style>
-        :root {
-            --bg-glass: rgba(15, 23, 42, 0.65);
-            --border-glass: rgba(255, 255, 255, 0.08);
-            --accent: #3b82f6;
-        }
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
             background-color: #020617;
-            font-family: system-ui, -apple-system, sans-serif;
             color: #f8fafc;
-            overflow: hidden;
+            font-family: system-ui, -apple-system, sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
         }
-        #webgl-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        /* Główny kontener gry - Nowoczesny interfejs Premium */
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
         }
-        /* Nowoczesny Panel Web3 / Dashboard UI */
-        #dashboard {
-            position: relative; z-index: 10;
-            width: 380px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-glass);
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
         }
-        h2 { font-size: 18px; font-weight: 800; letter-spacing: 1px; color: #fff; margin: 0 0 16px 0; text-align: center; text-transform: uppercase; }
-        .stat-group { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; font-size: 14px; font-weight: 600; }
-        .label { color: #94a3b8; }
-        .val { color: #38bdf8; font-family: monospace; font-size: 16px; }
+        header h1 { font-size: 22px; font-weight: 800; letter-spacing: 1.5px; color: #fff; text-transform: uppercase; }
+        header p { color: #94a3b8; font-size: 13px; margin-top: 4px; }
+        
+        /* Układ dwukolumnowy */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 20px;
+        }
+        .card h3 { font-size: 14px; text-transform: uppercase; color: #f59e0b; margin-bottom: 15px; letter-spacing: 0.5px; }
+        
+        /* Statystyki */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .stat-name { color: #94a3b8; font-size: 13px; font-weight: 600; }
+        .stat-controls { display: flex; align-items: center; gap: 12px; }
+        .stat-val { font-family: monospace; font-size: 16px; font-weight: 700; color: #38bdf8; }
+        
         button.btn-plus {
             background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);
-            width: 32px; height: 32px; font-weight: bold; cursor: pointer; border-radius: 8px; transition: all 0.2s;
+            width: 28px; height: 28px; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 14px;
         }
-        button.btn-plus:hover { background: #3b82f6; color: white; transform: scale(1.05); }
+        button.btn-plus:hover { background: #3b82f6; color: #fff; }
+        
+        /* Ring tekstowy i logi walki */
+        #console-ring {
+            background: #020617;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            height: 140px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        .log-hit { color: #f43f5e; font-weight: bold; }
+        .log-ko { color: #10b981; font-weight: bold; font-size: 13px; }
+
+        /* Paski Zdrowia HP */
+        .hp-container { margin-top: 10px; }
+        .hp-bar-bg { background: #334155; height: 6px; border-radius: 3px; width: 100%; margin-top: 4px; overflow: hidden; }
+        .hp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.2s ease; }
+        #hp-p1 { background: linear-gradient(90deg, #2563eb, #38bdf8); width: 100%; }
+        #hp-p2 { background: linear-gradient(90deg, #be123c, #fb7185); width: 100%; }
+
+        /* Przycisk akcji */
         #action-btn {
             background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: white; border: none;
-            width: 100%; padding: 14px; margin-top: 16px; font-size: 14px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 1px; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;
+            width: 100%; padding: 14px; margin-top: 20px; font-size: 14px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; border-radius: 10px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
-        #action-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-        #live-commentary {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 10;
-            background: var(--bg-glass); backdrop-filter: blur(12px); border: 1px solid var(--border-glass);
-            padding: 14px 40px; border-radius: 9999px; font-size: 13px; font-weight: 600; color: #f59e0b;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); text-align: center; width: 400px;
-        }
+        #action-btn:hover { background: #2563eb; }
     </style>
-    <!-- Import silnika 3D (Three.js) -->
-    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
-    <div id="webgl-container"></div>
+    <div id="game-container">
+        <header>
+            <h1>World Boxing League Manager</h1>
+            <p>Centrum treningowe i zarządzanie galą boksu</p>
+        </header>
 
-    <!-- NOWOCZESNY INTERFEJS GRY SZEFA KLUBU -->
-    <div id="dashboard">
-        <h2>Klub Bokserski Elite</h2>
-        <div class="stat-group">
-            <span class="label">Licencja Trenera (Punkty):</span>
-            <span id="pts" style="color: #a855f7; font-size: 18px; font-weight: bold;">5</span>
-        </div>
-        <div class="stat-group">
-            <span class="label">SIŁA (POWER):</span>
-            <div>
-                <span class="val" id="v-pow" style="margin-right: 12px;">15</span>
-                <button class="btn-plus" onclick="upgrade('pow')">+</button>
+        <div class="grid">
+            <!-- LEWA STRONA: PANEL ROZWOJU -->
+            <div class="card">
+                <h3>Gym & Trening</h3>
+                <div class="stat-row">
+                    <span class="stat-name">Wolne punkty rozwoju:</span>
+                    <span id="pts" style="color: #a855f7; font-weight: bold; font-size: 16px;">5</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">SIŁA (POWER):</span>
+                    <div class="stat-controls">
+                        <span class="val" id="v-pow">15</span>
+                        <button class="btn-plus" onclick="upgradeStat('pow')">+</button>
+                    </div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">SZYBKOŚĆ (SPEED):</span>
+                    <div class="stat-controls">
+                        <span class="val" id="v-spd">8</span>
+                        <button class="btn-plus" onclick="upgradeStat('spd')">+</button>
+                    </div>
+                </div>
+                
+                <div class="hp-container" style="margin-top: 20px;">
+                    <div class="stat-row" style="margin:0;"><span class="stat-name">Kondycja: ALEX (Ty)</span><span id="txt-hp1" style="font-size:12px; font-weight: bold;">100/100 HP</span></div>
+                    <div class="hp-bar-bg"><div id="hp-p1" class="hp-bar-fill"></div></div>
+                </div>
+            </div>
+
+            <!-- PRAWA STRONA: MONITORING WALKI (LIVE RING) -->
+            <div class="card">
+                <h3>Live Ring Server</h3>
+                <div id="console-ring">
+                    [SYSTEM]: Oczekuję na rozpoczęcie pojedynku...<br>
+                    [SYSTEM]: Przydziel wolne punkty trenera, aby zwiększyć szanse zawodnika na ringu.
+                </div>
+
+                <div class="hp-container" style="margin-top: 15px;">
+                    <div class="stat-row" style="margin:0;"><span class="stat-name">Kondycja: BOB (Rywal)</span><span id="txt-hp2" style="font-size:12px; font-weight: bold;">100/100 HP</span></div>
+                    <div class="hp-bar-bg"><div id="hp-p2" class="hp-bar-fill"></div></div>
+                </div>
             </div>
         </div>
-        <div class="stat-group">
-            <span class="label">SZYBKOŚĆ (SPEED):</span>
-            <div>
-                <span class="val" id="v-spd" style="margin-right: 12px;">8</span>
-                <button class="btn-plus" onclick="upgrade('spd')">+</button>
-            </div>
-        </div>
-        <button id="action-btn" onclick="start3DFight()">Wyślij zawodnika na ring</button>
+
+        <button id="action-btn" onclick="startSimulation()">Rozpocznij Symulację Walki</button>
     </div>
 
-    <div id="live-commentary" id="log-text">SYSTEM GOTOWY: ROZWIŃ STATYSTYKI</div>
-
 <script>
-// --- SILNIK 3D WEBGL (THREE.JS) ---
-const container = document.getElementById("webgl-container");
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x020617);
-scene.fog = new THREE.FogExp2(0x020617, 0.015); // Efekt głębi i mgły na arenie
+let coachPoints = 5;
+let matchOver = false, matchRunning = false;
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-camera.position.set(0, 15, 35);
-camera.lookAt(0, 4, 0);
+// Dynamiczne statystyki postaci
+let player = { name: "ALEX", hp: 100, power: 15, speed: 8 };
+let enemy = { name: "BOB", hp: 100, power: 14, speed: 7 };
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.shadowMap.enabled = true;
-container.appendChild(renderer.domElement);
+const ring = document.getElementById("console-ring");
 
-// Oświetlenie areny (Kinowe reflektory punktowe 3D)
-const ambientLight = new THREE.AmbientLight(0x1e293b, 0.6);
-scene.add(ambientLight);
-
-const spotlight = new THREE.SpotLight(0xffffff, 2);
-spotlight.position.set(0, 30, 0);
-spotlight.angle = Math.PI / 3;
-spotlight.penumbra = 0.8;
-spotlight.castShadow = true;
-scene.add(spotlight);
-
-// Generowanie trójwymiarowego Ringu Bokserskiego za pomocą kodu 3D
-const ringGeometry = new THREE.BoxGeometry(20, 1, 20);
-const ringMaterial = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
-const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
-ringMesh.position.y = -0.5;
-ringMesh.receiveShadow = true;
-scene.add(ringMesh);
-
-// Słupki ringu w 3D
-const postGeo = new THREE.CylinderGeometry(0.3, 0.3, 4, 16);
-const postMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
-const corners = [[9,9], [-9,9], [9,-9], [-9,-9]];
-corners.forEach(c => {
-    let post = new THREE.Mesh(postGeo, postMat);
-    post.position.set(c[0], 2, c[1]);
-    scene.add(post);
-});
-
-// GENEROWANIE NOWOCZESNYCH MODELI TRÓJWYMIAROWYCH DLA ZAWODNIKÓW (Sfery energetyczne / Manekiny 3D)
-function create3DBoxer(color) {
-    const group = new THREE.Group();
-    // Głowa
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 32), new THREE.MeshStandardMaterial({ color: 0xfde047 }));
-    head.position.y = 4.2;
-    group.add(head);
-    // Tors
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.5, 2.2, 32), new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 }));
-    body.position.y = 2.6;
-    body.castShadow = true;
-    group.add(body);
-    return group;
+function logToRing(message, type = "") {
+    let span = document.createElement("span");
+    if (type) span.className = type;
+    span.innerHTML = message + "<br>";
+    ring.appendChild(span);
+    ring.scrollTop = ring.scrollHeight; // Auto-scroll w dół
 }
 
-const boxer3DA = create3DBoxer(0x0ea5e9); // Niebieski zawodnik 3D
-boxer3DA.position.set(-4, 0, 0);
-scene.add(boxer3DA);
-
-const boxer3DB = create3DBoxer(0xf43f5e); // Czerwony zawodnik 3D
-boxer3DB.position.set(4, 0, 0);
-scene.add(boxer3DB);
-
-// --- LOGIKA I STATYSTYKI ---
-let trainerPoints = 5, matchActive = false, matchOver = false;
-let dataA = { power: 15, speed: 0.05, hp: 100 };
-let dataB = { power: 12, speed: 0.06, hp: 100 };
-
-function upgrade(stat) {
-    if (trainerPoints <= 0) return;
-    trainerPoints--;
-    document.getElementById("pts").innerText = trainerPoints;
-    if (stat === 'pow') {
-        dataA.power += 4; document.getElementById("v-pow").innerText = dataA.power;
+function upgradeStat(type) {
+    if (coachPoints <= 0 || matchRunning) return;
+    coachPoints--;
+    document.getElementById("pts").innerText = coachPoints;
+    if (type === 'pow') {
+        player.power += 4;
+        document.getElementById("v-pow").innerText = player.power;
     } else {
-        dataA.speed += 0.02; document.getElementById("v-spd").innerText = Math.round(dataA.speed * 100);
+        player.speed += 1;
+        document.getElementById("v-spd").innerText = player.speed;
     }
 }
 
-function start3DFight() {
-    if (matchActive) return;
-    dataA.hp = 100; dataB.hp = 100; matchOver = false; matchActive = true;
-    document.getElementById("live-commentary").innerText = "GONG! WALKA TRWA W TRÓJWYMIARZE!";
-}
-
-// Pętla animacji i silnik symulacji (60 Klatek na Sekundę)
-let time = 0;
-function animate() {
-    requestAnimationFrame(animate);
-    time += 0.01;
-
-    // Kinowy obrót kamery wokół ringu (Jak w telewizji)
-    camera.position.x = Math.sin(time * 0.15) * 32;
-    camera.position.z = Math.cos(time * 0.15) * 32;
-    camera.lookAt(0, 2.5, 0);
-
-    // Delikatne kołysanie się zawodników w 3D (Garda)
-    boxer3DA.position.y = Math.sin(time * 5) * 0.1;
-    boxer3DB.position.y = Math.cos(time * 4.5) * 0.1;
-
-    if (matchActive && !matchOver) {
-        // AI Gracz A wyprowadza cios (fizyczna animacja przesunięcia modelu 3D)
-        if (Math.random() < dataA.speed) {
-            boxer3DA.position.x += 1.5;
-            setTimeout(() => boxer3DA.position.x = -4, 150);
-            dataB.hp -= dataA.power;
-            document.getElementById("live-commentary").innerText = `Klubowicz Alex zadaje potężny cios! Rywal traci -${dataA.power} HP!`;
-        }
-        // AI Gracz B kontruje
-        if (Math.random() < dataB.speed && !matchOver) {
-            boxer3DB.position.x -= 1.5;
-            setTimeout(() => boxer3DB.position.x = 4, 150);
-            dataA.hp -= dataB.power;
-            document.getElementById("live-commentary").innerText = `Rywal odpowiada kontrą! Tracisz -${dataB.power} HP!`;
+function startSimulation() {
+    if (matchRunning) return;
+    matchRunning = true;
+    matchOver = false;
+    player.hp = 100;
+    enemy.hp = 100;
+    
+    // Reset pasków
+    document.getElementById("hp-p1").style.width = "100%";
+    document.getElementById("hp-p2").style.width = "100%";
+    document.getElementById("txt-hp1").innerText = "100/100 HP";
+    document.getElementById("txt-hp2").innerText = "100/100 HP";
+    
+    ring.innerHTML = ""; // Czyszczenie konsoli
+    logToRing("[GONG]: RUNDA 1 ROZPOCZĘTA!", "log-ko");
+    
+    let fightInterval = setInterval(() => {
+        if (matchOver) {
+            clearInterval(fightInterval);
+            matchRunning = false;
+            return;
         }
 
-        if (dataB.hp <= 0 || dataA.hp <= 0) {
+        // AI Gracza (Szansa na cios oparta na statystyce szybkości)
+        if (Math.random() * 20 < player.speed) {
+            enemy.hp -= player.power;
+            if (enemy.hp < 0) enemy.hp = 0;
+            document.getElementById("hp-p2").style.width = enemy.hp + "%";
+            document.getElementById("txt-hp2").innerText = enemy.hp + "/100 HP";
+            logToRing(`🥊 [ATAK]: ${player.name} uderza lewym prostym i zadaje <span class="log-hit">-${player.power} HP</span>!`);
+        }
+
+        // AI Przeciwnika
+        if (Math.random() * 20 < enemy.speed && enemy.hp > 0) {
+            player.hp -= enemy.power;
+            if (player.hp < 0) player.hp = 0;
+            document.getElementById("hp-p1").style.width = player.hp + "%";
+            document.getElementById("txt-hp1").innerText = player.hp + "/100 HP";
+            logToRing(`⚠️ [KONTRA]: ${enemy.name} wyprowadza prawy sierpowy! Tracisz <span class="log-hit">-${enemy.power} HP</span>.`);
+        }
+
+        // Warunki zakończenia walki (Knockout)
+        if (enemy.hp <= 0) {
             matchOver = true;
-            matchActive = false;
-            document.getElementById("live-commentary").innerText = dataB.hp <= 0 ? "K.O.! TWÓJ BOXER WYGRAŁ WALKĘ!" : "K.O.! PRZEGRANA W TEJ RUNDZIE.";
+            logToRing(`🏆 [K.O.]: ${enemy.name} pada na matę! WYGRYWA ${player.name}!`, "log-ko");
+        } else if (player.hp <= 0) {
+            matchOver = true;
+            logToRing(`❌ [K.O.]: Zostałeś znokautowany. Walkę wygrywa ${enemy.name}.`, "log-hit");
         }
-    }
 
-    renderer.render(scene, camera);
+    }, 600); // Krok symulacji co 600ms
 }
-
-// Obsługa automatycznego skalowania okna (Responsywność)
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-animate();
 </script>
 </body>
 </html>
