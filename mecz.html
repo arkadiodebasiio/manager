@@ -1,107 +1,184 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>Cyber Boxing Arena</title>
-    <style>
-        body { background: #111; color: #fff; font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
-        canvas { background: #1a1a1a; border: 4px solid #d4af37; border-radius: 8px; display: block; margin: 20px auto; }
-        .hud { display: flex; justify-content: space-between; width: 700px; margin: 0 auto; font-size: 16px; font-weight: bold; }
-        .bar-bg { background: #333; width: 250px; height: 18px; border: 2px solid #555; border-radius: 3px; overflow: hidden; margin-top: 5px; }
-        .bar-fill { height: 100%; width: 100%; transition: width 0.1s; }
-        #commentary { background: #000; color: #00ffaa; font-family: monospace; padding: 10px; height: 80px; width: 676px; margin: 10px auto; text-align: left; border-radius: 4px; overflow-y: auto; }
-    </style>
-</head>
-<body>
-    <h1>CYBER BOXING ARENA</h1>
-    <div class="hud">
-        <div>RED <div class="bar-bg"><div id="hp1" class="bar-fill" style="background: #ff2255; width: 100%;"></div></div></div>
-        <div>BLUE <div class="bar-bg"><div id="hp2" class="bar-fill" style="background: #00ccff; width: 100%;"></div></div></div>
-    </div>
-    <canvas id="boxingRing" width="700" height="320"></canvas>
-    <div id="commentary"></div>
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
-    <script>
-        const canvas = document.getElementById("boxingRing");
-        const ctx = canvas.getContext("2d");
-        const commBox = document.getElementById("commentary");
+public class BoxingMatch {
 
-        function logEvent(text, color = "#00ffaa") {
-            commBox.innerHTML += `<span style="color: ${color}">[SYSTEM] ${text}</span><br>`;
-            commBox.scrollTop = commBox.scrollHeight;
+    private static final Random random = new Random();
+
+    // --- ENUMY DLA REALIZMU ---
+    enum Stance { ORTHODOX, SOUTHPAW }
+    enum Style { SLUGGER, OUT_BOXER, INFIGHTER }
+    enum HitZone { HEAD, BODY }
+    enum PunchType { JAB, HOOK, UPPERCUT, OVERHAND }
+
+    // --- KLASA BOXER ---
+    static class Boxer {
+        String name;
+        String nickname;
+        Stance stance;
+        Style style;
+        
+        // Statystyki bazowe (1-100)
+        int hp = 100;
+        int stamina = 100;
+        int power;
+        int speed;
+        int chin; // Odporność na ciosy
+        int defense;
+
+        // Liczniki sędziowskie
+        int roundPoints = 0;
+        int totalScore = 0;
+
+        public Boxer(String name, String nickname, Stance stance, Style style, int power, int speed, int chin, int defense) {
+            this.name = name;
+            this.nickname = nickname;
+            this.stance = stance;
+            this.style = style;
+            this.power = power;
+            this.speed = speed;
+            this.chin = chin;
+            this.defense = defense;
         }
 
-        let p1 = { x: 180, y: 260, hp: 100, color: "#ff2255", facing: 1, p: 0, s: 1, hit: 0 };
-        let p2 = { x: 520, y: 260, hp: 100, color: "#00ccff", facing: -1, p: 0, s: 1, hit: 0 };
-        let over = false;
-
-        function drawBot(f) {
-            ctx.save();
-            if (f.hit > 0) f.hit--;
-            ctx.shadowBlur = f.hit ? 25 : 10;
-            ctx.shadowColor = f.hit ? "#fff" : f.color;
-
-            // Nogi
-            ctx.strokeStyle = f.hit ? "#fff" : f.color;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(f.x - 12, f.y); ctx.lineTo(f.x, f.y - 40);
-            ctx.moveTo(f.x + 15, f.y); ctx.lineTo(f.x, f.y - 40);
-            ctx.stroke();
-
-            // Korpus
-            ctx.fillStyle = "#1c1c1c";
-            ctx.fillRect(f.x - 10 * f.facing, f.y - 90, 20, 50);
-
-            // Głowa
-            ctx.beginPath();
-            ctx.arc(f.x - 4 * f.facing, f.y - 105, 12, 0, Math.PI * 2);
-            ctx.fillStyle = "#222"; ctx.fill();
-            ctx.strokeStyle = f.color; ctx.lineWidth = 3; ctx.stroke();
-
-            // Rękawica / Tarcza
-            let rx = 20 + (p1 === f ? p1.p * 70 : p2.p * 70);
-            ctx.beginPath();
-            ctx.arc(f.x - 4 * f.facing + (rx * f.facing), f.y - 80, 16, 0, Math.PI * 2);
-            ctx.fillStyle = f.hit ? "#fff" : f.color; ctx.fill();
-            ctx.restore();
+        public String getFullName() {
+            return name + " \"" + nickname + "\"";
         }
 
-        function loop() {
-            if (over) return;
-            ctx.clearRect(0, 0, 700, 320);
+        public boolean isKnockedOut() {
+            return this.hp <= 0;
+        }
 
-            let d = Math.abs(p2.x - p1.x);
-            p1.facing = p2.x > p1.x ? 1 : -1;
-            p2.facing = p1.x > p2.x ? 1 : -1;
+        public void regenerateStamina() {
+            this.stamina = Math.min(100, this.stamina + 25);
+        }
+    }
 
-            if (p1.p == 0 && p2.p == 0) {
-                if (d > 110) { p1.x += 1; p2.x -= 1; }
-                else {
-                    if (Math.random() > 0.95) p1.p = 0.1;
-                    if (Math.random() > 0.95) p2.p = 0.1;
+    // --- GŁÓWNA LOGIKA SYMULACJI ---
+    public static void main(String[] args) {
+        // Inicjalizacja zawodników (Najwyższa jakość odwzorowania weterana i pretendenta)
+        Boxer tadek = new Boxer("Tomasz Majewski", "Grom", Stance.SOUTHPAW, Style.SLUGGER, 88, 70, 90, 85);
+        Boxer damian = new Boxer("Damian Orłowski", "Orzeł", Stance.ORTHODOX, Style.OUT_BOXER, 75, 92, 78, 80);
+
+        System.out.println("=== WALKA O PAS MISTRZOWSKI WAGI CIĘŻKIEJ ===");
+        System.out.println(tadek.getFullName() + " VS " + damian.getFullName());
+        System.out.println("---------------------------------------------------\n");
+
+        int totalRounds = 3; // Skrócone do 3 rund dla czytelności konsoli (można zmienić na 12)
+
+        for (int round = 1; round <= totalRounds; round++) {
+            System.out.println("--- RUNDA " + round + " ---");
+            tadek.roundPoints = 10;
+            damian.roundPoints = 10;
+
+            // Każda runda ma 5 interakcji/wymian ciosów
+            for (int exchange = 1; exchange <= 5; exchange++) {
+                if (tadek.isKnockedOut() || damian.isKnockedOut()) break;
+
+                // Losowanie kto atakuje w tej wymianie
+                if (random.nextBoolean()) {
+                    simulateExchange(tadek, damian);
+                } else {
+                    simulateExchange(damian, tadek);
+                }
+                sleep(600); // Pauza dla realizmu wyświetlania tekstu
+            }
+
+            if (tadek.isKnockedOut() || damian.isKnockedOut()) break;
+
+            // Podsumowanie rundy wg systemu 10-Point Must
+            System.out.println("\n>> Koniec rundy " + round + ". Zawodnicy wracają do narożników. <<");
+            tadek.totalScore += tadek.roundPoints;
+            damian.totalScore += damian.roundPoints;
+            
+            // Regeneracja między rundami
+            tadek.regenerateStamina();
+            damian.regenerateStamina();
+            System.out.printf("Stan zdrowia -> %s: %d%% HP | %s: %d%% HP%n", tadek.name, tadek.hp, damian.name, damian.hp);
+            System.out.println("---------------------------------------------------");
+            sleep(1000);
+        }
+
+        // --- WERDYKT KOŃCOWY ---
+        System.out.println("\n================= WERDYKT WALKI =================");
+        if (tadek.isKnockedOut()) {
+            System.out.println("KONIEC PRZED CZASEM! KO! Zwycięzcą zostaje: " + damian.getFullName() + "!");
+        } else if (damian.isKnockedOut()) {
+            System.out.println("KONIEC PRZED CZASEM! KO! Zwycięzcą zostaje: " + tadek.getFullName() + "!");
+        } else {
+            System.out.println("Walka dotrwała do decyzji sędziów!");
+            System.out.printf("Punkty sędziowskie: %s [%d] vs [%d] %s%n", tadek.name, tadek.totalScore, damian.totalScore, damian.name);
+            if (tadek.totalScore > damian.totalScore) {
+                System.out.println("Jednogłośną decyzją sędziów wygrywa: " + tadek.getFullName() + "!");
+            } else if (damian.totalScore > tadek.totalScore) {
+                System.out.println("Jednogłośną decyzją sędziów wygrywa: " + damian.getFullName() + "!");
+            } else {
+                System.out.println("Mamy remis!");
+            }
+        }
+    }
+
+    // --- SYMULACJA JEDNEJ WYMIANY CIOSÓW ---
+    private static void simulateExchange(Boxer attacker, Boxer defender) {
+        PunchType punch = PunchType.values()[random.nextInt(PunchType.values().length)];
+        HitZone zone = HitZone.values()[random.nextInt(HitZone.values().length)];
+
+        // Koszt kondycyjny ataku
+        attacker.stamina = Math.max(10, attacker.stamina - (8 + random.nextInt(7)));
+
+        // Obliczanie szansy na trafienie na podstawie statystyk i zmęczenia
+        int attackRoll = attacker.speed + random.nextInt(40) + (attacker.stamina / 5);
+        int defenseRoll = defender.defense + random.nextInt(40) + (defender.stamina / 5);
+
+        // Modyfikator pozycji (Mańkut vs Klasyczny)
+        if (attacker.stance != defender.stance) {
+            attackRoll += 5; // Odwrotna pozycja często zaskakuje klasycznego boksera
+        }
+
+        if (attackRoll > defenseRoll) {
+            // TRAFIENIE
+            int baseDamage = (attacker.power / 4) + random.nextInt(15);
+            
+            // Premia za styl i rodzaj ciosu
+            if (attacker.style == Style.SLUGGER && punch == PunchType.OVERHAND) baseDamage += 10;
+            if (attacker.style == Style.OUT_BOXER && punch == PunchType.JAB) baseDamage += 5;
+
+            // Redukcja obrażeń przez odporność (chin) obrońcy
+            int finalDamage = Math.max(2, baseDamage - (defender.chin / 15));
+            defender.hp = Math.max(0, defender.hp - finalDamage);
+
+            System.out.printf("[%s] trafia potężnym %s na %s! (%d obrażeń)%n", 
+                    attacker.nickname, punch, zone, finalDamage);
+
+            // Szansa na nokdaun (krytyczne trafienie)
+            if (finalDamage > 18 && random.nextInt(100) < 25) {
+                System.out.printf(" ALERT: %s ląduje na deskach! Sędzia zaczyna liczenie!%n", defender.name);
+                defender.roundPoints -= 2; // Strata punktów za nokdaun
+                defender.stamina = Math.max(20, defender.stamina - 30);
+                
+                // Próba wstania z desek (test odporności psychofizycznej)
+                if (defender.hp <= 10 && random.nextInt(100) > defender.chin) {
+                    defender.hp = 0; // Ciężkie KO - zawodnik nie wstaje
+                    System.out.printf("...Osiem... Dziewięć... Dziesięć! Koniec! %s zostaje ciężko znokautowany!%n", defender.name);
+                } else {
+                    System.out.println("...Bokser podnosi się na 'osiem' i walczy dalej!");
                 }
             }
-
-            if (p1.p > 0) {
-                p1.p += 0.15 * p1.s;
-                if (p1.p >= 1) { p1.s = -1; if (d < 120) { p2.hp -= 10; p2.hit = 5; document.getElementById("hp2").style.width = p2.hp + "%"; logEvent("RED trafia w BLUE!", "#ff2255"); } }
-                if (p1.p <= 0) { p1.p = 0; p1.s = 1; }
-            }
-            if (p2.p > 0) {
-                p2.p += 0.15 * p2.s;
-                if (p2.p >= 1) { p2.s = -1; if (d < 120) { p1.hp -= 10; p1.hit = 5; document.getElementById("hp1").style.width = p1.hp + "%"; logEvent("BLUE trafia w RED!", "#00ccff"); } }
-                if (p2.p <= 0) { p2.p = 0; p2.s = 1; }
-            }
-
-            if (p1.hp <= 0 || p2.hp <= 0) { over = true; logEvent("KONIEC WALKI!", "#ffcc00"); }
-
-            drawBot(p1);
-            drawBot(p2);
-            requestAnimationFrame(loop);
+        } else if (defenseRoll - attackRoll < 10) {
+            // KLINCZ LUB BLOK
+            System.out.printf("[%s] blokuje cios, zawodnicy wchodzą w klincz! Sędzia rozrywa pozycję.%n", defender.nickname);
+        } else {
+            // CZYSTY UNIK
+            System.out.printf("[%s] robi genialny unik rotacyjny! %s przestrzeliwuje.%n", defender.nickname, attacker.nickname);
         }
-        logEvent("Start starcia.");
-        loop();
-    </script>
-</body>
-</html>
+    }
+
+    // Pomocnicza metoda do opóźniania tekstu w konsoli
+    private static void sleep(int millis) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
