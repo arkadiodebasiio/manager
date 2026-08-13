@@ -2,392 +2,259 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Super Boxing Arena 2D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Boxing Engine</title>
     <style>
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #0b0b0f;
-            color: #e0e0e0;
             margin: 0;
-            padding: 20px;
+            background: #222;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: #16161e;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            border: 1px solid #2d2d3d;
-        }
-        h1 {
-            text-align: center;
-            color: #ff3333;
-            font-size: 1.8em;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin: 0 0 15px 0;
-        }
-        #gameCanvas {
-            background: radial-gradient(circle, #2a2d3d 0%, #111319 100%);
-            border: 4px solid #ff3333;
-            border-radius: 8px;
-            display: block;
-            margin: 0 auto 15px auto;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-        }
-        .scorecard {
-            display: flex;
-            justify-content: space-between;
-            background: #21212b;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: 1px solid #333344;
-        }
-        .boxer-info {
-            width: 45%;
-        }
-        .boxer-name {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #fff;
-        }
-        .hp-bar-bg {
-            background: #333;
-            height: 14px;
-            border-radius: 7px;
-            margin-top: 5px;
+            justify-content: center;
+            height: 100vh;
             overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background: #333;
+            border: 4px solid #fff;
+            overflow: hidden;
+        }
+        /* Ring linia */
+        #ring-line {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            height: 4px;
+            background: #555;
+        }
+        /* Interfejs UI */
+        .ui-panel {
+            position: absolute;
+            top: 10px;
+            width: 350px;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
             border: 1px solid #555;
         }
-        .hp-bar {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #2ecc71, #27ae60);
-            transition: width 0.2s ease;
-        }
-        .hp-bar.damaged {
-            background: linear-gradient(90deg, #e74c3c, #c0392b);
-        }
-        #commentary {
-            background: #0d0d13;
-            border-radius: 8px;
-            padding: 12px;
-            height: 90px;
-            overflow-y: hidden;
-            font-family: 'Courier New', monospace;
-            font-size: 0.95em;
-            border-left: 5px solid #ff3333;
-            margin-bottom: 15px;
-        }
-        .line { margin-bottom: 4px; }
-        .hit { color: #ff6666; }
-        .crit { color: #ff3333; font-weight: bold; }
-        .miss { color: #95a5a6; }
-        .system { color: #f1c40f; font-weight: bold; }
-        
-        button {
-            background: linear-gradient(180deg, #ff4d4d 0%, #cc0000 100%);
-            color: white;
-            border: none;
-            padding: 14px;
-            font-size: 1.1em;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            box-shadow: 0 4px 15px rgba(255,51,51,0.3);
-            text-transform: uppercase;
-        }
-        button:hover {
-            background: linear-gradient(180deg, #ff6666 0%, #e60000 100%);
-        }
-        button:disabled {
+        #p1-ui { left: 10px; }
+        #p2-ui { right: 10px; text-align: right; }
+        .bar {
+            height: 15px;
+            margin: 5px 0;
             background: #444;
-            color: #888;
-            box-shadow: none;
-            cursor: not-allowed;
+            transition: width 0.1s;
+        }
+        .hp { background: #ff3333; width: 100%; }
+        .stamina { background: #33ff33; width: 100%; }
+        
+        /* Zawodnicy */
+        .boxer {
+            position: absolute;
+            bottom: 40px;
+            width: 60px;
+            height: 120px;
+            transition: transform 0.05s;
+        }
+        #player1 { background: #3388ff; left: 200px; }
+        #player2 { background: #ff3333; left: 540px; }
+        
+        /* Rękawice (Wizualizacja ciosów) */
+        .glove {
+            position: absolute;
+            top: 30px;
+            width: 25px;
+            height: 25px;
+            background: #fff;
+            border-radius: 50%;
+            display: none;
+        }
+        #p1-glove { right: -20px; background: #1155cc; }
+        #p2-glove { left: -20px; background: #cc1111; }
+
+        /* Stan bloku */
+        .shield {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border: 2px dashed #fff;
+            display: none;
+        }
+
+        #controls-info {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Gala Mistrzów: Finałowa Walka</h1>
-    
-    <div class="scorecard">
-        <div class="boxer-info">
-            <div class="boxer-name" style="color: #3498db;">GROM (Niebieski)</div>
-            <div class="hp-bar-bg"><div id="hp1" class="hp-bar"></div></div>
+    <div id="game-container">
+        <!-- Ring -->
+        <div id="ring-line"></div>
+
+        <!-- UI Gracza 1 -->
+        <div class="ui-panel" id="p1-ui">
+            <div>GRACZ 1 (Niebieski)</div>
+            <div class="bar"><div id="p1-hp" class="hp"></div></div>
+            <div class="bar"><div id="p1-stamina" class="stamina"></div></div>
+            <div id="p1-state">Stan: Wolny</div>
         </div>
-        <div class="boxer-info" style="text-align: right;">
-            <div class="boxer-name" style="color: #e74c3c;">ORZEŁ (Czerwony)</div>
-            <div class="hp-bar-bg"><div id="hp2" class="hp-bar"></div></div>
+
+        <!-- UI Gracza 2 -->
+        <div class="ui-panel" id="p2-ui">
+            <div>GRACZ 2 (Czerwony)</div>
+            <div class="bar"><div id="p2-hp" class="hp"></div></div>
+            <div class="bar"><div id="p2-stamina" class="stamina"></div></div>
+            <div id="p2-state">Stan: Wolny</div>
+        </div>
+
+        <!-- Zawodnicy -->
+        <div id="player1" class="boxer">
+            <div id="p1-glove" class="glove"></div>
+            <div id="p1-shield" class="shield"></div>
+        </div>
+        <div id="player2" class="boxer">
+            <div id="p2-glove" class="glove"></div>
+            <div id="p2-shield" class="shield"></div>
         </div>
     </div>
 
-    <canvas id="gameCanvas" width="760" height="280"></canvas>
-
-    <div id="commentary">
-        <div class="system">Kliknij przycisk poniżej, aby zawodnicy wyszli z narożników!</div>
+    <div id="controls-info">
+        <strong>Gracz 1:</strong> A/D - Ruch | W - Blok | G - Lewy Prosty | H - Prawy Sierpowy<br>
+        <strong>Gracz 2:</strong> Strzałki Lewo/Prawo - Ruch | Strzałka Góra - Blok | Kp 1 - Lewy Prosty | Kp 2 - Prawy Sierpowy
     </div>
 
-    <button id="actionBtn" onclick="runSimulation()">Rozpocznij Pojedynek</button>
-</div>
+<script>
+    // Konfiguracja i Stan Gry
+    const CONFIG = {
+        speed: 5,
+        jabDist: 50,
+        hookDist: 35,
+        staminaRegen: 0.5,
+        gravity: 0.5
+    };
 
-<!-- DOŁĄCZENIE DRUGIEGO PLIKU Z LOGIKĄ -->
-<script src="script.js"></script>
+    const p1 = {
+        id: 1, el: document.getElementById('player1'), glove: document.getElementById('p1-glove'), shield: document.getElementById('p1-shield'),
+        hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
+        x: 200, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+    };
 
+    const p2 = {
+        id: 2, el: document.getElementById('player2'), glove: document.getElementById('p2-glove'), shield: document.getElementById('p2-shield'),
+        hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
+        x: 540, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
+    };
+
+    const keys = {};
+
+    // Nasłuchiwanie klawiatury
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // Funkcja zadawania ciosu
+    function punch(attacker, defender, type) {
+        if (attacker.state !== 'idle' || attacker.stamina < 15) return;
+
+        attacker.state = type;
+        attacker.stateTimer = type === 'jab' ? 10 : 18; // czas trwania animacji w klatkach
+        attacker.stamina -= type === 'jab' ? 15 : 25;
+        attacker.glove.style.display = 'block';
+
+        // Obliczanie zasięgu i trafienia
+        const distance = Math.abs((attacker.x + 30) - (defender.x + 30));
+        const reach = type === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
+        const damage = type === 'jab' ? 8 : 18;
+
+        if (distance <= reach + 60) { // 60 to szerokość boxera
+            setTimeout(() => {
+                if (defender.state === 'blocking') {
+                    defender.stamina = Math.max(0, defender.stamina - (damage / 2));
+                    attacker.stateTimer += 5; // kara za uderzenie w blok (odrzut)
+                } else {
+                    defender.hp = Math.max(0, defender.hp - damage);
+                    defender.state = 'hit';
+                    defender.stateTimer = 12; // ogłuszenie po trafieniu
+                    defender.glove.style.display = 'none';
+                }
+            }, 50);
+        }
+    }
+
+    // Główna pętla gry (60 FPS)
+    function update() {
+        // --- REGENERACJA I CZAS STANU ---
+        [p1, p2].forEach(p => {
+            if (p.stateTimer > 0) {
+                p.stateTimer--;
+            } else {
+                if (p.state !== 'blocking') p.state = 'idle';
+                p.glove.style.display = 'none';
+            }
+            if (p.state === 'idle' && p.stamina < 100) p.stamina = Math.min(100, p.stamina + CONFIG.staminaRegen);
+        });
+
+        // --- OBSŁUGA STEROWANIA ---
+        // Gracz 1
+        if (p1.state === 'idle' || p1.state === 'blocking') {
+            if (keys['KeyW']) { p1.state = 'blocking'; p1.shield.style.display = 'block'; }
+            else { p1.state = 'idle'; p1.shield.style.display = 'none'; }
+
+            if (p1.state === 'idle') {
+                if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
+                if (keys['KeyD']) p1.x = Math.min(p2.x - 55, p1.x + CONFIG.speed); // blokada przechodzenia przez siebie
+                if (keys['KeyG']) punch(p1, p2, 'jab');
+                if (keys['KeyH']) punch(p1, p2, 'hook');
+            }
+        }
+
+        // Gracz 2
+        if (p2.state === 'idle' || p2.state === 'blocking') {
+            if (keys['ArrowUp']) { p2.state = 'blocking'; p2.shield.style.display = 'block'; }
+            else { p2.state = 'idle'; p2.shield.style.display = 'none'; }
+
+            if (p2.state === 'idle') {
+                if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 55, p2.x - CONFIG.speed);
+                if (keys['ArrowRight']) p2.x = Math.min(740, p2.x + CONFIG.speed);
+                if (keys['Numpad1'] || keys['Digit1']) punch(p2, p1, 'jab'); // Obsługa numpada lub cyfry 1
+                if (keys['Numpad2'] || keys['Digit2']) punch(p2, p1, 'hook');
+            }
+        }
+
+        // --- AKTUALIZACJA POZYCJI I UI ---
+        p1.el.style.left = p1.x + 'px';
+        p2.el.style.left = p2.x + 'px';
+
+        p1.hpEl.style.width = p1.hp + '%';
+        p1.stamEl.style.width = p1.stamina + '%';
+        p1.stateEl.innerText = `Stan: ${p1.state.toUpperCase()}`;
+
+        p2.hpEl.style.width = p2.hp + '%';
+        p2.stamEl.style.width = p2.stamina + '%';
+        p2.stateEl.innerText = `Stan: ${p2.state.toUpperCase()}`;
+
+        // Koniec gry
+        if (p1.hp <= 0 || p2.hp <= 0) {
+            alert(p1.hp <= 0 ? "GRACZ 2 WYGRYWA K.O.!" : "GRACZ 1 WYGRYWA K.O.!");
+            p1.hp = 100; p2.hp = 100; p1.x = 200; p2.x = 540;
+            p1.stamina = 100; p2.stamina = 100;
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    // Uruchomienie silnika
+    update();
+</script>
 </body>
 </html>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const b1 = { 
-    name: "Grom", x: 180, startX: 180, y: 200, hp: 100, maxHp: 100, color: "#3498db", 
-    targetX: 180, state: "idle", punchProgress: 0, bop: 0, bloodParticles: [] 
-};
-const b2 = { 
-    name: "Orzeł", x: 580, startX: 580, y: 200, hp: 100, maxHp: 100, color: "#e74c3c", 
-    targetX: 580, state: "idle", punchProgress: 0, bop: 0, bloodParticles: [] 
-};
-
-let matchActive = false;
-const punches = ["lewy prosty", "prawy sierp", "hak na korpus", "podbródkowy", "overhand"];
-const zones = ["głowę", "korpus"];
-
-function drawBoxer(boxer, isLeftOriented) {
-    ctx.save();
-    
-    boxer.bop += 0.15;
-    let bopY = Math.sin(boxer.bop) * 3;
-    if (boxer.state === "hit") bopY = 8;
-
-    let lean = 0;
-    if (boxer.state === "dodge") {
-        lean = isLeftOriented ? -25 : 25;
-    }
-
-    ctx.translate(boxer.x, boxer.y + bopY);
-
-    ctx.fillStyle = "#333";
-    ctx.fillRect(-10, 40, 6, 40);
-    ctx.fillRect(4, 40, 6, 40);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(isLeftOriented ? -10 : -14, 75, 10, 8);
-    ctx.fillRect(isLeftOriented ? 4 : 0, 75, 10, 8);
-
-    ctx.fillStyle = boxer.color;
-    ctx.fillRect(-15, 20, 30, 25);
-    ctx.fillStyle = "#fff"; 
-    ctx.fillRect(-15, 17, 30, 5);
-
-    ctx.fillStyle = "#e0a98c"; 
-    ctx.save();
-    ctx.translate(lean * 0.3, 0);
-    ctx.fillRect(-16, -25, 32, 43);
-
-    ctx.beginPath();
-    ctx.arc(0, -40, 14, 0, Math.PI * 2);
-    ctx.fillStyle = "#e0a98c";
-    ctx.fill();
-    ctx.closePath();
-
-    ctx.fillStyle = "#000";
-    if (isLeftOriented) {
-        ctx.fillRect(5, -44, 3, 3);
-    } else {
-        ctx.fillRect(-8, -44, 3, 3);
-    }
-
-    ctx.fillStyle = boxer.color; 
-    let punchX = 0;
-    if (boxer.state === "punching") {
-        punchX = Math.sin(boxer.punchProgress * Math.PI) * 55;
-    }
-
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(lean, 0);
-    if (isLeftOriented) {
-        ctx.beginPath(); ctx.arc(-5, -20, 10, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(15 + punchX, -23, 11, 0, Math.PI*2); ctx.fill();
-    } else {
-        ctx.beginPath(); ctx.arc(5, -20, 10, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(-15 - punchX, -23, 11, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.restore();
-    ctx.restore();
-
-    drawBlood(boxer);
-}
-
-function triggerBlood(boxer) {
-    for(let i=0; i<12; i++) {
-        boxer.bloodParticles.push({
-            x: boxer.x + (Math.random()*20 - 10),
-            y: boxer.y - 30 + (Math.random()*20 - 10),
-            vx: (Math.random() - 0.5) * 8,
-            vy: (Math.random() - 0.8) * 8,
-            alpha: 1
-        });
-    }
-}
-
-function drawBlood(boxer) {
-    for(let i = boxer.bloodParticles.length - 1; i >= 0; i--) {
-        let p = boxer.bloodParticles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.3; 
-        p.alpha -= 0.04;
-
-        ctx.fillStyle = `rgba(200, 0, 0, ${p.alpha})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
-        ctx.fill();
-
-        if(p.alpha <= 0) boxer.bloodParticles.splice(i, 1);
-    }
-}
-
-function drawScene() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = "#444454";
-    ctx.lineWidth = 4;
-    for(let i = 110; i <= 170; i += 30) {
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-    }
-
-    ctx.fillStyle = "#1e212b";
-    ctx.fillRect(0, 190, canvas.width, canvas.height - 190);
-    ctx.strokeStyle = "#ff3333";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(5, 190, canvas.width - 10, canvas.height - 195);
-
-    b1.x += (b1.targetX - b1.x) * 0.15;
-    b2.x += (b2.targetX - b2.x) * 0.15;
-
-    if (b1.state === "punching") {
-        b1.punchProgress += 0.15;
-        if (b1.punchProgress >= 1) { b1.state = "idle"; b1.punchProgress = 0; b1.targetX = b1.startX; }
-    }
-    if (b2.state === "punching") {
-        b2.punchProgress += 0.15;
-        if (b2.punchProgress >= 1) { b2.state = "idle"; b2.punchProgress = 0; b2.targetX = b2.startX; }
-    }
-
-    drawBoxer(b1, true);
-    drawBoxer(b2, false);
-
-    requestAnimationFrame(drawScene);
-}
-
-function addComment(text, typeClass) {
-    const box = document.getElementById("commentary");
-    box.innerHTML = `<div class="line ${typeClass}">${text}</div>` + box.innerHTML;
-}
-
-function updateBars() {
-    const bar1 = document.getElementById("hp1");
-    const bar2 = document.getElementById("hp2");
-    bar1.style.width = Math.max(0, b1.hp) + "%";
-    bar2.style.width = Math.max(0, b2.hp) + "%";
-
-    if(b1.hp < 35) bar1.className = "hp-bar damaged";
-    if(b2.hp < 35) bar2.className = "hp-bar damaged";
-}
-
-function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
-
-async function runSimulation() {
-    document.getElementById("actionBtn").disabled = true;
-    matchActive = true;
-    b1.hp = 100; b2.hp = 100;
-    b1.x = b1.startX; b2.x = b2.startX;
-    document.getElementById("hp1").className = "hp-bar";
-    document.getElementById("hp2").className = "hp-bar";
-    updateBars();
-    
-    document.getElementById("commentary").innerHTML = "";
-    addComment("=== WALKA ROZPOCZĘTA! GONG! ===", "system");
-
-    for (let round = 1; round <= 3; round++) {
-        if (b1.hp <= 0 || b2.hp <= 0) break;
-        addComment(`--- ROZPOCZYNA SIĘ RUNDA ${round} ---`, "system");
-        await delay(1200);
-
-        for (let exchange = 0; exchange < 6; exchange++) {
-            if (b1.hp <= 0 || b2.hp <= 0) break;
-
-            let att = Math.random() < 0.5 ? b1 : b2;
-            let def = (att === b1) ? b2 : b1;
-
-            att.targetX = 330;
-            def.targetX = 430;
-            await delay(300);
-
-            att.state = "punching";
-            att.punchProgress = 0;
-
-            let hitChance = Math.random();
-
-            if (hitChance < 0.6) {
-                def.state = "hit";
-                let dmg = Math.floor(Math.random() * 12) + 8;
-                def.hp = Math.max(0, def.hp - dmg);
-                updateBars();
-                triggerBlood(def);
-
-                if (dmg > 15) {
-                    addComment(`🔥 Potężny OVERHAND! ${att.name} ciężko trafia rywala! (-${dmg} HP)`, "crit");
-                } else {
-                    addComment(`🥊 ${att.name} trafia szybkim lewym prostym. (-${dmg} HP)`, "hit");
-                }
-                
-                await delay(250);
-                if(def.state === "hit") def.state = "idle";
-
-            } else {
-                def.state = "dodge";
-                addComment(`💨 Genialny unik! ${def.name} schodzi z linii ciosu!`, "miss");
-                await delay(300);
-                if(def.state === "dodge") def.state = "idle";
-            }
-
-            att.targetX = att.startX;
-            def.targetX = def.startX;
-            await delay(900);
-        }
-        
-        if (b1.hp > 0 && b2.hp > 0) {
-            addComment(`🔔 Koniec rundy ${round}. Odpoczynek w narożnikach.`, "system");
-            await delay(1500);
-        }
-    }
-
-    addComment("=== KONIEC WALKII! ===", "system");
-    if (b1.hp <= 0) {
-        addComment(`🏆 ORZEŁ WYGRYWA PRZEZ NOKAUT (KO)!`, "crit");
-    } else if (b2.hp <= 0) {
-        addComment(`🏆 GROM WYGRYWA PRZEZ NOKAUT (KO)!`, "crit");
-    } else {
-        if (b1.hp > b2.hp) {
-            addComment(`🏆 Na punkty wygrywa GROM!`, "system");
-        } else if (b2.hp > b1.hp) {
-            addComment(`🏆 Na punkty wygrywa ORZEŁ!`, "system");
-        } else {
-            addComment(`⚖️ Remis po morderczej walce!`, "system");
-        }
-    }
-
-    document.getElementById("actionBtn").disabled = false;
-}
-
-drawScene();
