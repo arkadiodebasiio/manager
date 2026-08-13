@@ -2,122 +2,234 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Championship Boxing Manager</title>
+    <title>Elite Boxing Manager 3D</title>
     <style>
-        body { background: #020617; color: #f8fafc; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
-        #panel { background: linear-gradient(185deg, #0f172a 0%, #1e293b 100%); padding: 16px; border-radius: 12px; margin-bottom: 20px; width: 340px; border: 1px solid rgba(255,255,255,0.08); }
-        .row { display: flex; justify-content: space-between; margin: 6px 0; font-weight: bold; font-size: 14px; }
-        button { background: #2563eb; color: #fff; border: none; padding: 4px 12px; cursor: pointer; border-radius: 6px; font-weight: bold; }
-        #fight-btn { background: #059669; width: 100%; padding: 10px; margin-top: 8px; font-size: 14px; border-radius: 8px; }
-        canvas { border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: #0f172a; }
+        :root {
+            --bg-glass: rgba(15, 23, 42, 0.65);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --accent: #3b82f6;
+        }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #020617;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #f8fafc;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #webgl-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        }
+        /* Nowoczesny Panel Web3 / Dashboard UI */
+        #dashboard {
+            position: relative; z-index: 10;
+            width: 380px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        h2 { font-size: 18px; font-weight: 800; letter-spacing: 1px; color: #fff; margin: 0 0 16px 0; text-align: center; text-transform: uppercase; }
+        .stat-group { display: flex; justify-content: space-between; align-items: center; margin: 12px 0; font-size: 14px; font-weight: 600; }
+        .label { color: #94a3b8; }
+        .val { color: #38bdf8; font-family: monospace; font-size: 16px; }
+        button.btn-plus {
+            background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);
+            width: 32px; height: 32px; font-weight: bold; cursor: pointer; border-radius: 8px; transition: all 0.2s;
+        }
+        button.btn-plus:hover { background: #3b82f6; color: white; transform: scale(1.05); }
+        #action-btn {
+            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: white; border: none;
+            width: 100%; padding: 14px; margin-top: 16px; font-size: 14px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; border-radius: 12px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;
+        }
+        #action-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+        #live-commentary {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 10;
+            background: var(--bg-glass); backdrop-filter: blur(12px); border: 1px solid var(--border-glass);
+            padding: 14px 40px; border-radius: 9999px; font-size: 13px; font-weight: 600; color: #f59e0b;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); text-align: center; width: 400px;
+        }
     </style>
+    <!-- Import silnika 3D (Three.js) -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
-    <div id="panel">
-        <div class="row"><span>Punkty Trenera:</span><span id="pts" style="color:#38bdf8">5</span></div>
-        <div class="row"><span>SIŁA GRACZA (<span id="v-pow">12</span>):</span><button onclick="train('pow')">+</button></div>
-        <div class="row"><span>SZYBKOŚĆ GRACZA (<span id="v-spd">6</span>):</span><button onclick="train('spd')">+</button></div>
-        <button id="fight-btn" onclick="startFight()">ROZPOCZNIJ WALKĘ</button>
+    <div id="webgl-container"></div>
+
+    <!-- NOWOCZESNY INTERFEJS GRY SZEFA KLUBU -->
+    <div id="dashboard">
+        <h2>Klub Bokserski Elite</h2>
+        <div class="stat-group">
+            <span class="label">Licencja Trenera (Punkty):</span>
+            <span id="pts" style="color: #a855f7; font-size: 18px; font-weight: bold;">5</span>
+        </div>
+        <div class="stat-group">
+            <span class="label">SIŁA (POWER):</span>
+            <div>
+                <span class="val" id="v-pow" style="margin-right: 12px;">15</span>
+                <button class="btn-plus" onclick="upgrade('pow')">+</button>
+            </div>
+        </div>
+        <div class="stat-group">
+            <span class="label">SZYBKOŚĆ (SPEED):</span>
+            <div>
+                <span class="val" id="v-spd" style="margin-right: 12px;">8</span>
+                <button class="btn-plus" onclick="upgrade('spd')">+</button>
+            </div>
+        </div>
+        <button id="action-btn" onclick="start3DFight()">Wyślij zawodnika na ring</button>
     </div>
 
-    <canvas id="stage" width="440" height="240"></canvas>
+    <div id="live-commentary" id="log-text">SYSTEM GOTOWY: ROZWIŃ STATYSTYKI</div>
 
 <script>
-const canvas = document.getElementById("stage");
-const ctx = canvas.getContext("2d");
+// --- SILNIK 3D WEBGL (THREE.JS) ---
+const container = document.getElementById("webgl-container");
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020617);
+scene.fog = new THREE.FogExp2(0x020617, 0.015); // Efekt głębi i mgły na arenie
 
-let points = 5, active = false, over = false, txt = "ZAPLANUJ CYKL TRENINGOWY";
-let bA = { name: "ALEX", x: 140, y: 110, hp: 100, color: "#38bdf8", gloves: "#f59e0b", state: "IDLE", timer: 0, speed: 0.05, power: 12 };
-let bB = { name: "BOB",  x: 260, y: 110, hp: 100, color: "#f43f5e", gloves: "#f8fafc", state: "IDLE", timer: 0, speed: 0.06, power: 14 };
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.set(0, 15, 35);
+camera.lookAt(0, 4, 0);
 
-function train(type) {
-    if (points <= 0) return;
-    points--; document.getElementById("pts").innerText = points;
-    if (type === 'pow') { bA.power += 4; document.getElementById("v-pow").innerText = bA.power; }
-    else { bA.speed += 0.02; document.getElementById("v-spd").innerText = Math.round(bA.speed * 100); }
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+container.appendChild(renderer.domElement);
+
+// Oświetlenie areny (Kinowe reflektory punktowe 3D)
+const ambientLight = new THREE.AmbientLight(0x1e293b, 0.6);
+scene.add(ambientLight);
+
+const spotlight = new THREE.SpotLight(0xffffff, 2);
+spotlight.position.set(0, 30, 0);
+spotlight.angle = Math.PI / 3;
+spotlight.penumbra = 0.8;
+spotlight.castShadow = true;
+scene.add(spotlight);
+
+// Generowanie trójwymiarowego Ringu Bokserskiego za pomocą kodu 3D
+const ringGeometry = new THREE.BoxGeometry(20, 1, 20);
+const ringMaterial = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+ringMesh.position.y = -0.5;
+ringMesh.receiveShadow = true;
+scene.add(ringMesh);
+
+// Słupki ringu w 3D
+const postGeo = new THREE.CylinderGeometry(0.3, 0.3, 4, 16);
+const postMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+const corners = [[9,9], [-9,9], [9,-9], [-9,-9]];
+corners.forEach(c => {
+    let post = new THREE.Mesh(postGeo, postMat);
+    post.position.set(c[0], 2, c[1]);
+    scene.add(post);
+});
+
+// GENEROWANIE NOWOCZESNYCH MODELI TRÓJWYMIAROWYCH DLA ZAWODNIKÓW (Sfery energetyczne / Manekiny 3D)
+function create3DBoxer(color) {
+    const group = new THREE.Group();
+    // Głowa
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 32), new THREE.MeshStandardMaterial({ color: 0xfde047 }));
+    head.position.y = 4.2;
+    group.add(head);
+    // Tors
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.5, 2.2, 32), new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 }));
+    body.position.y = 2.6;
+    body.castShadow = true;
+    group.add(body);
+    return group;
 }
 
-function startFight() { bA.hp = 100; bB.hp = 100; over = false; active = true; txt = "RUNDA 1 - GONG!"; }
+const boxer3DA = create3DBoxer(0x0ea5e9); // Niebieski zawodnik 3D
+boxer3DA.position.set(-4, 0, 0);
+scene.add(boxer3DA);
 
-function runAI(p, enemy, isLeft) {
-    if (!active || over) return; p.timer++;
-    if ((p.state === "PUNCH" || p.state === "HIT") && p.timer > 10) p.state = "IDLE";
-    if (p.state === "IDLE" && Math.random() < p.speed) {
-        p.state = "PUNCH"; p.timer = 0; enemy.state = "HIT"; enemy.timer = 0; enemy.hp -= p.power;
-        txt = `${p.name} TRAFIA POTĘŻNYM CIOSEM!`;
-        if (enemy.hp <= 0) { enemy.hp = 0; over = true; txt = `MISTRZOWSKIE K.O.! WYGRYWA ${p.name}!`; }
-    }
-}
+const boxer3DB = create3DBoxer(0xf43f5e); // Czerwony zawodnik 3D
+boxer3DB.position.set(4, 0, 0);
+scene.add(boxer3DB);
 
-function drawArtistFighter(p, isLeft) {
-    ctx.save();
-    let dx = p.x; let dy = p.y;
-    if (p.state === "PUNCH") dx += isLeft ? 20 : -20;
-    if (p.state === "HIT") { dx += isLeft ? -8 : 8; dy -= 2; }
+// --- LOGIKA I STATYSTYKI ---
+let trainerPoints = 5, matchActive = false, matchOver = false;
+let dataA = { power: 15, speed: 0.05, hp: 100 };
+let dataB = { power: 12, speed: 0.06, hp: 100 };
 
-    // Ręcznie malowany cień pod nogami
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
-    ctx.beginPath(); ctx.ellipse(dx + 15, dy + 55, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
-
-    // RYSOWANIE KARTONOWEGO CIAŁA (Okrągłe, cieniowane kształty zamiast kwadratów)
-    ctx.fillStyle = "#ffcc99"; // Kolor skóry
-    ctx.beginPath(); ctx.arc(dx + 15, dy + 10, 12, 0, Math.PI * 2); ctx.fill(); // Głowa
-    ctx.fillRect(dx + 3, dy + 18, 24, 25); // Tors
-
-    ctx.fillStyle = "#1e293b"; // Włosy / Fryzura
-    ctx.fillRect(dx + 3, dy - 2, 24, 6);
-
-    ctx.fillStyle = "#000"; // Oczy
-    ctx.fillRect(isLeft ? dx + 18 : dx + 10, dy + 6, 2, 2);
-
-    // Spodenki sportowe z paskiem
-    ctx.fillStyle = p.color; ctx.fillRect(dx + 3, dy + 35, 24, 16);
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(dx + 3, dy + 35, 24, 3); // Pas bokserski
-
-    // Rękawice (Wysunięte lub garda)
-    ctx.fillStyle = p.gloves;
-    if (p.state === "PUNCH") {
-        ctx.beginPath(); ctx.arc(isLeft ? dx + 32 : dx - 4, dy + 22, 8, 0, Math.PI*2); ctx.fill();
+function upgrade(stat) {
+    if (trainerPoints <= 0) return;
+    trainerPoints--;
+    document.getElementById("pts").innerText = trainerPoints;
+    if (stat === 'pow') {
+        dataA.power += 4; document.getElementById("v-pow").innerText = dataA.power;
     } else {
-        ctx.beginPath(); ctx.arc(dx - 2, dy + 24, 7, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(dx + 32, dy + 24, 7, 0, Math.PI*2); ctx.fill();
+        dataA.speed += 0.02; document.getElementById("v-spd").innerText = Math.round(dataA.speed * 100);
+    }
+}
+
+function start3DFight() {
+    if (matchActive) return;
+    dataA.hp = 100; dataB.hp = 100; matchOver = false; matchActive = true;
+    document.getElementById("live-commentary").innerText = "GONG! WALKA TRWA W TRÓJWYMIARZE!";
+}
+
+// Pętla animacji i silnik symulacji (60 Klatek na Sekundę)
+let time = 0;
+function animate() {
+    requestAnimationFrame(animate);
+    time += 0.01;
+
+    // Kinowy obrót kamery wokół ringu (Jak w telewizji)
+    camera.position.x = Math.sin(time * 0.15) * 32;
+    camera.position.z = Math.cos(time * 0.15) * 32;
+    camera.lookAt(0, 2.5, 0);
+
+    // Delikatne kołysanie się zawodników w 3D (Garda)
+    boxer3DA.position.y = Math.sin(time * 5) * 0.1;
+    boxer3DB.position.y = Math.cos(time * 4.5) * 0.1;
+
+    if (matchActive && !matchOver) {
+        // AI Gracz A wyprowadza cios (fizyczna animacja przesunięcia modelu 3D)
+        if (Math.random() < dataA.speed) {
+            boxer3DA.position.x += 1.5;
+            setTimeout(() => boxer3DA.position.x = -4, 150);
+            dataB.hp -= dataA.power;
+            document.getElementById("live-commentary").innerText = `Klubowicz Alex zadaje potężny cios! Rywal traci -${dataA.power} HP!`;
+        }
+        // AI Gracz B kontruje
+        if (Math.random() < dataB.speed && !matchOver) {
+            boxer3DB.position.x -= 1.5;
+            setTimeout(() => boxer3DB.position.x = 4, 150);
+            dataA.hp -= dataB.power;
+            document.getElementById("live-commentary").innerText = `Rywal odpowiada kontrą! Tracisz -${dataB.power} HP!`;
+        }
+
+        if (dataB.hp <= 0 || dataA.hp <= 0) {
+            matchOver = true;
+            matchActive = false;
+            document.getElementById("live-commentary").innerText = dataB.hp <= 0 ? "K.O.! TWÓJ BOXER WYGRAŁ WALKĘ!" : "K.O.! PRZEGRANA W TEJ RUNDZIE.";
+        }
     }
 
-    // Paski życia nad głowami
-    ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fillRect(p.x - 5, p.y - 18, 40, 5);
-    ctx.fillStyle = "#10b981"; ctx.fillRect(p.x - 5, p.y - 18, (p.hp / 100) * 40, 5);
-    ctx.restore();
+    renderer.render(scene, camera);
 }
 
-function render() {
-    // Widownia i tło hali
-    let bg = ctx.createLinearGradient(0, 0, 0, 100);
-    bg.addColorStop(0, "#020617"); bg.addColorStop(1, "#0f172a");
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, 440, 240);
+// Obsługa automatycznego skalowania okna (Responsywność)
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-    // Szara mata ringu w rzucie perspektywicznym
-    ctx.fillStyle = "#475569";
-    ctx.beginPath(); ctx.moveTo(60, 100); ctx.lineTo(380, 100); ctx.lineTo(440, 220); ctx.lineTo(0, 220); ctx.fill();
-
-    // Czerwono-białe liny ringu
-    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0, 96); ctx.lineTo(440, 96); ctx.stroke();
-    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, 92); ctx.lineTo(440, 92); ctx.stroke();
-
-    runAI(bA, bB, true); runAI(bB, bA, false);
-    drawArtistFighter(bA, true); drawArtistFighter(bB, false);
-
-    // Nowoczesny dół z tekstem
-    ctx.fillStyle = "rgba(15, 23, 42, 0.9)"; ctx.fillRect(40, 175, 360, 28);
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.3)"; ctx.strokeRect(40, 175, 360, 28);
-    ctx.fillStyle = "#f59e0b"; ctx.font = "bold 11px system-ui"; ctx.textAlign = "center";
-    ctx.fillText(txt, 220, 192); ctx.textAlign = "left";
-
-    requestAnimationFrame(render);
-}
-render();
+animate();
 </script>
 </body>
 </html>
