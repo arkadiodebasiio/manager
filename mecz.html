@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prawdziwy Silnik Bokserski 2D</title>
+    <title>Prawdziwy Silnik Bokserski 2D - Canvas</title>
     <style>
         body {
             margin: 0;
@@ -26,13 +26,12 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
             overflow: hidden;
         }
-        #ring-floor {
+        /* Płótno gry, na którym skrypt rysuje bokserów */
+        #gameCanvas {
             position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 60px;
-            background: #3a3a5e;
-            border-top: 5px solid #e94560;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
         .ui-panel {
             position: absolute;
@@ -56,64 +55,6 @@
         .stamina { background: #33ff33; width: 100%; transition: width 0.1s; }
         .state-text { font-size: 11px; color: #aaa; font-family: monospace; }
         
-        /* GENEROWANIE GRAFIKI BOKSERA PRZEZ CSS (Niezawodne) */
-        .boxer {
-            position: absolute;
-            bottom: 45px;
-            width: 70px;
-            height: 130px;
-            transition: transform 0.1s;
-        }
-        
-        /* Elementy ciała generowane z kodu */
-        .head {
-            position: absolute;
-            top: 0; left: 15px; width: 40px; height: 40px;
-            background: #ffdbac; border-radius: 50%;
-        }
-        .body-trunk {
-            position: absolute;
-            top: 40px; left: 5px; width: 60px; height: 90px;
-            border-radius: 10px 10px 0 0;
-        }
-        .glove-l, .glove-r {
-            position: absolute;
-            width: 24px; height: 24px;
-            background: #ff1e56; border-radius: 50%;
-            border: 2px solid #fff;
-            transition: all 0.05s;
-        }
-
-        /* Ustawienia fabryczne rąk */
-        .glove-l { top: 50px; right: -10px; }
-        .glove-r { top: 65px; right: -15px; }
-
-        /* Style specyficzne dla stron */
-        #player1 .body-trunk { background: #3388ff; } /* Niebieskie spodenki/tors */
-        #player1 .glove-l, #player1 .glove-r { background: #1155cc; }
-
-        #player2 .body-trunk { background: #ff3333; } /* Czerwone spodenki/tors */
-        #player2 .glove-l, #player2 .glove-r { background: #cc1111; }
-        
-        /* Animacje ciosów w CSS sterowane klasami skryptu */
-        .punching .glove-r {
-            transform: translateX(45px);
-            width: 28px; height: 28px;
-        }
-        .blocking .glove-l { transform: translate(-10px, -25px); }
-        .blocking .glove-r { transform: translate(-25px, -35px); }
-
-        /* Efekt zebrania hita */
-        .hit-effect {
-            animation: shake 0.1s infinite;
-            filter: brightness(2);
-        }
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            50% { transform: translateX(-10px); }
-            100% { transform: translateX(10px); }
-        }
-
         #controls-info {
             margin-top: 15px;
             text-align: center;
@@ -128,8 +69,7 @@
 <body>
 
     <div id="game-container">
-        <div id="ring-floor"></div>
-
+        <!-- Interfejs UI -->
         <div class="ui-panel" id="p1-ui">
             <strong style="color: #3388ff;">MIGUEL (P1)</strong>
             <div class="bar"><div id="p1-hp" class="hp"></div></div>
@@ -144,30 +84,21 @@
             <div id="p2-state" class="state-text">STAN: READY</div>
         </div>
 
-        <!-- Struktura anatomiczna postaci wygenerowana w HTML -->
-        <div id="player1" class="boxer">
-            <div class="head"></div>
-            <div class="body-trunk"></div>
-            <div class="glove-l"></div>
-            <div class="glove-r"></div>
-        </div>
-
-        <div id="player2" class="boxer">
-            <div class="head"></div>
-            <div class="body-trunk"></div>
-            <div class="glove-l"></div>
-            <div class="glove-r"></div>
-        </div>
+        <!-- Główny ekran graficzny ringu -->
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
     </div>
 
     <div id="controls-info">
-        <strong>BALROG (P1):</strong> A/D - Ruch | W - Blok | G - Lewy Prosty | H - Prawy Sierpowy<br>
-        <strong>LITTLE MAC (P2):</strong> ←/→ - Ruch | ↑ - Blok | 1 - Lewy Prosty | 2 - Prawy Sierpowy
+        <strong>MIGUEL (P1):</strong> A/D - Ruch | W - Blok | G - Lewy Prosty | H - Prawy Sierpowy<br>
+        <strong>ROCKY (P2):</strong> ←/→ - Ruch | ↑ - Blok | 1 - Lewy Prosty | 2 - Prawy Sierpowy
     </div>
 
     <script src="script.js"></script>
 </body>
 </html>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
 const CONFIG = {
     speed: 5,
     jabDist: 80,
@@ -175,14 +106,15 @@ const CONFIG = {
     staminaRegen: 0.6
 };
 
+// Dodane kolory rysowania bezpośrednio do obiektów zawodników
 const p1 = {
-    id: 1, el: document.getElementById('player1'),
+    id: 1, color: '#3388ff', gloveColor: '#1155cc', skinColor: '#ffdbac',
     hpEl: document.getElementById('p1-hp'), stamEl: document.getElementById('p1-stamina'), stateEl: document.getElementById('p1-state'),
     x: 180, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
 };
 
 const p2 = {
-    id: 2, el: document.getElementById('player2'),
+    id: 2, color: '#ff3333', gloveColor: '#cc1111', skinColor: '#e0a96d',
     hpEl: document.getElementById('p2-hp'), stamEl: document.getElementById('p2-stamina'), stateEl: document.getElementById('p2-state'),
     x: 540, hp: 100, stamina: 100, state: 'idle', stateTimer: 0
 };
@@ -215,27 +147,76 @@ function punch(attacker, defender, type) {
     }
 }
 
-function updateVisuals(player, isP2 = false) {
-    player.el.style.left = player.x + 'px';
-
-    // Reset klas animacji
-    player.el.classList.remove('punching', 'blocking', 'hit-effect');
-
-    // Nadawanie klas na podstawie maszyn stanowych JavaScript
-    if (player.state === 'jab' || player.state === 'hook') {
-        player.el.classList.add('punching');
-    } else if (player.state === 'blocking') {
-        player.el.classList.add('blocking');
-    } else if (player.state === 'hit') {
-        player.el.classList.add('hit-effect');
+// CAŁKOWICIE NOWA FUNKCJA RYSOWANIA BOKSERÓW (Zastępuje puste klocki)
+function drawBoxer(p, facingRight) {
+    ctx.save();
+    
+    // Efekt wstrząsu/migania po otrzymaniu ciosu
+    if (p.state === 'hit') {
+        ctx.translate((Math.random() - 0.5) * 10, 0);
+        ctx.filter = 'brightness(1.8)';
     }
 
-    // Obracanie graczy do siebie twarzami
-    if (isP2) {
-        player.el.style.transform = "scaleX(-1)";
-    } else {
-        player.el.style.transform = "scaleX(1)";
+    const groundY = 355; // Wysokość podłogi ringu
+
+    // Rysowanie Nóg / Spodenek bokserskich
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - 20, groundY - 40, 40, 40);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(p.x - 20, groundY, 15, -10); // Lewy but
+    ctx.fillRect(p.x + 5, groundY, 15, -10);  // Prawy but
+
+    // Rysowanie Torsu (Klatka piersiowa)
+    ctx.fillStyle = p.skinColor;
+    ctx.fillRect(p.x - 25, groundY - 90, 50, 50);
+
+    // Rysowanie Głowy
+    ctx.beginPath();
+    ctx.arc(p.x, groundY - 110, 20, 0, Math.PI * 2);
+    ctx.fillStyle = p.skinColor;
+    ctx.fill();
+    ctx.closePath();
+
+    // Rysowanie Oczu/Włosów w zależności od kierunku patrzenia
+    ctx.fillStyle = '#000';
+    const eyeOffset = facingRight ? 8 : -12;
+    ctx.fillRect(p.x + eyeOffset, groundY - 115, 4, 4); // Oko
+
+    // Rysowanie Rąk i Rękawic (Dynamiczne stany animacji)
+    let glove1X = facingRight ? p.x + 15 : p.x - 35;
+    let glove1Y = groundY - 75;
+    let glove2X = facingRight ? p.x + 25 : p.x - 45;
+    let glove2Y = groundY - 60;
+
+    if (p.state === 'jab' || p.state === 'hook') {
+        // Wyprowadzenie ciosu - rękawica leci do przodu
+        const punchExtension = p.state === 'jab' ? CONFIG.jabDist : CONFIG.hookDist;
+        glove2X = facingRight ? p.x + punchExtension : p.x - punchExtension;
+        glove2Y = groundY - 80;
+    } else if (p.state === 'blocking') {
+        // Garda - rękawice zasłaniają twarz
+        glove1X = facingRight ? p.x + 12 : p.x - 32;
+        glove1Y = groundY - 110;
+        glove2X = facingRight ? p.x + 20 : p.x - 40;
+        glove2Y = groundY - 105;
     }
+
+    // Rysowanie Rękawicy tylnej
+    ctx.beginPath();
+    ctx.arc(glove1X, glove1Y, 11, 0, Math.PI * 2);
+    ctx.fillStyle = p.gloveColor;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+
+    // Rysowanie Rękawicy przedniej
+    ctx.beginPath();
+    ctx.arc(glove2X, glove2Y, 13, 0, Math.PI * 2);
+    ctx.fillStyle = p.gloveColor;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
 }
 
 function update() {
@@ -254,8 +235,8 @@ function update() {
         else if (p1.state === 'blocking') p1.state = 'idle';
 
         if (p1.state === 'idle') {
-            if (keys['KeyA']) p1.x = Math.max(0, p1.x - CONFIG.speed);
-            if (keys['KeyD']) p1.x = Math.min(p2.x - 70, p1.x + CONFIG.speed);
+            if (keys['KeyA']) p1.x = Math.max(25, p1.x - CONFIG.speed);
+            if (keys['KeyD']) p1.x = Math.min(p2.x - 50, p1.x + CONFIG.speed); // Modyfikacja szerokości kolizji ciał
             if (keys['KeyG']) punch(p1, p2, 'jab');
             if (keys['KeyH']) punch(p1, p2, 'hook');
         }
@@ -267,16 +248,27 @@ function update() {
         else if (p2.state === 'blocking') p2.state = 'idle';
 
         if (p2.state === 'idle') {
-            if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 70, p2.x - CONFIG.speed);
-            if (keys['ArrowRight']) p2.x = Math.min(730, p2.x + CONFIG.speed);
+            if (keys['ArrowLeft']) p2.x = Math.max(p1.x + 50, p2.x - CONFIG.speed);
+            if (keys['ArrowRight']) p2.x = Math.min(775, p2.x + CONFIG.speed);
             if (keys['Digit1'] || keys['Numpad1']) punch(p2, p1, 'jab');
             if (keys['Digit2'] || keys['Numpad2']) punch(p2, p1, 'hook');
         }
     }
 
-    updateVisuals(p1, false);
-    updateVisuals(p2, true);
+    // CZYSZCZENIE I RENDEROWANIE SCENY RYSOWANEJ (Canvas)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Rysowanie lin i podłogi ringu z kodu
+    ctx.fillStyle = '#3a3a5e';
+    ctx.fillRect(0, 350, canvas.width, 50);
+    ctx.fillStyle = '#e94560';
+    ctx.fillRect(0, 345, canvas.width, 5);
+
+    // Renderowanie wygenerowanych ciał bokserów
+    drawBoxer(p1, true);  // Gracz 1 patrzy w prawo
+    drawBoxer(p2, false); // Gracz 2 patrzy w lewo
+
+    // UI Aktualizacja barów
     p1.hpEl.style.width = p1.hp + '%';
     p1.stamEl.style.width = p1.stamina + '%';
     p1.stateEl.innerText = `STAN: ${p1.state.toUpperCase()}`;
