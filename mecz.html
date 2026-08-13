@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top-Down Boxing Simulation</title>
+    <title>Gala Bokserska 2D - Widok z Góry</title>
     <style>
         body {
             margin: 0;
-            background: #0f0f0f;
+            background: #0a0a0e;
             color: #fff;
-            font-family: Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,153 +17,331 @@
             height: 100vh;
             overflow: hidden;
         }
-        #ui {
+        #game-interface {
+            width: 800px;
             display: flex;
             justify-content: space-between;
-            width: 700px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            font-size: 14px;
+            align-items: center;
+            margin-bottom: 15px;
+            background: rgba(20, 20, 30, 0.8);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid #222538;
+            box-sizing: border-box;
         }
-        .p1-color { color: #3388ff; }
-        .p2-color { color: #ff3333; }
+        .boxer-hud {
+            width: 45%;
+        }
+        .boxer-name {
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .p1-color { color: #00ddff; text-shadow: 0 0 10px rgba(0, 221, 255, 0.4); }
+        .p2-color { color: #ff3366; text-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
+        
+        .bar-container {
+            width: 100%;
+            height: 16px;
+            background: #15161e;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #2a2c3d;
+        }
+        .hp-bar {
+            height: 100%;
+            width: 100%;
+            transition: width 0.1s ease-out;
+        }
+        #p1-hp-bar { background: linear-gradient(90deg, #0099ff, #00ddff); }
+        #p2-hp-bar { background: linear-gradient(90deg, #ff0055, #ff3366); }
+
         canvas {
-            background: #222;
-            border: 6px solid #c9a000;
-            box-shadow: 0 0 25px rgba(201, 160, 0, 0.4);
+            background: #111217;
+            border-radius: 8px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
         }
-        #info {
-            margin-top: 10px;
-            font-size: 12px;
-            color: #888;
+        #controls-panel {
+            margin-top: 15px;
+            font-size: 13px;
+            background: rgba(20, 20, 30, 0.6);
+            padding: 10px 30px;
+            border-radius: 8px;
+            border: 1px solid #1c1d2a;
+            color: #a0a5c0;
             text-align: center;
-            line-height: 1.4;
+        }
+        kbd {
+            background: #2a2c3d;
+            border-radius: 3px;
+            padding: 2px 6px;
+            color: #fff;
+            font-size: 11px;
+            font-family: monospace;
+            border-bottom: 2px solid #15161e;
         }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div><span class="p1-color">NIEBIESKI (P1) HP:</span> <span id="p1-hp">100</span></div>
-    <div><span class="p2-color">CZERWONY (P2) HP:</span> <span id="p2-hp">100</span></div>
+<div id="game-interface">
+    <div class="boxer-hud">
+        <div class="boxer-name p1-color">MIGUEL (P1)</div>
+        <div class="bar-container"><div id="p1-hp-bar" class="hp-bar"></div></div>
+    </div>
+    <div style="font-size: 24px; font-weight: 900; color: #4e536e;">VS</div>
+    <div class="boxer-hud" style="text-align: right;">
+        <div class="boxer-name p2-color">ROCKY (P2)</div>
+        <div class="bar-container"><div id="p2-hp-bar" class="hp-bar"></div></div>
+    </div>
 </div>
 
-<canvas id="ring" width="700" height="400"></canvas>
+<canvas id="ringCanvas" width="800" height="450"></canvas>
 
-<div id="info">
-    <strong>GRACZ 1 (Niebieski):</strong> Ruch: W, A, S, D | Cios: <strong>Spacja</strong><br>
-    <strong>GRACZ 2 (Czerwony):</strong> Ruch: Strzałki (← ↑ → ↓) | Cios: <strong>Enter</strong>
+<div id="controls-panel">
+    <span class="p1-color">MIGUEL:</span> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> - Poruszanie | <kbd>G</kbd> - Lewy Prosty | <kbd>H</kbd> - Sierpowy<br style="margin-bottom: 5px;">
+    <span class="p2-color">ROCKY:</span> <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> - Poruszanie | <kbd>1</kbd> - Lewy Prosty | <kbd>2</kbd> - Sierpowy
 </div>
 
-<script>
-    const canvas = document.getElementById('ring');
-    const ctx = canvas.getContext('2d');
-
-    const p1 = { x: 200, y: 200, radius: 18, color: '#3388ff', hp: 100, punchCooldown: 0, face: 'right' };
-    const p2 = { x: 500, y: 200, radius: 18, color: '#ff3333', hp: 100, punchCooldown: 0, face: 'left' };
-
-    const keys = {};
-    window.addEventListener('keydown', e => { keys[e.code] = true; });
-    window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-    function update() {
-        // Ruch P1 (WSAD)
-        if (keys['KeyW']) p1.y -= 3;
-        if (keys['KeyS']) p1.y += 3;
-        if (keys['KeyA']) { p1.x -= 3; p1.face = 'left'; }
-        if (keys['KeyD']) { p1.x += 3; p1.face = 'right'; }
-
-        // Ruch P2 (Strzałki)
-        if (keys['ArrowUp']) p2.y -= 3;
-        if (keys['ArrowDown']) p2.y += 3;
-        if (keys['ArrowLeft']) { p2.x -= 3; p2.face = 'left'; }
-        if (keys['ArrowRight']) { p2.x += 3; p2.face = 'right'; }
-
-        // Ograniczenie do ringu
-        p1.x = Math.max(30, Math.min(canvas.width - 30, p1.x));
-        p1.y = Math.max(30, Math.min(canvas.height - 30, p1.y));
-        p2.x = Math.max(30, Math.min(canvas.width - 30, p2.x));
-        p2.y = Math.max(30, Math.min(canvas.height - 30, p2.y));
-
-        // Cooldowny ciosów
-        if (p1.punchCooldown > 0) p1.punchCooldown--;
-        if (p2.punchCooldown > 0) p2.punchCooldown--;
-
-        // Cios P1 (Spacja)
-        if (keys['Space'] && p1.punchCooldown === 0) {
-            p1.punchCooldown = 25;
-            let dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-            if (dist < 45) {
-                p2.hp = Math.max(0, p2.hp - 10);
-            }
-        }
-
-        // Cios P2 (Enter)
-        if (keys['Enter'] && p2.punchCooldown === 0) {
-            p2.punchCooldown = 25;
-            let dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-            if (dist < 45) {
-                p1.hp = Math.max(0, p1.hp - 10);
-            }
-        }
-
-        // Aktualizacja pasków tekstowych UI
-        document.getElementById('p1-hp').innerText = p1.hp;
-        document.getElementById('p2-hp').innerText = p2.hp;
-
-        // Warunek K.O.
-        if (p1.hp <= 0 || p2.hp <= 0) {
-            alert(p1.hp <= 0 ? "K.O.! CZERWONYY WYGRYWA!" : "K.O.! NIEBIESKI WYGRYWA!");
-            p1.hp = 100; p2.hp = 100; p1.x = 200; p2.x = 500;
-        }
-    }
-
-    function draw() {
-        // Tło ringu (widok z góry)
-        ctx.fillStyle = '#1b1b1b';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Linie ringu z góry
-        ctx.strokeStyle = '#444';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-        // Rysowanie P1
-        ctx.beginPath();
-        ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p1.color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // Rękawica P1 / wskaźnik ataku
-        ctx.fillStyle = '#ff1e56';
-        ctx.beginPath();
-        ctx.arc(p1.x + (p1.face === 'right' ? 18 : -18), p1.y, 7, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Rysowanie P2
-        ctx.beginPath();
-        ctx.arc(p2.x, p2.y, p2.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p2.color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        // Rękawica P2 / wskaźnik ataku
-        ctx.fillStyle = '#ff1e56';
-        ctx.beginPath();
-        ctx.arc(p2.x + (p2.face === 'right' ? 18 : -18), p2.y, 7, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-
-    loop();
-</script>
+<!-- Podłączenie skryptu JS -->
+<script src="script.js"></script>
 </body>
 </html>
+const canvas = document.getElementById('ringCanvas');
+const ctx = canvas.getContext('2d');
+
+const CONFIG = {
+    ringX: 80, ringY: 40, ringW: 640, ringH: 370,
+    boxerRadius: 24
+};
+
+const p1 = {
+    x: 240, y: 225, angle: 0, targetAngle: 0, color: '#00ddff', shortColor: '#0055aa', gloves: '#0099ff',
+    hp: 100, punchState: 0, punchHand: 'left', speed: 3.5, activePunch: 'none'
+};
+
+const p2 = {
+    x: 560, y: 225, angle: Math.PI, targetAngle: Math.PI, color: '#ff3366', shortColor: '#aa0033', gloves: '#ff0055',
+    hp: 100, punchState: 0, punchHand: 'left', speed: 3.5, activePunch: 'none'
+};
+
+const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function triggerPunch(attacker, type) {
+    if (attacker.punchState > 0 || p1.hp <= 0 || p2.hp <= 0) return;
+    
+    attacker.activePunch = type;
+    attacker.punchState = 1;
+    attacker.punchHand = attacker.punchHand === 'left' ? 'right' : 'left';
+}
+
+function processPunchLogic(attacker, defender) {
+    if (attacker.punchState === 0) return;
+
+    if (attacker.punchState < 6) {
+        attacker.punchState += 1.5;
+        if (attacker.punchState >= 5) {
+            let reach = attacker.activePunch === 'jab' ? 30 : 20;
+            let punchX = attacker.x + Math.cos(attacker.angle) * (CONFIG.boxerRadius + reach);
+            let punchY = attacker.y + Math.sin(attacker.angle) * (CONFIG.boxerRadius + reach);
+            
+            let distToDefender = Math.hypot(punchX - defender.x, punchY - defender.y);
+            if (distToDefender < CONFIG.boxerRadius + 5) {
+                let damage = attacker.activePunch === 'jab' ? 6 : 14;
+                defender.hp = Math.max(0, defender.hp - damage);
+                createBloodSplatter();
+            }
+        }
+    } else {
+        attacker.punchState += 1;
+        if (attacker.punchState >= 11) {
+            attacker.punchState = 0;
+            attacker.activePunch = 'none';
+        }
+    }
+}
+
+let flashIntensity = 0;
+function createBloodSplatter() {
+    flashIntensity = 0.4;
+}
+
+function update() {
+    // Ruch i celowanie P1
+    let p1MoveX = 0, p1MoveY = 0;
+    if (keys['KeyW']) p1MoveY -= 1;
+    if (keys['KeyS']) p1MoveY += 1;
+    if (keys['KeyA']) p1MoveX -= 1;
+    if (keys['KeyD']) p1MoveX += 1;
+
+    if (p1MoveX !== 0 || p1MoveY !== 0) {
+        p1.x += p1MoveX * p1.speed;
+        p1.y += p1MoveY * p1.speed;
+        p1.targetAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    }
+    if (keys['KeyG']) triggerPunch(p1, 'jab');
+    if (keys['KeyH']) triggerPunch(p1, 'hook');
+
+    // Ruch i celowanie P2
+    let p2MoveX = 0, p2MoveY = 0;
+    if (keys['ArrowUp']) p2MoveY -= 1;
+    if (keys['ArrowDown']) p2MoveY += 1;
+    if (keys['ArrowLeft']) p2MoveX -= 1;
+    if (keys['ArrowRight']) p2MoveX += 1;
+
+    if (p2MoveX !== 0 || p2MoveY !== 0) {
+        p2.x += p2MoveX * p2.speed;
+        p2.y += p2MoveY * p2.speed;
+        p2.targetAngle = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+    }
+    if (keys['Digit1'] || keys['Numpad1']) triggerPunch(p2, 'jab');
+    if (keys['Digit2'] || keys['Numpad2']) triggerPunch(p2, 'hook');
+
+    // Płynny obrót ramion i tułowia
+    [p1, p2].forEach(p => {
+        let diff = p.targetAngle - p.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        p.angle += diff * 0.2;
+    });
+
+    // Kolizje z linami ringu
+    [p1, p2].forEach(p => {
+        p.x = Math.max(CONFIG.ringX + CONFIG.boxerRadius, Math.min(CONFIG.ringX + CONFIG.ringW - CONFIG.boxerRadius, p.x));
+        p.y = Math.max(CONFIG.ringY + CONFIG.boxerRadius, Math.min(CONFIG.ringY + CONFIG.ringH - CONFIG.boxerRadius, p.y));
+    });
+
+    // Kolizja ciał graczy
+    let dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    let minDist = CONFIG.boxerRadius * 2;
+    if (dist < minDist) {
+        let overlap = minDist - dist;
+        let dirX = (p1.x - p2.x) / dist;
+        let dirY = (p1.y - p2.y) / dist;
+        p1.x += dirX * overlap * 0.5; p1.y += dirY * overlap * 0.5;
+        p2.x -= dirX * overlap * 0.5; p2.y -= dirY * overlap * 0.5;
+    }
+
+    processPunchLogic(p1, p2);
+    processPunchLogic(p2, p1);
+
+    document.getElementById('p1-hp-bar').style.width = p1.hp + '%';
+    document.getElementById('p2-hp-bar').style.width = p2.hp + '%';
+
+    if (flashIntensity > 0) flashIntensity -= 0.03;
+
+    if (p1.hp <= 0 || p2.hp <= 0) {
+        alert(p1.hp <= 0 ? "K.O.! ROCKY ROZBIJA RYWALA NA DESKI!" : "K.O.! MIGUEL WYGRYWA PRZEZ DESTRUKCJĘ!");
+        p1.hp = 100; p2.hp = 100; p1.x = 240; p2.x = 560; p1.angle = 0; p2.angle = Math.PI;
+    }
+}
+
+function drawBoxer(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+
+    // Cień pod zawodnikiem
+    ctx.beginPath();
+    ctx.ellipse(0, 5, CONFIG.boxerRadius, CONFIG.boxerRadius - 6, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fill();
+
+    // Tors i barki
+    ctx.beginPath();
+    ctx.ellipse(0, 0, CONFIG.boxerRadius, CONFIG.boxerRadius - 4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#15161e';
+    ctx.stroke();
+
+    // Spodenki / Pas
+    ctx.fillStyle = p.shortColor;
+    ctx.fillRect(-CONFIG.boxerRadius + 6, -3, (CONFIG.boxerRadius - 6) * 2, 8);
+
+    // Głowa
+    ctx.beginPath();
+    ctx.arc(0, 0, 11, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffdbac';
+    ctx.fill();
+    ctx.stroke();
+
+    // Wskaźnik twarzy (nos)
+    ctx.fillStyle = '#ffdbac';
+    ctx.fillRect(9, -2, 5, 4);
+
+    // Pozycje rąk
+    let leftHandDist = 12;
+    let rightHandDist = 12;
+
+    if (p.punchState > 0) {
+        let extension = p.activePunch === 'jab' ? 24 : 16;
+        let factor = Math.sin((p.punchState / 10) * Math.PI); 
+        if (p.punchHand === 'left') leftHandDist += extension * factor;
+        if (p.punchHand === 'right') rightHandDist += extension * factor;
+    }
+
+    // Lewa rękawica
+    ctx.beginPath();
+    ctx.arc(leftHandDist, -CONFIG.boxerRadius + 3, 8, 0, Math.PI * 2);
+    ctx.fillStyle = p.gloves;
+    ctx.fill();
+    ctx.stroke();
+
+    // Prawa rękawica
+    ctx.beginPath();
+    ctx.arc(rightHandDist, CONFIG.boxerRadius - 3, 8, 0, Math.PI * 2);
+    ctx.fillStyle = p.gloves;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function draw() {
+    ctx.fillStyle = '#222430';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#1c1d27';
+    ctx.fillRect(CONFIG.ringX, CONFIG.ringY, CONFIG.ringW, CONFIG.ringH);
+
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(CONFIG.ringX, CONFIG.ringY, CONFIG.ringW, CONFIG.ringH);
+    
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(CONFIG.ringX + 4, CONFIG.ringY + 4, CONFIG.ringW - 8, CONFIG.ringH - 8);
+
+    ctx.font = '800 70px Montserrat';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOXING', canvas.width / 2, canvas.height / 2 + 10);
+    ctx.fillText('CHAMPION', canvas.width / 2, canvas.height / 2 + 75);
+
+    ctx.fillStyle = '#ff3366'; ctx.fillRect(CONFIG.ringX - 6, CONFIG.ringY - 6, 12, 12);
+    ctx.fillStyle = '#00ddff'; ctx.fillRect(CONFIG.ringX + CONFIG.ringW - 6, CONFIG.ringY - 6, 12, 12);
+    ctx.fillStyle = '#fff'; ctx.fillRect(CONFIG.ringX - 6, CONFIG.ringY + CONFIG.ringH - 6, 12, 12);
+    ctx.fillRect(CONFIG.ringX + CONFIG.ringW - 6, CONFIG.ringY + CONFIG.ringH - 6, 12, 12);
+
+    if (flashIntensity > 0) {
+        ctx.fillStyle = `rgba(255, 0, 85, ${flashIntensity})`;
+        ctx.fillRect(CONFIG.ringX, CONFIG.ringY, CONFIG.ringW, CONFIG.ringH);
+    }
+
+    drawBoxer(p1);
+    drawBoxer(p2);
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
