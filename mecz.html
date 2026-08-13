@@ -1,216 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
-    <title>CM4 Attack vs Defense 1v1</title>
+    <meta charset="UTF-8">
+    <title>Manager Boksu - Symulacja</title>
     <style>
-        body { background: #08120b; color: #fff; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 5px; overflow: hidden; }
-        canvas { background: #0f3d1c; border: 3px solid #fff; display: block; margin: 5px auto; width: 620px; height: 380px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
-        #commentary { background: #000; border: 1px solid #222; width: 600px; min-height: 40px; margin: 5px auto; padding: 10px; font-size: 13px; color: #00ff66; text-align: left; box-shadow: inset 0 0 10px rgba(0,255,102,0.1); }
-        #scoreboard { font-size: 22px; font-weight: bold; font-family: 'Arial Black', sans-serif; margin: 5px; letter-spacing: 1px; }
+        body { background: #111; color: #fff; font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
+        canvas { background: #222; border: 4px solid #444; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        #log { margin-top: 15px; height: 80px; overflow-y: auto; background: #1a1a1a; padding: 10px; border: 1px solid #333; font-size: 14px; width: 600px; margin-left: auto; margin-right: auto; text-align: left; color: #0f0; border-radius: 5px; }
+        .stats { display: flex; justify-content: space-around; width: 600px; margin: 10px auto; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="scoreboard">🟥 TEAM A <span id="sa">0</span> - <span id="sb">0</span> TEAM B 🟦</div>
-    <canvas id="cmCanvas" width="640" height="400"></canvas>
-    <div id="commentary">> Przygotowanie murawy do pojedynku Atak vs Obrona...</div>
+    <h1>RING MANAGER 2026</h1>
+    <div class="stats">
+        <div style="color: #ff5555;">Czerwony: <span id="hp1">100</span> HP</div>
+        <div style="color: #5555ff;">Niebieski: <span id="hp2">100</span> HP</div>
+    </div>
+    <canvas id="ring" width="600" height="400"></canvas>
+    <div id="log"></div>
 
     <script>
-        const canvas = document.getElementById("cmCanvas"); const ctx = canvas.getContext("2d");
-        const comment = document.getElementById("commentary");
-        let scoreA = 0; let scoreB = 0;
+        const canvas = document.getElementById("ring");
+        const ctx = canvas.getContext("2d");
+        const logDiv = document.getElementById("log");
 
-        // DWAJ ZAWODNICY Z BALANSEM STATYSTYK (Atakujący vs Obrońca)
-        let players = [
-            { id: "A1", team: "A", nr: 9, role: "ATT", bx: 150, by: 200, pas: 10, sho: 19, def: 5, name: "Lewandowski" },
-            { id: "B1", team: "B", nr: 1, role: "GK",  bx: 490, by: 200, pas: 12, sho: 5,  def: 18, name: "Buffon" }
-        ];
-
-        // Wyzerowanie wektorów prędkości fizycznej (pędu)
-        players.forEach(p => { 
-            p.x = p.bx; p.y = p.by; p.tx = p.bx; p.ty = p.by; 
-            p.vx = 0; p.vy = 0; p.speed = 0.35; 
-        });
-
-        // Piłka czeka na środku boiska na losowanie pierwszego posiadacza
-        let ball = { x: 320, y: 200, vx: 0, vy: 0, friction: 0.965, owner: null };
-        let lockPossessionTimer = 0; 
-        
-        let fazaMeczu = "DECYZJA"; let czasDecyzji = 0;
-
-        function wypiszKomentarz(tekst, kolor = "#00ff66") {
-            comment.style.color = kolor; comment.innerText = "⚽ " + tekst;
+        function addLog(text) {
+            logDiv.innerHTML += "[" + new Date().toLocaleTimeString() + "] " + text + "<br>";
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        function resetPoBramce() {
-            players.forEach(p => { p.x = p.bx; p.y = p.by; p.tx = p.bx; p.ty = p.by; p.vx = 0; p.vy = 0; });
-            ball.x = 320; ball.y = 200; ball.vx = 0; ball.vy = 0; ball.owner = null;
-            fazaMeczu = "DECYZJA"; czasDecyzji = 0; lockPossessionTimer = 0;
+        let b1 = { x: 150, y: 200, vx: 2, vy: 0, hp: 100, color: "#ff5555", name: "Czerwony", punchCooldown: 0 };
+        let b2 = { x: 450, y: 200, vx: -2, vy: 0, hp: 5555, color: "#5555ff", name: "Niebieski", punchCooldown: 0 };
+        // fix the blue hp init typo safely
+        b2.hp = 100;
+
+        let gameOver = false;
+
+        function drawBoxer(b, angle, punching) {
+            ctx.save();
+            ctx.translate(b.x, b.y);
+            ctx.rotate(angle);
+
+            // Korpus (Główna kula)
+            ctx.beginPath();
+            ctx.arc(0, 0, 25, 0, Math.PI * 2);
+            ctx.fillStyle = b.color;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#fff";
+            ctx.stroke();
+
+            // Ręce jako szczypce raka (kreski) + rękawice
+            let armDist = punching ? 40 : 25;
+            
+            // Lewa ręka/szczypce
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.quadraticCurveTo(15, -30, armDist, -20);
+            ctx.strokeStyle = "#ccc";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            // Rękawica
+            ctx.beginPath();
+            ctx.arc(armDist, -20, 8, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+
+            // Prawa ręka/szczypce
+            ctx.beginPath();
+            ctx.moveTo(0, 10);
+            ctx.quadraticCurveTo(15, 30, armDist, 20);
+            ctx.strokeStyle = "#ccc";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            // Rękawica
+            ctx.beginPath();
+            ctx.arc(armDist, 20, 8, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+
+            ctx.restore();
         }
-        // LOGIKA MECZOWA: ATAK KONTRA OBRONA
-        function silnikMeczowyTick() {
-            // Ruch piłki na bazie wektorów prędkości i tarcia trawy
-            if (!ball.owner) {
-                ball.x += ball.vx;
-                ball.y += ball.vy;
-                ball.vx *= ball.friction;
-                ball.vy *= ball.friction;
+
+        function update() {
+            if (gameOver) return;
+
+            // Ruch w stronę przeciwnika
+            let dx = b2.x - b1.x;
+            let dy = b2.y - b1.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            let angle1 = Math.atan2(dy, dx);
+            let angle2 = Math.atan2(-dy, -dx);
+
+            if (dist > 65) {
+                b1.x += Math.cos(angle1) * 1.8;
+                b1.y += Math.sin(angle1) * 1.8;
+                b2.x += Math.cos(angle2) * 1.8;
+                b2.y += Math.sin(angle2) * 1.8;
             } else {
-                ball.x = ball.owner.x;
-                ball.y = ball.owner.y;
-                ball.vx = 0;
-                ball.vy = 0;
-            }
+                // Zwarcia / ciosy
+                b1.punchCooldown++;
+                b2.punchCooldown++;
 
-            if (lockPossessionTimer > 0) lockPossessionTimer--;
+                let p1Punch = (b1.punchCooldown % 40 < 20);
+                let p2Punch = (b2.punchCooldown % 45 < 20);
 
-            // SYSTEM DECYZYJNY AI
-            if (czasDecyzji <= 0) {
-                czasDecyzji = 25 + Math.floor(Math.random() * 25);
-                
-                // SYSTEM LOSOWANIA STARTU (Jeśli nikt jeszcze nie ma piłki na początku)
-                if (!ball.owner && ball.x === 320 && ball.y === 200 && lockPossessionTimer === 0) {
-                    let losowyStart = players[Math.floor(Math.random() * players.length)];
-                    ball.owner = losowyStart;
-                    wypiszKomentarz(`Losowanie: ruszamy! Przy piłce ${losowyStart.name}.`, "#ffff00");
+                if (b1.punchCooldown % 50 === 0 && Math.random() > 0.4) {
+                    b2.hp -= Math.floor(Math.random() * 8) + 3;
+                    addLog(b1.name + " trafia sierpowym szczypcem!");
+                    document.getElementById("hp2").innerText = Math.max(0, b2.hp);
+                }
+                if (b2.punchCooldown % 55 === 0 && Math.random() > 0.4) {
+                    b1.hp -= Math.floor(Math.random() * 8) + 3;
+                    addLog(b2.name + " kontratakuje lewym prostym!");
+                    document.getElementById("hp1").innerText = Math.max(0, b1.hp);
                 }
 
-                if (ball.owner) {
-                    let p = ball.owner;
-                    let przeciwnik = players.find(pl => pl.team !== p.team);
-                    let kierunek = p.team === "A" ? 1 : -1;
-                    let los = Math.random();
+                // Delikatny taneczny odskok
+                b1.x += (Math.random() - 0.5) * 2;
+                b1.y += (Math.random() - 0.5) * 2;
+                b2.x += (Math.random() - 0.5) * 2;
+                b2.y += (Math.random() - 0.5) * 2;
 
-                    // ROLA 1: KULKA PRZY PIŁCE (ATAKUJĄCY)
-                    let celX = p.team === "A" ? 635 : 5;
-                    let wStrefieStrzalu = p.team === "A" ? p.x > 380 : p.x < 260;
-
-                    if (wStrefieStrzalu && los < 0.55) {
-                        let celY = 175 + Math.random() * 50;
-                        let dx = celX - p.x; let dy = celY - p.y;
-                        let dystans = Math.sqrt(dx * dx + dy * dy);
-                        
-                        ball.owner = null;
-                        lockPossessionTimer = 20; 
-                        ball.vx = (dx / dystans) * 13.5;
-                        ball.vy = (dy / dystans) * 13.5;
-
-                        let silaStrzalu = (p.sho / 20) * Math.random();
-                        let obronaGK = (przeciwnik.def / 20) * Math.random();
-
-                        if (silaStrzalu > obronaGK) {
-                            wypiszKomentarz(`GOOOOL! Niezrównany strzał! Trafia ${p.name}!`, "#ffff00");
-                            fazaMeczu = p.team === "A" ? "GOL_A" : "GOL_B";
-                        } else {
-                            wypiszKomentarz(`Parada klasy światowej! ${przeciwnik.name} blokuje strzał!`, "#ff00e1");
-                            setTimeout(() => { ball.owner = przeciwnik; }, 300);
-                        }
-                    } else {
-                        p.tx = p.x + (kierunek * 85);
-                        p.ty = p.y + (Math.random() * 60 - 30);
-                        wypiszKomentarz(`${p.name} sunie z dymem na bramkę przeciwnika!`, "#00ff66");
-                    }
-
-                    // ROLA 2: KULKA BEZ PIŁKI (OBROŃCA COFA SIĘ DO BLOKU)
-                    przeciwnik.tx = celX - (kierunek * 60);
-                    przeciwnik.ty = ball.y + (Math.random() * 20 - 10);
-                } else {
-                    players.forEach(pl => { pl.tx = ball.x; pl.ty = ball.y; });
+                if (b1.hp <= 0 || b2.hp <= 0) {
+                    gameOver = true;
+                    let winner = b1.hp > 0 ? b1.name : b2.name;
+                    addLog("KONIEC WALKIE! NOKAUT! Wygrywa: " + winner);
                 }
             }
-            czasDecyzji--;
 
-            // FIZYKA PĘDU I SPRAWIEDLIWEGO PRZECHWYTU PIŁKI
-            let kolejnosccSprawdzania = [...players].sort(() => Math.random() - 0.5);
-
-            kolejnosccSprawdzania.forEach(p => {
-                let dx = p.tx - p.x;
-                let dy = p.ty - p.y;
-                let dystans = Math.sqrt(dx * dx + dy * dy);
-
-                if (dystans > 5) {
-                    let ax = (dx / dystans) * p.speed;
-                    let ay = (dy / dystans) * p.speed;
-                    p.vx += ax; p.vy += ay;
-                }
-
-                p.vx *= 0.82; p.vy *= 0.82;
-                p.x += p.vx; p.y += p.vy;
-
-                if (p.x < 15) p.x = 15; if (p.x > 625) p.x = 625;
-                if (p.y < 15) p.y = 15; if (p.y > 385) p.y = 385;
-
-                if (!ball.owner && lockPossessionTimer <= 0 && fazaMeczu === "DECYZJA") {
-                    let bdx = ball.x - p.x; let bdy = ball.y - p.y;
-                    let bdystans = Math.sqrt(bdx * bdx + bdy * bdy);
-
-                    if (bdystans < 12) {
-                        ball.owner = p;
-                        lockPossessionTimer = 8;
-                        czasDecyzji = 5; 
-                    }
-                }
-            });
-
-            if (fazaMeczu === "GOL_A" && ball.x >= 630) {
-                scoreA++; document.getElementById("sa").innerText = scoreA;
-                fazaMeczu = "CELEBRACJA"; setTimeout(resetPoBramce, 2000);
-            }
-            if (fazaMeczu === "GOL_B" && ball.x <= 10) {
-                scoreB++; document.getElementById("sb").innerText = scoreB;
-                fazaMeczu = "CELEBRACJA"; setTimeout(resetPoBramce, 2000);
-            }
-            
-            if (!ball.owner) {
-                if (ball.y < 12 || ball.y > 388) ball.vy *= -1;
-                if ((ball.x < 12 || ball.x > 628) && !fazaMeczu.startsWith("GOL")) ball.vx *= -1;
-            }
+            // Ograniczenie do ringu
+            b1.x = Math.max(40, Math.min(560, b1.x));
+            b1.y = Math.max(40, Math.min(360, b1.y));
+            b2.x = Math.max(40, Math.min(560, b2.x));
+            b2.y = Math.max(40, Math.min(360, b2.y));
         }
 
-        // GRAFIKA 2D BOISKA
-        function renderujMecz() {
-            ctx.fillStyle = "#0f3d1c"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = "rgba(255,255,255,0.02)";
-            for (let i = 0; i < canvas.width; i += 40) {
-                if ((i / 40) % 2 === 0) ctx.fillRect(i, 10, 40, canvas.height - 20);
-            }
+            // Linie ringu
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
-            ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 2;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20); 
-            ctx.beginPath(); ctx.moveTo(canvas.width / 2, 10); ctx.lineTo(canvas.width / 2, canvas.height - 10); ctx.stroke(); 
-            ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2); ctx.stroke(); 
-            
-            ctx.strokeRect(10, 100, 75, 200); ctx.strokeRect(canvas.width - 85, 100, 75, 200); 
-            ctx.fillStyle = "#05170b"; ctx.fillRect(2, 170, 8, 60); ctx.fillRect(canvas.width - 10, 170, 8, 60); 
+            let p1Punch = (b1.punchCooldown % 40 < 20);
+            let p2Punch = (b2.punchCooldown % 45 < 20);
 
-            players.forEach(p => {
-                ctx.beginPath(); ctx.arc(p.x, p.y + 3, 7, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fill();
+            let angle1 = Math.atan2(b2.y - b1.y, b2.x - b1.x);
+            let angle2 = Math.atan2(b1.y - b2.y, b1.x - b2.x);
 
-                ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
-                ctx.fillStyle = p.team === "A" ? "#d50000" : "#2962ff"; 
-                ctx.fill();
-                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
-
-                ctx.fillStyle = "#ffffff"; ctx.font = "bold 9px Arial";
-                ctx.fillText(p.nr, p.x - 4, p.y + 3);
-
-                ctx.font = "bold 9px Courier New"; ctx.fillStyle = "#ffffff";
-                ctx.fillText(p.name, p.x - 22, p.y - 13);
-            });
-
-            ctx.beginPath(); ctx.arc(ball.x, ball.y, 4.5, 0, Math.PI * 2);
-            ctx.fillStyle = "#ffffff"; ctx.fill();
-            ctx.strokeStyle = "#000000"; ctx.lineWidth = 1; ctx.stroke();
+            drawBoxer(b1, angle1, p1Punch);
+            drawBoxer(b2, angle2, p2Punch);
         }
 
-        function petlaGry() {
-            silnikMeczowyTick();
-            renderujMecz();
-            requestAnimationFrame(petlaGry);
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
         }
 
-        setTimeout(petlaGry, 1000);
+        addLog("Gong! Walka rozpoczęta. Zawodnicy ruszają na środki ringu.");
+        loop();
     </script>
 </body>
 </html>
