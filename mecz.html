@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokserzy - spowolnione tempo walki</title>
+    <title>Bokserzy - czyste ciosy na twarz</title>
     <style>
         body {
             margin: 0;
@@ -32,13 +32,12 @@
     canvas.height = ringSize;
 
     const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
-    
     const baseRadius = 100;      
     let currentOrbitRadius = baseRadius; 
 
     const boxerRed = {
         angle: Math.PI / 2, 
-        orbitSpeed: 0.023,    // Spowolnione z 0.035 o 1/3
+        orbitSpeed: 0.023,    
         radius: 24,
         color: '#e74c3c',
         number: '1',
@@ -59,7 +58,9 @@
         radius: 24,
         color: '#2980b9',
         number: '2',
-        animTimer: 0
+        animTimer: 0,
+        rx: ringCenter.x, // Pozycja po odchyleniu
+        ry: ringCenter.y
     };
 
     function drawRing() {
@@ -100,17 +101,16 @@
     }
 
     function update() {
-        // Praca nóg spowolniona z 0.2 na 0.133 (o 1/3)
         boxerRed.animTimer += 0.133;
-        boxerRed.punchTimer += 0.66; // Wolniejsze odliczanie do kolejnego ciosu
+        boxerRed.punchTimer += 0.66; 
         boxerBlue.animTimer += 0.133;
 
+        // Dynamiczny głęboki doskok przy wyprowadzaniu ciosu
         let targetRadius = baseRadius;
         if (boxerRed.isPunching) {
-            targetRadius = boxerRed.punchType === 'straight' ? 78 : 66;
+            targetRadius = boxerRed.punchType === 'straight' ? 62 : 54;
         }
 
-        // Płynność doskoku dopasowana do nowego tempa
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
         boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
@@ -126,7 +126,6 @@
             boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
         }
 
-        // Szansa na wyprowadzenie ciosu
         if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
@@ -135,26 +134,43 @@
         }
 
         if (boxerRed.isPunching) {
-            // Prędkość ciosu spowolniona z 0.22 na 0.146 (o 1/3)
             boxerRed.punchProgress += 0.146; 
             if (boxerRed.punchProgress >= Math.PI) {
                 boxerRed.punchProgress = 0;
                 boxerRed.isPunching = false;
             }
         }
+
+        // Realistyczny odchył niebieskiego DO TYŁU w momencie maksymalnego zasięgu ciosu (szczyt sinusa)
+        let impactPower = 0;
+        if (boxerRed.isPunching) {
+            let pVal = Math.sin(boxerRed.punchProgress);
+            // Kiedy cios wchodzi głęboko (druga połowa ruchu w przód i początek powrotu)
+            if (pVal > 0.75) { 
+                impactPower = (pVal - 0.75) * 45; // Mocne, nagłe szarpnięcie głowy/ciała w tył
+            }
+        }
+        
+        // Kierunek odpychania: dokładnie w stronę przeciwną do pozycji czerwonego
+        const dx = ringCenter.x - boxerRed.x;
+        const dy = ringCenter.y - boxerRed.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        boxerBlue.rx = ringCenter.x + (dx / dist) * impactPower;
+        boxerBlue.ry = ringCenter.y + (dy / dist) * impactPower;
     }
 
     function drawBlueBoxer() {
         const bounce = Math.sin(boxerBlue.animTimer) * 3;
-        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x) + Math.PI;
+        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
 
         ctx.beginPath();
-        ctx.ellipse(boxerBlue.x, boxerBlue.y + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
+        ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.fill();
 
         ctx.save();
-        ctx.translate(boxerBlue.x, boxerBlue.y + bounce);
+        ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce);
         ctx.rotate(angleToRed - Math.PI / 2); 
 
         ctx.beginPath();
@@ -165,6 +181,7 @@
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
+        // Rękawice tworzące gardę
         const gloveRadius = 7;
         ctx.beginPath();
         ctx.arc(-12, -boxerBlue.radius + 4, gloveRadius, 0, Math.PI * 2);
@@ -232,10 +249,12 @@
 
         if (boxerRed.isPunching) {
             if (boxerRed.punchType === 'straight') {
-                leftGloveY -= pVal * 42;
+                // Rękawica wchodzi głęboko na wprost, prosto w środek niebieskiej kuli
+                leftGloveY -= pVal * 48;
             } else {
-                leftGloveX += Math.sin(boxerRed.punchProgress) * 6;
-                leftGloveY -= pVal * 30;
+                // Sierp idzie szerokim łukiem i ląduje bezpośrednio na środku twarzy
+                leftGloveX += Math.sin(boxerRed.punchProgress) * 10;
+                leftGloveY -= pVal * 42;
             }
         }
 
