@@ -14,14 +14,38 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350
 };
 
+// boxerBlue zyskuje liczniki serii ciosów, rejestr kontuzji oraz statystyki pod debuffy
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
-    animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0 
+    animTimer: 0, rx: ringCenter, ry: ringCenter, 
+    stunTimer: 0,
+    punchStreak: 0,            // Liczy ciosy z rzędu na "6" bez bloku
+    injury: "none",            // Aktywna kontuzja: "none", "eye", "liver", "lip"
+    blockCount: 0,             // Liczy udane bloki pod kontuzję wątroby
+    fatigueMultiplier: 1.0,    // Mnożnik zmęczenia (+3% przy spuchniętej wardze)
+    weakPunchChance: 0.0       // Szansa na słabszy cios (10% przy podbitym oku)
 };
 
-// Funkcja rzutu kostką 1-6
 function rollDice() {
     return Math.floor(Math.random() * 6) + 1;
+}
+
+// Funkcja losująca i aplikująca jedną z trzech drobnych kontuzji
+function applyMinorInjury() {
+    const roll = Math.floor(Math.random() * 3) + 1; // 1, 2 lub 3
+    if (roll === 1) {
+        boxerBlue.injury = "eye"; // Podbite oko
+        boxerBlue.weakPunchChance = 0.10; // 10% szansy na ciosy słabsze o 50%
+        console.log("KONTUZJA: Podbite oko! 10% szans na ciosy o 50% słabsze.");
+    } else if (roll === 2) {
+        boxerBlue.injury = "liver"; // Strzał w wątrobę
+        boxerBlue.blockCount = 0;
+        console.log("KONTUZJA: Strzał w wątrobę! Co 10 blok przestanie działać.");
+    } else if (roll === 3) {
+        boxerBlue.injury = "lip"; // Spuchnięta warga
+        boxerBlue.fatigueMultiplier = 1.03; // Szybsze męczenie o 3%
+        console.log("KONTUZJA: Spuchnięta warga! Zawodnik męczy się o 3% szybciej.");
+    }
 }
 
 export function updatePhysics() {
@@ -57,30 +81,48 @@ export function updatePhysics() {
         boxerRed.hasHit = false; 
     }
 
+    // Wyważony system mnożników siły z rzutu kostką
+    let diceRoll = rollDice();
+    let diceMultiplier = 0.5; 
+    if (diceRoll >= 3 && diceRoll <= 5) {
+        diceMultiplier = 0.9; 
+    } else if (diceRoll === 6) {
+        diceMultiplier = 1.15; 
+    }
+
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += 0.146; 
 
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
-            if (boxerRed.punchType === 'hook') {
-                if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
-                    boxerBlue.stunTimer = 300; 
+            
+            // Sprawdzamy czy niebieski zablokował cios (pobrane z gardy w rendererze)
+            const isBlocked = window.isCurrentlyBlockingGarda || false;
+
+            if (isBlocked) {
+                // Udany blok przerywa niebezpieczną serię celnych ciosów "na szóstce"
+                boxerBlue.punchStreak = 0;
+            } else {
+                // Czyste trafienie: Jeśli padła "szóstka", zwiększamy licznik serii
+                if (diceRoll === 6) {
+                    boxerBlue.punchStreak += 1;
+                    // Drugi cios z rzędu na 6 bez bloku pomiędzy nimi = drobna kontuzja
+                    if (boxerBlue.punchStreak >= 2 && boxerBlue.injury === "none") {
+                        applyMinorInjury();
+                    }
+                }
+
+                // Logika stuna dla czystego sierpa pozostała nienaruszona
+                if (boxerRed.punchType === 'hook' && boxerBlue.stunTimer === 0) {
+                    if (Math.random() < 0.20) {
+                        boxerBlue.stunTimer = 300; 
+                    }
                 }
             }
             boxerRed.hasHit = true;
         }
 
         if (boxerRed.punchProgress >= Math.PI) boxerRed.isPunching = false;
-    }
-
-    // Wyważony system mnożników siły (1-2: słaby, 3-5: mocny standard, 6: po prostu porządny cios)
-    let diceRoll = rollDice();
-    let diceMultiplier = 0.5; // Dla rzutów 1 i 2 (lekkie muśnięcie)
-    
-    if (diceRoll >= 3 && diceRoll <= 5) {
-        diceMultiplier = 0.9; // Dla rzutów 3, 4, 5 (wyważony, standardowy cios)
-    } else if (diceRoll === 6) {
-        diceMultiplier = 1.15; // Dla rzutu 6 (czyste, pełne uderzenie, ale bez przesady)
     }
 
     let basePower = (boxerRed.punchType === 'hook' ? 54 : 45) * diceMultiplier; 
