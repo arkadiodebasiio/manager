@@ -55,15 +55,26 @@ function drawBlueBoxer() {
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
     const gloveRadius = 7;
-    const gloveSpread = isBlocking ? 4 : 12; 
+    
+    // SZEROKI ROZSTAW NIEBIESKIEGO: Powrót do Twoich ulubionych 12 pikseli na bok
+    // Kiedy aktywuje się blok, rękawice schodzą się ciasno do środka na 3 piksele
+    let leftGloveX = isBlocking ? -3 : -12;
+    let rightGloveX = isBlocking ? 3 : 12;
+    let gloveY = -boxerBlue.radius + 4;
 
-    [-gloveSpread, gloveSpread].forEach(gx => {
-        ctx.beginPath(); 
-        ctx.arc(gx, -boxerBlue.radius + (isBlocking ? 1 : 4), gloveRadius, 0, Math.PI * 2); 
-        ctx.fillStyle = gloveColor; 
-        ctx.fill(); 
-        ctx.stroke();
-    });
+    if (isBlocking) {
+        gloveY = -boxerBlue.radius + 1;
+    }
+
+    // Lewa rękawica niebieskiego
+    ctx.beginPath(); 
+    ctx.arc(leftGloveX, gloveY, gloveRadius, 0, Math.PI * 2); 
+    ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
+
+    // Prawa rękawica niebieskiego
+    ctx.beginPath(); 
+    ctx.arc(rightGloveX, gloveY + (isBlocking ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), gloveRadius, 0, Math.PI * 2); 
+    ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
@@ -82,17 +93,31 @@ function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    ctx.beginPath(); ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
+    // SZEROKI ROZSTAW PRAWEJ RĘKAWICY CZERWONEGO: Ustalone na 12 pikseli w bok
+    ctx.beginPath();
+    ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    let leftGloveX = currentX, leftGloveY = currentY - boxerRed.radius + 4;
+    // SZEROKI ROZSTAW LEWEJ RĘKAWICY CZERWONEGO: W spoczynku zaczyna od -12 pikseli
+    let leftGloveX = currentX - 12; 
+    let leftGloveY = currentY - boxerRed.radius + 4;
+
     if (boxerRed.isPunching) {
-        if (boxerRed.punchType === 'straight') leftGloveY -= pVal * 48;
-        else { leftGloveX += Math.sin(boxerRed.punchProgress) * 10; leftGloveY -= pVal * 42; }
+        if (boxerRed.punchType === 'straight') {
+            // Płynne schodzenie szerokiej ręki do osi środkowej (0) podczas ciosu prostego
+            leftGloveX = currentX - 12 * (1 - pVal);
+            leftGloveY -= pVal * 48;
+        } else {
+            // Zamach sierpowy wyprowadzany z szerokiej pozycji wyjściowej
+            leftGloveX += Math.sin(boxerRed.punchProgress) * 22;
+            leftGloveY -= pVal * 42;
+        }
     }
 
     if (boxerRed.isPunching && Math.abs(leftGloveY - (currentY - boxerRed.radius + 4)) > 5) {
-        ctx.beginPath(); ctx.moveTo(currentX - 6, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
+        ctx.beginPath(); 
+        // Ramię dopasowane do szerokiego rozstawu barku (-12)
+        ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
         ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     }
 
@@ -103,37 +128,15 @@ function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-// NOWA, NIEZALEŻNA FUNKCJA RYSOWANIA TARCZY NA WSPÓŁRZĘDNYCH GLOBALNYCH
 function drawBlockShield() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    
-    // Tarcza rysuje się nad głową niebieskiego tylko w szczytowym momencie bloku
     if (boxerRed.isPunching && pVal > 0.85 && isBlocking) {
         ctx.save();
-        // Ustalamy stałą pozycję nad niebieską kuleczką na ekranie
         const shieldX = boxerBlue.rx;
         const shieldY = boxerBlue.ry - 36;
-
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = '#f1c40f'; // Żółte retro retro
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-
-        ctx.beginPath();
-        // Rysowanie ikony tarczy klasyczną ścieżką wektorową Canvas
-        ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); 
-        ctx.lineTo(shieldX, shieldY + 16); 
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Linia wewnętrzna tarczy (detal graficzny)
-        ctx.beginPath();
-        ctx.moveTo(shieldX, shieldY);
-        ctx.lineTo(shieldX, shieldY + 12);
-        ctx.strokeStyle = '#d35400';
-        ctx.stroke();
-
+        ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
         ctx.restore();
     }
 }
@@ -144,7 +147,7 @@ function loop() {
     updatePhysics(); 
     drawBlueBoxer(); 
     drawRedBoxer();
-    drawBlockShield(); // Wywołanie rysowania tarczy na samym wierzchu
+    drawBlockShield(); 
     requestAnimationFrame(loop);
 }
 
