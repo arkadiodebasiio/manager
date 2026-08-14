@@ -65,6 +65,32 @@ function drawBlueBoxer() {
         ctx.stroke();
     });
 
+    // BEZPIECZNY EFEKT TARCZY: Rysujemy ją tylko w momencie maksymalnego kontaktu ciosu przy aktywnym bloku
+    if (boxerRed.isPunching && pVal > 0.85 && isBlocking) {
+        ctx.save();
+        ctx.globalAlpha = 0.75; // Lekka przezroczystość, by nie zasłonić kuleczek całkowicie
+        ctx.fillStyle = '#f1c40f'; // Żółty kolor tarczy ochronnej
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        
+        // Rysujemy mały, zaokrąglony kształt tarczy tuż przed gardą niebieskiego boksera
+        ctx.beginPath();
+        ctx.arc(0, -boxerBlue.radius - 8, 14, 0, Math.PI, true); // Łuk tarczy
+        ctx.lineTo(0, -boxerBlue.radius - 26); // Szpic na dole tarczy
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Dodatkowa mała wewnętrzna linia dla lepszego wyglądu retro tarczy
+        ctx.beginPath();
+        ctx.moveTo(0, -boxerBlue.radius - 8);
+        ctx.lineTo(0, -boxerBlue.radius - 22);
+        ctx.strokeStyle = '#d35400';
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
 }
@@ -101,36 +127,6 @@ function drawRedBoxer() {
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
-
-    // BEZPIECZNA LOGIKA BŁYSKAWICY: Rysujemy ją tylko, gdy cios trafia czysto i nie ma bloku
-    if (boxerRed.isPunching && pVal > 0.85 && !isBlocking) {
-        // Obliczamy globalną pozycję uderzającej rękawicy czerwonego
-        const radAngle = boxerRed.angle;
-        // Przeliczamy lokalne współrzędne rękawicy na globalny układ Canvasu
-        const gloveGlobalX = boxerRed.x + leftGloveX * Math.cos(radAngle - Math.PI/2) - leftGloveY * Math.sin(radAngle - Math.PI/2);
-        const gloveGlobalY = boxerRed.y + leftGloveX * Math.sin(radAngle - Math.PI/2) + leftGloveY * Math.cos(radAngle - Math.PI/2);
-
-        // Punkty pośrednie zygzaka błyskawicy (od rękawicy do środka niebieskiego)
-        const midX1 = gloveGlobalX + (boxerBlue.rx - gloveGlobalX) * 0.33 + (Math.random() - 0.5) * 15;
-        const midY1 = gloveGlobalY + (boxerBlue.ry - gloveGlobalY) * 0.33 + (Math.random() - 0.5) * 15;
-        const midX2 = gloveGlobalX + (boxerBlue.rx - gloveGlobalX) * 0.66 + (Math.random() - 0.5) * 15;
-        const midY2 = gloveGlobalY + (boxerBlue.ry - gloveGlobalY) * 0.66 + (Math.random() - 0.5) * 15;
-
-        ctx.save();
-        ctx.strokeStyle = '#f1c40f'; // Neonowy żółty kolor
-        ctx.lineWidth = 3;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#f1c40f'; // Efekt świecenia neonu
-        
-        ctx.beginPath();
-        ctx.moveTo(gloveGlobalX, gloveGlobalY);
-        ctx.lineTo(midX1, midY1);
-        ctx.lineTo(midX2, midY2);
-        ctx.lineTo(boxerBlue.rx, boxerBlue.ry);
-        ctx.stroke();
-        
-        ctx.restore();
-    }
 }
 
 function loop() {
