@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokser w ringu - cios przed siebie</title>
+    <title>Bokser w ringu - obchodzenie przeciwnika</title>
     <style>
         body {
             margin: 0;
@@ -31,10 +31,16 @@
     canvas.width = ringSize;
     canvas.height = ringSize;
 
+    // Środek ringu (tu stoi wirtualny przeciwnik)
+    const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
+    
+    // Promień koła, po którym porusza się bokser
+    const orbitRadius = 110; 
+
     // Obiekt boksera
     const boxer = {
-        x: canvas.width / 2,
-        y: canvas.height / 2 + 30,
+        angle: Math.PI / 2, // Kąt startowy (na dole ringu)
+        orbitSpeed: 0.003,  // Bardzo powolne przesuwanie się w prawo (wokół środka)
         radius: 24,
         color: '#e74c3c',
         number: '1',
@@ -79,13 +85,22 @@
             ctx.lineWidth = 2;
             ctx.stroke();
         });
+
+        // Opcjonalnie: mały punkt na środku ringu jako punkt odniesienia (przeciwnik)
+        ctx.beginPath();
+        ctx.arc(ringCenter.x, ringCenter.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fill();
     }
 
     function update() {
         boxer.animTimer += 0.15;
         boxer.punchTimer += 1;
 
-        // Inicjacja ciosu w przód
+        // Powolne przesuwanie w prawo (zmieniamy kąt pozycji na okręgu)
+        boxer.angle -= boxer.orbitSpeed; 
+
+        // Inicjacja ciosu
         if (!boxer.isPunching && boxer.punchTimer > 80 && Math.random() < 0.05) {
             boxer.isPunching = true;
             boxer.punchProgress = 0;
@@ -93,7 +108,7 @@
         }
 
         if (boxer.isPunching) {
-            boxer.punchProgress += 0.25; // Szybki cios
+            boxer.punchProgress += 0.25;
             if (boxer.punchProgress >= Math.PI) {
                 boxer.punchProgress = 0;
                 boxer.isPunching = false;
@@ -102,21 +117,35 @@
     }
 
     function drawBoxer() {
-        const bounceOffset = Math.sin(boxer.animTimer) * 5;
-        const tiltOffset = Math.cos(boxer.animTimer) * 1.5;
+        // Obliczanie bazowej pozycji X i Y boksera na okręgu wokół środka
+        const baseX = ringCenter.x + Math.cos(boxer.angle) * orbitRadius;
+        const baseY = ringCenter.y + Math.sin(boxer.angle) * orbitRadius;
 
-        // Efekt wysunięcia tułowia do przodu przy ciosie
+        // Efekt skakania (podskoki w miejscu)
+        const bounceOffset = Math.sin(boxer.animTimer) * 4;
+        const tiltOffset = Math.cos(boxer.animTimer) * 1.2;
+
+        // Cios wysuwa boksera delikatnie do przodu (w stronę środka ringu)
         const punchExtension = boxer.isPunching ? Math.sin(boxer.punchProgress) * 35 : 0;
-        const bodyLean = punchExtension * 0.3; 
+        const bodyLean = punchExtension * 0.25;
 
-        const currentY = boxer.y + bounceOffset - bodyLean;
-        const currentX = boxer.x + tiltOffset;
-
-        // Cień pod bokserem
+        // Rysowanie cienia bezpośrednio na macie (nie obraca się)
         ctx.beginPath();
-        ctx.ellipse(boxer.x, boxer.y + boxer.radius + 4, boxer.radius - Math.abs(bounceOffset), 6, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.ellipse(baseX, baseY + boxer.radius, boxer.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.fill();
+
+        // Używamy transformacji canvasu, aby obrócić boksera przodem do środka ringu
+        ctx.save();
+        // Przesuwamy punkt zero rysowania do pozycji boksera (uwzględniając podskoki i wychylenie ciosu)
+        ctx.translate(baseX + tiltOffset, baseY + bounceOffset);
+        // Obracamy układ współrzędnych. +Math.PI/2 koryguje przód kuleczki
+        ctx.rotate(boxer.angle - Math.PI / 2); 
+
+        // Po translacji rysujemy boksera w punkcie (0, -bodyLean) 
+        // Minus oznacza ruch "w górę" lokalnego układu, czyli w stronę przeciwnika
+        const currentY = -bodyLean;
+        const currentX = 0;
 
         // Ciało kuleczki
         ctx.beginPath();
@@ -127,23 +156,23 @@
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        // Pozycja gardy (rękawice ustawione z przodu kuleczki, lekko rozstawione)
+        // Pozycja gardy (rękawice przed kuleczką)
         const gloveRadius = 7;
         const leftGloveBaseX = currentX - 12;
         const rightGloveBaseX = currentX + 12;
         const gloveBaseY = currentY - boxer.radius + 4;
 
-        // Prawa rękawica (zostaje w gardzie przy ciele)
+        // Prawa rękawica (trzyma gardę)
         ctx.beginPath();
         ctx.arc(rightGloveBaseX, gloveBaseY + Math.sin(boxer.animTimer * 2) * 2, gloveRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
 
-        // Lewa rękawica (wystrzeliwuje prosto PRZED SIEBIE - do góry)
+        // Lewa rękawica (wystrzeliwuje do przodu)
         const finalLeftGloveY = gloveBaseY - punchExtension;
 
-        // Rysowanie wysuniętego ramienia (linii łączącej ciało z rękawicą)
+        // Ramię ciosu
         if (boxer.isPunching && punchExtension > 5) {
             ctx.beginPath();
             ctx.moveTo(leftGloveBaseX, currentY - 10);
@@ -162,12 +191,18 @@
         ctx.fill();
         ctx.stroke();
 
-        // Numerek na środku
+        // Numerek retro (musimy go obrócić z powrotem do pionu, żeby tekst nie był do góry nogami)
+        ctx.save();
+        ctx.translate(currentX, currentY);
+        ctx.rotate(-(boxer.angle - Math.PI / 2)); // odkręcenie rotacji dla tekstu
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(boxer.number, currentX, currentY);
+        ctx.fillText(boxer.number, 0, 0);
+        ctx.restore();
+
+        ctx.restore(); // Przywrócenie normalnego układu canvasu
     }
 
     function loop() {
