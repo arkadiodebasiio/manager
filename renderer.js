@@ -1,6 +1,7 @@
 import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 
 const boomEffect = { x: 0, y: 0, opacity: 0, scale: 1, active: false };
+let lastPunchState = false;
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -41,6 +42,16 @@ function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
+    // Wykrywanie momentu uderzenia bezpośrednio w renderowaniu
+    if (boxerRed.isPunching && pVal > 0.85 && !lastPunchState) {
+        boomEffect.x = boxerBlue.rx;
+        boomEffect.y = boxerBlue.ry - 38;
+        boomEffect.opacity = 1.0;
+        boomEffect.scale = 0.5;
+        boomEffect.active = true;
+    }
+    lastPunchState = boxerRed.isPunching && pVal > 0.5;
+
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
 
@@ -66,13 +77,6 @@ function drawRedBoxer() {
 
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Wyzwolenie napisu BOOM przy uderzeniu
-    if (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.90 && !boxerRed.hasHit) {
-        boomEffect.x = boxerBlue.rx; boomEffect.y = boxerBlue.ry - 38;
-        boomEffect.opacity = 1.0; boomEffect.scale = 0.5; boomEffect.active = true;
-    }
-    boxerRed.hasHit = boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.90;
-
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
@@ -80,7 +84,9 @@ function drawRedBoxer() {
 
 function drawBoomText() {
     if (boomEffect.active) {
-        boomEffect.scale += (1.2 - boomEffect.scale) * 0.2; boomEffect.y -= 0.4; boomEffect.opacity -= 0.04; 
+        boomEffect.scale += (1.2 - boomEffect.scale) * 0.2; 
+        boomEffect.y -= 0.4; 
+        boomEffect.opacity -= 0.04; 
         if (boomEffect.opacity <= 0) { boomEffect.active = false; return; }
         
         ctx.save(); ctx.translate(boomEffect.x, boomEffect.y); ctx.scale(boomEffect.scale, boomEffect.scale);
