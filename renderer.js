@@ -1,8 +1,4 @@
-import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
-
-// Lokalny efekt napisu wewnątrz renderera (bez żadnego eksportowania z engine)
-const boom = { x: 0, y: 0, alpha: 0, scale: 0.5, show: false };
-let prevPunch = false;
+import { canvas, ctx, boxerRed, boxerBlue, hitEvent, updatePhysics } from './engine.js';
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -43,16 +39,6 @@ function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
-    // Wykrywanie szczytu uderzenia i aktywacja napisu BOOM lokalnie
-    if (boxerRed.isPunching && pVal > 0.8 && !prevPunch) {
-        boom.x = boxerBlue.rx;
-        boom.y = boxerBlue.ry - 35;
-        boom.alpha = 1.0;
-        boom.scale = 0.6;
-        boom.show = true;
-    }
-    prevPunch = boxerRed.isPunching && pVal > 0.4;
-
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
 
@@ -83,35 +69,22 @@ function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-function drawBoomText() {
-    if (boom.show) {
-        boom.scale += 0.03;
-        boom.alpha -= 0.03;
-        if (boom.alpha <= 0) { boom.show = false; return; }
-
-        ctx.save();
-        ctx.translate(boom.x, boom.y);
-        ctx.scale(boom.scale, boom.scale);
-        ctx.globalAlpha = boom.alpha;
-        ctx.font = 'bold 20px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 3;
-        ctx.strokeText('BOOM!', 0, 0);
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillText('BOOM!', 0, 0);
-        ctx.restore();
-    }
-}
-
 function loop() {
+    ctx.save();
+    // Bezpieczne drżenie całego ekranu canvas przy uderzeniu
+    if (hitEvent.shake > 0) {
+        const shakeX = (Math.random() - 0.5) * hitEvent.shake;
+        const shakeY = (Math.random() - 0.5) * hitEvent.shake;
+        ctx.translate(shakeX, shakeY);
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawRing(); 
     updatePhysics(); 
     drawBlueBoxer(); 
     drawRedBoxer();
-    drawBoomText();
+    
+    ctx.restore();
     requestAnimationFrame(loop);
 }
 
