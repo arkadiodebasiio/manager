@@ -96,25 +96,24 @@ function drawRedBoxer() {
     ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // NAPRAWIONA LEWA RĘKAWICA CZERWONEGO: Teraz startuje idealnie symetrycznie od -12 pikseli
-    let leftGloveX = currentX - 12; 
+    // NAPRAWIONA LEWA RĘKAWICA CZERWONEGO: W spoczynku ma sztywne -12, bez błędnych przesunięć matematycznych
+    let leftGloveX = -12; 
     let leftGloveY = currentY - boxerRed.radius + 4;
 
     if (boxerRed.isPunching) {
         if (boxerRed.punchType === 'straight') {
-            // Płynne przemieszczenie z pozycji szerokiej (-12) do osi środka podczas prostego
-            leftGloveX = (currentX - 12) * (1 - pVal);
+            // Poprawione schodzenie do środka: płynny ruch od -12 do 0 bez załamań pozycji
+            leftGloveX = -12 + (pVal * 12);
             leftGloveY -= pVal * 48;
         } else {
-            // Zamach sierpowy z pozycji szerokiej (-12)
-            leftGloveX += Math.sin(boxerRed.punchProgress) * 22;
+            // Zamach sierpowny (szeroki)
+            leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
             leftGloveY -= pVal * 42;
         }
     }
 
     if (boxerRed.isPunching && Math.abs(leftGloveY - (currentY - boxerRed.radius + 4)) > 5) {
         ctx.beginPath(); 
-        // Początek barku ramienia idealnie zsynchronizowany na -12
         ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
         ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     }
