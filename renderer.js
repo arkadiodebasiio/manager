@@ -1,4 +1,4 @@
-import { canvas, ctx, boxerRed, boxerBlue, hitEvent, updatePhysics } from './engine.js';
+const { canvas, ctx, boxerRed, boxerBlue, hitEvent, updatePhysics } = window.GameEngine;
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
