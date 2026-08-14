@@ -23,7 +23,6 @@ export function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     
-    // Stabilne odliczanie klatek – 300 klatek to równe 5 sekund w 60 FPS
     if (boxerBlue.stunTimer > 0) {
         boxerBlue.animTimer += 0.35; 
         boxerBlue.stunTimer--; 
@@ -54,14 +53,15 @@ export function updatePhysics() {
     }
 
     if (boxerRed.isPunching) {
-        const prevProgress = boxerRed.punchProgress;
-        boxerRed.punchProgress += 0.146; 
+        // ZMIANA PRĘDKOŚCI: proste są o 15% szybsze (0.168) niż sierpy (0.146)
+        const punchSpeed = boxerRed.punchType === 'straight' ? 0.168 : 0.146;
+        boxerRed.punchProgress += punchSpeed; 
 
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
             if (boxerRed.punchType === 'hook') {
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
-                    boxerBlue.stunTimer = 300; // Pancerne 300 klatek (5 sekund)
+                    boxerBlue.stunTimer = 300; 
                 }
             }
             boxerRed.hasHit = true;
