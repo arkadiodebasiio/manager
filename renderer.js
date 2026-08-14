@@ -2,6 +2,7 @@ import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 
 let isBlocking = false;
 let blockDecisionMade = false;
+let activePunchHand = 'left'; // 'left' lub 'right'
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -55,7 +56,6 @@ function drawBlueBoxer() {
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
     const gloveRadius = 7;
-    
     let leftGloveX = isBlocking ? -3 : -12;
     let rightGloveX = isBlocking ? 3 : 12;
     let gloveY = -boxerBlue.radius + 4;
@@ -64,15 +64,8 @@ function drawBlueBoxer() {
         gloveY = -boxerBlue.radius + 1;
     }
 
-    // Lewa rękawica niebieskiego
-    ctx.beginPath(); 
-    ctx.arc(leftGloveX, gloveY, gloveRadius, 0, Math.PI * 2); 
-    ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-
-    // Prawa rękawica niebieskiego
-    ctx.beginPath(); 
-    ctx.arc(rightGloveX, gloveY + (isBlocking ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), gloveRadius, 0, Math.PI * 2); 
-    ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(leftGloveX, gloveY, gloveRadius, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), gloveRadius, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
@@ -81,6 +74,11 @@ function drawBlueBoxer() {
 function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
+
+    // Losowanie ręki dokładnie w momencie inicjacji ciosu (70% lewa / 30% prawa) bez wpływu na samą częstotliwość ataków
+    if (boxerRed.isPunching && boxerRed.punchProgress < 0.1) {
+        activePunchHand = Math.random() < 0.70 ? 'left' : 'right';
+    }
 
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
@@ -91,34 +89,42 @@ function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Prawa rękawica czerwonego (szeroko na 12 pikseli)
-    ctx.beginPath();
-    ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
-
-    // NAPRAWIONA LEWA RĘKAWICA CZERWONEGO: W spoczynku ma sztywne -12, bez błędnych przesunięć matematycznych
     let leftGloveX = -12; 
     let leftGloveY = currentY - boxerRed.radius + 4;
+    let rightGloveX = 12;
+    let rightGloveY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
 
-    if (boxerRed.isPunching) {
+    if (boxerRed.isPunching && activePunchHand === 'left') {
         if (boxerRed.punchType === 'straight') {
-            // Poprawione schodzenie do środka: płynny ruch od -12 do 0 bez załamań pozycji
             leftGloveX = -12 + (pVal * 12);
             leftGloveY -= pVal * 48;
         } else {
-            // Zamach sierpowny (szeroki)
             leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
             leftGloveY -= pVal * 42;
         }
     }
 
-    if (boxerRed.isPunching && Math.abs(leftGloveY - (currentY - boxerRed.radius + 4)) > 5) {
-        ctx.beginPath(); 
-        ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
-        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    if (boxerRed.isPunching && activePunchHand === 'right') {
+        if (boxerRed.punchType === 'straight') {
+            rightGloveX = 12 - (pVal * 12);
+            rightGloveY -= pVal * 48;
+        } else {
+            rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
+            rightGloveY -= pVal * 42;
+        }
     }
 
+    if (boxerRed.isPunching && activePunchHand === 'left' && Math.abs(leftGloveY - (currentY - boxerRed.radius + 4)) > 5) {
+        ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
+        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    }
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+
+    if (boxerRed.isPunching && activePunchHand === 'right' && Math.abs(rightGloveY - (currentY - boxerRed.radius + 4)) > 5) {
+        ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(rightGloveX, rightGloveY);
+        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    }
+    ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
