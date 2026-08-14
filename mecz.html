@@ -2,240 +2,110 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Boxing Manager Modern UI</title>
+    <title>Kuleczka Bokser</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: #020617;
-            color: #f8fafc;
-            font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
+            margin: 0;
             overflow: hidden;
+            background-color: #1a472a; /* Kolor boiska/maty */
         }
-
-        /* Nowoczesny Panel Dashboard */
-        #game-interface {
-            width: 100%;
-            max-width: 600px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-            margin-bottom: 20px;
-            z-index: 10;
+        canvas {
+            display: block;
         }
-
-        .hud-header { text-align: center; margin-bottom: 16px; }
-        .hud-header h1 { font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #fff; }
-        
-        .fighters-status { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px; }
-        .fighter-name { font-size: 13px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
-        .hp-bar-bg { background: #334155; height: 10px; border-radius: 5px; width: 100%; overflow: hidden; }
-        .hp-bar-fill { height: 100%; width: 100%; transition: width 0.2s ease; }
-        #hp-alex { background: linear-gradient(90deg, #2563eb, #38bdf8); }
-        #hp-bob { background: linear-gradient(90deg, #be123c, #fb7185); }
-
-        #log-text { font-family: monospace; font-size: 12px; color: #f59e0b; text-align: center; font-weight: 600; min-height: 18px; }
-
-        #action-btn {
-            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: white; border: none;
-            width: 100%; padding: 14px; margin-top: 14px; font-size: 14px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 1px; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;
-        }
-        #action-btn:hover { transform: translateY(-1px); }
-
-        /* --- NOWOCZESNA ARENA WALKI 3D / CSS --- */
-        #arena-viewport {
-            width: 100%;
-            max-width: 600px;
-            height: 260px;
-            background: radial-gradient(circle, #1e1b4b 0%, #020617 100%);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            perspective: 600px; /* Trójwymiarowa rzutnia */
-        }
-
-        /* Wektorowy trójwymiarowy ring */
-        #ring-3d {
-            width: 380px;
-            height: 160px;
-            background: #475569;
-            transform: rotateX(50deg); /* Pochylenie ringu dla efektu 3D */
-            border: 4px solid #ef4444; /* Czerwone liny */
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.3);
-            position: relative;
-        }
-
-        /* Postacie Bokserów (Renderowane wektorami CSS) */
-        .boxer-avatar {
-            position: absolute;
-            bottom: 60px;
-            width: 50px;
-            height: 100px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: all 0.15s ease-out;
-        }
-
-        #avatar-alex { left: 160px; }
-        #avatar-bob { right: 160px; }
-
-        /* Części ciała bokserów */
-        .boxer-head { width: 24px; height: 24px; background: #ffcc99; border-radius: 50%; border: 2px solid #000; }
-        .boxer-hair { width: 24px; height: 6px; background: #1e293b; border-radius: 4px 4px 0 0; }
-        .boxer-torso { width: 34px; height: 45px; background: #ffcc99; border-radius: 6px; margin-top: 2px; border: 2px solid #000; position: relative; }
-        .boxer-shorts { width: 34px; height: 16px; background: #2563eb; position: absolute; bottom: 0; border-top: 2px solid #fff; }
-        #avatar-bob .boxer-shorts { background: #be123c; }
-
-        /* Rękawice bokserskie */
-        .glove { width: 14px; height: 14px; background: #f59e0b; border-radius: 50%; border: 1px solid #000; position: absolute; top: 12px; transition: transform 0.1s; }
-        .glove-left { left: -8px; }
-        .glove-right { right: -8px; }
-        #avatar-bob .glove { background: #f8fafc; }
-
-        /* --- STANY I ANIMACJE WALKID --- */
-        .punching-left .glove-left { transform: translate(18px, -10px) scale(1.2); }
-        .punching-right .glove-right { transform: translate(-18px, -10px) scale(1.2); }
-        
-        .dodging { transform: translateY(15px) scaleY(0.85); }
-        .hit-reaction { transform: translateX(-12px) rotate(-10deg); }
-        #avatar-bob.hit-reaction { transform: translateX(12px) rotate(10deg); }
-        
-        .ko-state { transform: translateY(40px) rotate(90deg) !important; opacity: 0.6; }
     </style>
 </head>
 <body>
 
-    <!-- GÓRNY PANEL KONTROLNY -->
-    <div id="game-interface">
-        <div class="hud-header">
-            <h1>Championship Boxing Live</h1>
-            <div id="log-text">SYSTEM GOTOWY: SYSTEM DOSTOSOWANY DO TWOJEJ PRZEGLĄDARKI</div>
-        </div>
-
-        <div class="fighters-status">
-            <div>
-                <div class="fighter-name">ALEX (Menedżer)</div>
-                <div class="hp-bar-bg"><div id="hp-alex" class="hp-bar-fill"></div></div>
-            </div>
-            <div>
-                <div class="fighter-name">BOB (Pretendent)</div>
-                <div class="hp-bar-bg"><div id="hp-bob" class="hp-bar-fill"></div></div>
-            </div>
-        </div>
-
-        <button id="action-btn" onclick="startCSSMatch()">Rozpocznij Pokaz na Ringu</button>
-    </div>
-
-    <!-- ARENA Z GRAFIKĄ WALKID (DZIAŁA ZAWSZE) -->
-    <div id="arena-viewport">
-        <div id="ring-3d"></div>
-
-        <!-- Wektorowy Zawodnik A -->
-        <div id="avatar-alex" class="boxer-avatar">
-            <div class="boxer-hair"></div>
-            <div class="boxer-head"></div>
-            <div class="boxer-torso">
-                <div class="glove glove-left"></div>
-                <div class="glove glove-right"></div>
-                <div class="boxer-shorts"></div>
-            </div>
-        </div>
-
-        <!-- Wektorowy Zawodnik B -->
-        <div id="avatar-bob" class="boxer-avatar">
-            <div class="boxer-hair" style="background:#b45309"></div>
-            <div class="boxer-head"></div>
-            <div class="boxer-torso">
-                <div class="glove glove-left"></div>
-                <div class="glove glove-right"></div>
-                <div class="boxer-shorts"></div>
-            </div>
-        </div>
-    </div>
+<canvas id="ringCanvas"></canvas>
 
 <script>
-let active = false, over = false;
-let statA = { hp: 100, pow: 12, speed: 0.06 };
-let statB = { hp: 100, pow: 14, speed: 0.05 };
+    const canvas = document.getElementById('ringCanvas');
+    const ctx = canvas.getContext('2d');
 
-const alexAv = document.getElementById("avatar-alex");
-const bobAv = document.getElementById("avatar-bob");
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-function startCSSMatch() {
-    if (active) return;
-    statA.hp = 100; statB.hp = 100; over = false; active = true;
-    alexAv.className = "boxer-avatar";
-    bobAv.className = "boxer-avatar";
-    document.getElementById("hp-alex").style.width = "100%";
-    document.getElementById("hp-bob").style.width = "100%";
-    document.getElementById("log-text").innerText = "GONG! WALKA ROZPOCZĘTA.";
-    simulationLoop();
-}
+    // Obiekt boksera (kuleczki)
+    const boxer = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 20,          // rozmiar kuleczki
+        speed: 3,            // prędkość biegu
+        vx: 2,
+        vy: 1.5,
+        color: '#e74c3c',    // czerwony kolorek jak w managerze
+        number: '9'          // numer na koszulce/plecach
+    };
 
-function simulationLoop() {
-    if (!active || over) return;
+    function update() {
+        // Ruch kuleczki
+        boxer.x += boxer.vx;
+        boxer.y += boxer.vy;
 
-    // AI Losuje zachowanie zawodników co 400ms
-    setTimeout(() => {
-        if (over) return;
-
-        // Reset pozycji do IDLE przed kolejną akcją
-        alexAv.className = "boxer-avatar";
-        bobAv.className = "boxer-avatar";
-
-        let chance = Math.random();
-
-        if (chance < 0.4) {
-            // Alex zadaje cios lewą ręką
-            alexAv.classList.add("punching-left");
-            statB.hp -= statA.pow;
-            if (statB.hp < 0) statB.hp = 0;
-            document.getElementById("hp-bob").style.width = statB.hp + "%";
-            bobAv.classList.add("hit-reaction");
-            document.getElementById("log-text").innerText = `🥊 ALEX trafia lewym prostym za -${statA.pow} HP!`;
-        } else if (chance < 0.8) {
-            // Bob kontruje prawą ręką
-            bobAv.classList.add("punching-right");
-            statA.hp -= statB.pow;
-            if (statA.hp < 0) statA.hp = 0;
-            document.getElementById("hp-alex").style.width = statA.hp + "%";
-            alexAv.classList.add("hit-reaction");
-            document.getElementById("log-text").innerText = `💥 BOB wyprowadza potężną kontrę za -${statB.pow} HP!`;
-        } else {
-            // Uniki obu zawodników
-            alexAv.classList.add("dodging");
-            bobAv.classList.add("dodging");
-            document.getElementById("log-text").innerText = "🛡️ Obydwaj bokserzy przechodzą do defensywy i uniku!";
+        // Odbijanie od krawędzi ekranu
+        if (boxer.x - boxer.radius < 0 || boxer.x + boxer.radius > canvas.width) {
+            boxer.vx *= -1;
         }
-
-        // Sprawdzanie nokautu K.O.
-        if (statB.hp <= 0) {
-            over = true; active = false;
-            bobAv.className = "boxer-avatar ko-state";
-            document.getElementById("log-text").innerText = "🏆 MISTRZOWSKIE K.O.! BOB LEŻY NA MACIE, ALEX WYGRYWA!";
-        } else if (statA.hp <= 0) {
-            over = true; active = false;
-            alexAv.className = "boxer-avatar ko-state";
-            document.getElementById("log-text").innerText = "❌ NOKAUT! Zostałeś pokonany na ringu przez Boba.";
+        if (boxer.y - boxer.radius < 0 || boxer.y + boxer.radius > canvas.height) {
+            boxer.vy *= -1;
         }
+    }
 
-        simulationLoop();
-    }, 450);
-}
+    function draw() {
+        // Czyszczenie tła (efekt zielonej murawy/maty)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Rysowanie cienia kuleczki
+        ctx.beginPath();
+        ctx.arc(boxer.x + 3, boxer.y + 3, boxer.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fill();
+
+        // Rysowanie głównego ciała kuleczki
+        ctx.beginPath();
+        ctx.arc(boxer.x, boxer.y, boxer.radius, 0, Math.PI * 2);
+        ctx.fillStyle = boxer.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+
+        // Rysowanie małych rękawic bokserskich (po bokach kuleczki)
+        const gloveRadius = 6;
+        // Lewa rękawica
+        ctx.beginPath();
+        ctx.arc(boxer.x - boxer.radius - 2, boxer.y - 4, gloveRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#d35400';
+        ctx.fill();
+        ctx.stroke();
+
+        // Prawa rękawica
+        ctx.beginPath();
+        ctx.arc(boxer.x + boxer.radius + 2, boxer.y - 4, gloveRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#d35400';
+        ctx.fill();
+        ctx.stroke();
+
+        // Rysowanie numerka w środku kuleczki (styl retro CM/FM)
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(boxer.number, boxer.x, boxer.y);
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    loop();
 </script>
+
 </body>
 </html>
