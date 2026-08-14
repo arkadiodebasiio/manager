@@ -1,5 +1,7 @@
 import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 
+const boomEffect = { x: 0, y: 0, opacity: 0, scale: 1, active: false };
+
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
     ctx.strokeStyle = '#b7950b'; ctx.lineWidth = 2;
@@ -64,9 +66,29 @@ function drawRedBoxer() {
 
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
+    // Wyzwolenie napisu BOOM przy uderzeniu
+    if (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.90 && !boxerRed.hasHit) {
+        boomEffect.x = boxerBlue.rx; boomEffect.y = boxerBlue.ry - 38;
+        boomEffect.opacity = 1.0; boomEffect.scale = 0.5; boomEffect.active = true;
+    }
+    boxerRed.hasHit = boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.90;
+
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
+}
+
+function drawBoomText() {
+    if (boomEffect.active) {
+        boomEffect.scale += (1.2 - boomEffect.scale) * 0.2; boomEffect.y -= 0.4; boomEffect.opacity -= 0.04; 
+        if (boomEffect.opacity <= 0) { boomEffect.active = false; return; }
+        
+        ctx.save(); ctx.translate(boomEffect.x, boomEffect.y); ctx.scale(boomEffect.scale, boomEffect.scale);
+        ctx.globalAlpha = boomEffect.opacity; ctx.font = 'italic bold 22px Arial, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.strokeStyle = '#000';
+        ctx.lineWidth = 4; ctx.strokeText('BOOM!', 0, 0); ctx.fillStyle = '#f1c40f';
+        ctx.fillText('BOOM!', 0, 0); ctx.restore();
+    }
 }
 
 function loop() {
@@ -75,8 +97,8 @@ function loop() {
     updatePhysics(); 
     drawBlueBoxer(); 
     drawRedBoxer();
+    drawBoomText();
     requestAnimationFrame(loop);
 }
 
 loop();
-
