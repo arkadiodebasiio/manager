@@ -140,14 +140,13 @@ function drawRedBoxer() {
 
     const currentY = -bodyLean * 0.2, currentX = 0;
     
-    // RYSOWANIE TUŁOWIA (Baza pod spód)
+    // 1. Rysujemy tułów jako bazę
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); 
     ctx.fillStyle = boxerRed.color; 
     ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // POPRAWKA WYSUNIĘCIA: Rękawice w spoczynku startują dokładnie od czubka ciała (-boxerRed.radius)
-    // tak samo jak u niebieskiego zawodnika, zapobiegając ucinaniu kółek
+    // 2. Czysta matematyka pozycji rąk bazująca na czubku kuli (identycznie jak u niebieskiego)
     let leftGloveX = -12; 
     let leftGloveY = -boxerRed.radius + 4;
     let rightGloveX = 12;
@@ -170,22 +169,21 @@ function drawRedBoxer() {
                 rightGloveX = 12 - (pVal * 12);
                 rightGloveY = (-boxerRed.radius + 4) - (pVal * rightReach);
             } else {
-                rightX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
+                rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
                 rightGloveY = (-boxerRed.radius + 4) - (pVal * (rightReach - 6));
             }
         }
     }
 
-    // Rysowanie lewej rękawicy
+    // 3. Rysujemy rękawice na samym wierzchu tułowia
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); 
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Rysowanie prawej rękawicy z pulsowaniem góra/dół w spoczynku
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY + rightPulse, 7, 0, Math.PI * 2); 
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Numerek na środku klatki piersiowej
+    // 4. Numerek na sam koniec
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
