@@ -1,9 +1,9 @@
-import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
+import { canvas, ctx, boxerRed, boxerBlue, strongHand, updatePhysics } from './engine.js';
 
 let isBlocking = false;
 let blockDecisionMade = false;
 let activePunchHand = 'left';
-let wasPunchingLastFrame = false; // Zapamiętuje poprzednią klatkę, aby bezpiecznie wylosować rękę
+let wasPunchingLastFrame = false;
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -76,9 +76,10 @@ function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
-    // NAPRAWIONE WYKRYWANIE STARTU CIOSU: Losujemy rękę dokładnie w klatce, w której isPunching zmienia się z false na true
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
         activePunchHand = Math.random() < 0.70 ? 'left' : 'right';
+        // Przekazujemy informację o ręce do silnika fizycznego
+        window.currentActivePunchHand = activePunchHand;
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
@@ -96,23 +97,27 @@ function drawRedBoxer() {
     let rightGloveX = 12;
     let rightGloveY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
 
+    // BONUS +10% DO ZASIĘGU WYCIĄGNIĘCIA RĘKI (Zasięg bazowy 48 zwiększa się do 53 pikseli)
+    const leftReach = strongHand === 'left' ? 53 : 48;
+    const rightReach = strongHand === 'right' ? 53 : 48;
+
     if (boxerRed.isPunching && activePunchHand === 'left') {
         if (boxerRed.punchType === 'straight') {
             leftGloveX = -12 + (pVal * 12);
-            leftGloveY -= pVal * 48;
+            leftGloveY -= pVal * leftReach;
         } else {
             leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
-            leftGloveY -= pVal * 42;
+            leftGloveY -= pVal * (leftReach - 6);
         }
     }
 
     if (boxerRed.isPunching && activePunchHand === 'right') {
         if (boxerRed.punchType === 'straight') {
             rightGloveX = 12 - (pVal * 12);
-            rightGloveY -= pVal * 48;
+            rightGloveY -= pVal * rightReach;
         } else {
             rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
-            rightGloveY -= pVal * 42;
+            rightGloveY -= pVal * (rightReach - 6);
         }
     }
 
