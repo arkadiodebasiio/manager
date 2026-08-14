@@ -40,7 +40,6 @@ function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
-    // Bezpieczne sprawdzanie uderzenia – teraz działa idealnie, bo zmienne są połączone bezpośrednio
     if (boxerRed.isPunching && pVal > 0.85 && !lastPunchState) {
         boomEffect.x = boxerBlue.rx;
         boomEffect.y = boxerBlue.ry - 38;
@@ -57,7 +56,7 @@ function drawRedBoxer() {
 
     const currentY = -bodyLean * 0.2, currentX = 0;
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
     ctx.beginPath(); ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
