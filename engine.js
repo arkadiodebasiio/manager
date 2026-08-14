@@ -1,20 +1,20 @@
-export const canvas = document.getElementById('ringCanvas');
-export const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('ringCanvas');
+const ctx = canvas.getContext('2d');
 
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
-export const boxerRed = {
+const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: 0.023, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350
 };
 
-export const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
+const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
 
-export const hitEvent = { shake: 0 };
+const hitEvent = { shake: 0 };
 
-export function updatePhysics() {
+function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     boxerBlue.animTimer += 0.133;
@@ -55,3 +55,6 @@ export function updatePhysics() {
     boxerBlue.rx = ringCenter + (dx / dist) * impactPower;
     boxerBlue.ry = ringCenter + (dy / dist) * impactPower;
 }
+
+// Udostępniamy bezpiecznie w globalnym obiekcie okna
+window.GameEngine = { canvas, ctx, boxerRed, boxerBlue, hitEvent, updatePhysics };
