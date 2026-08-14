@@ -5,12 +5,13 @@
     <title>Bokserzy Retro - Projekt</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { display: block; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        canvas { display: block; background-color: #d4ac0d; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
-<canvas id="ringCanvas"></canvas>
+<canvas id="ringCanvas" width="500" height="500"></canvas>
 
+<!-- Ładujemy tradycyjnie, silnik pierwszy, renderer drugi -->
 <script src="engine.js"></script>
 <script src="renderer.js"></script>
 </body>
