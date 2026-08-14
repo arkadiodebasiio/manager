@@ -43,7 +43,14 @@ window.GameEngine = (function() {
         y: 0,
         opacity: 0,
         scale: 1,
-        active: false
+        active: false,
+        trigger: function(posX, posY) {
+            this.x = posX;
+            this.y = posY - 38;
+            this.opacity = 1.0;
+            this.scale = 0.5;
+            this.active = true;
+        }
     };
 
     function update() {
@@ -80,17 +87,7 @@ window.GameEngine = (function() {
         }
 
         if (boxerRed.isPunching) {
-            const lastProgress = boxerRed.punchProgress;
             boxerRed.punchProgress += 0.146; 
-
-            if (Math.sin(boxerRed.punchProgress) > 0.95 && Math.sin(lastProgress) <= 0.95 && !hitText.active) {
-                hitText.x = boxerBlue.rx;
-                hitText.y = boxerBlue.ry - 38; 
-                hitText.opacity = 1.0;
-                hitText.scale = 0.5; 
-                hitText.active = true;
-            }
-
             if (boxerRed.punchProgress >= Math.PI) {
                 boxerRed.punchProgress = 0;
                 boxerRed.isPunching = false;
@@ -125,6 +122,7 @@ window.GameEngine = (function() {
 })();
 (function() {
     const { canvas, ctx, ringCenter, boxerRed, boxerBlue, hitText, update } = window.GameEngine;
+    let lastPunchState = false;
 
     function drawRing() {
         ctx.fillStyle = '#d4ac0d';
@@ -182,10 +180,9 @@ window.GameEngine = (function() {
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        const gloveRadius = 7;
         [-12, 12].forEach(gx => {
             ctx.beginPath();
-            ctx.arc(gx, -boxerBlue.radius + 4, gloveRadius, 0, Math.PI * 2);
+            ctx.arc(gx, -boxerBlue.radius + 4, 7, 0, Math.PI * 2);
             ctx.fillStyle = '#d35400';
             ctx.fill();
             ctx.stroke();
@@ -228,9 +225,8 @@ window.GameEngine = (function() {
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        const gloveRadius = 7;
         ctx.beginPath();
-        ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, gloveRadius, 0, Math.PI * 2);
+        ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
@@ -259,7 +255,7 @@ window.GameEngine = (function() {
         }
 
         ctx.beginPath();
-        ctx.arc(leftGloveX, leftGloveY, gloveRadius, 0, Math.PI * 2);
+        ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
@@ -300,6 +296,14 @@ window.GameEngine = (function() {
     function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawRing();
+        
+        // Sprawdzanie momentu uderzenia w klatce renderującej
+        const isCurrentlyPunchingHigh = boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.90;
+        if (isCurrentlyPunchingHigh && !lastPunchState) {
+            hitText.trigger(boxerBlue.rx, boxerBlue.ry);
+        }
+        lastPunchState = isCurrentlyPunchingHigh;
+
         update();
         drawBlueBoxer();
         drawRedBoxer();
@@ -309,33 +313,3 @@ window.GameEngine = (function() {
 
     loop();
 })();
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>Bokserzy - Naprawione</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #111;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        canvas {
-            display: block;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-        }
-    </style>
-</head>
-<body>
-
-<canvas id="ringCanvas"></canvas>
-
-<script src="engine.js"></script>
-<script src="renderer.js"></script>
-
-</body>
-</html>
