@@ -140,14 +140,17 @@ function drawRedBoxer() {
 
     const currentY = -bodyLean * 0.2, currentX = 0;
     
-    // Naturalne punkty barków
-    const leftShoulderX = -10, leftShoulderY = currentY - 8;
-    const rightShoulderX = 10, rightShoulderY = currentY - 8;
+    // RYSOWANIE TUŁOWIA (DOKŁADNIE JAK U NIEBIESKIEGO)
+    ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); 
+    ctx.fillStyle = boxerRed.color; 
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
+    // IDRASTYCZNE UPROSZCZENIE (KLON STYLU NIEBIESKIEGO): Rękawice rysowane bez kresek, jako czyste kółka nad tułowiem
     let leftGloveX = -12; 
     let leftGloveY = currentY - boxerRed.radius + 4;
     let rightGloveX = 12;
-    let rightGloveY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
+    let rightGloveY = currentY - boxerRed.radius + 4;
 
     const leftReach = strongHand === 'left' ? 53 : 48;
     const rightReach = strongHand === 'right' ? 53 : 48;
@@ -172,23 +175,16 @@ function drawRedBoxer() {
         }
     }
 
-    // NAJPIERW RYSUJEMY CIAŁO (będzie pod spodem)
-    ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    // Rysowanie lewej rękawicy (Czyste kółko z białą obwódką, bez kresek)
+    ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); 
+    ctx.fillStyle = '#d35400'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // TERAZ RYSUJEMY LEWĄ RĘKĘ (będzie nad kulką na wierzchu)
-    ctx.beginPath(); ctx.moveTo(leftShoulderX, leftShoulderY); ctx.lineTo(leftGloveX, leftGloveY);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); 
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    // Rysowanie prawej rękawicy (Czyste kółko, które pulsuje w bezruchu identycznie jak u niebieskiego)
+    const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
+    ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY + rightPulse, 7, 0, Math.PI * 2); 
+    ctx.fillStyle = '#d35400'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // TERAZ RYSUJEMY PRAWĄ RĘKĘ (będzie nad kulką na wierzchu)
-    ctx.beginPath(); ctx.moveTo(rightShoulderX, rightShoulderY); ctx.lineTo(rightGloveX, rightGloveY);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); 
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
-
-    // Numerek na sam koniec
+    // Numerek zawodnika na środku klatki piersiowej
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
