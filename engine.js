@@ -51,5 +51,4 @@ function updatePhysics() {
     boxerBlue.ry = ringCenter + (dy / dist) * impactPower;
 }
 
-// Udostępniamy obiekty globalnie, aby renderer.js miał do nich pełny, nieblokowany dostęp
 window.Game = { canvas, ctx, boxerRed, boxerBlue, boomEffect, updatePhysics };
