@@ -71,7 +71,6 @@ function drawRedBoxer() {
 
 function loop() {
     ctx.save();
-    // Bezpieczne drżenie całego ekranu canvas przy uderzeniu
     if (hitEvent.shake > 0) {
         const shakeX = (Math.random() - 0.5) * hitEvent.shake;
         const shakeY = (Math.random() - 0.5) * hitEvent.shake;
