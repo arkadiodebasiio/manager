@@ -1,5 +1,9 @@
 import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 
+// Lokalny stan obrony niebieskiego boksera
+let isBlocking = false;
+let blockDecisionMade = false;
+
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
     ctx.strokeStyle = '#b7950b'; ctx.lineWidth = 2;
@@ -20,13 +24,28 @@ function drawBlueBoxer() {
     const bounce = Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
 
-    // OBLICZANIE BŁYSKU: Sprawdzamy w locie, jak głęboko jest cios czerwonego
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
-    // Jeśli cios dociera do celu (pVal > 0.85), zmieniamy kolor na czerwono-biały rozbłysk
+    // Logika podejmowania decyzji o bloku (na początku ciosu czerwonego)
+    if (boxerRed.isPunching && pVal > 0.1 && pVal < 0.3 && !blockDecisionMade) {
+        isBlocking = Math.random() < 0.4; // 40% szans na udany blok ciosu
+        blockDecisionMade = true;
+    }
+    if (!boxerRed.isPunching) {
+        isBlocking = false;
+        blockDecisionMade = false;
+    }
+
+    // Zmiana koloru ciała lub rękawic w zależności od powodzenia obrony
     let currentColor = boxerBlue.color;
+    let gloveColor = '#d35400'; // Standardowy brązowy/pomarańczowy kolor retro rękawic
+
     if (boxerRed.isPunching && pVal > 0.85) {
-        currentColor = '#ffbebe'; // Kolor rozbłysku po otrzymaniu ciosu
+        if (isBlocking) {
+            gloveColor = '#f1c40f'; // Rękawice świecą na żółto przy udanym bloku
+        } else {
+            currentColor = '#ffbebe'; // Czyste trafienie na twarz (błysk ciała)
+        }
     }
 
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
@@ -34,12 +53,21 @@ function drawBlueBoxer() {
 
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); 
-    ctx.fillStyle = currentColor; // Użycie dynamicznego koloru
+    ctx.fillStyle = currentColor; 
     ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    [-12, 12].forEach(gx => {
-        ctx.beginPath(); ctx.arc(gx, -boxerBlue.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    // Rysowanie rękawic niebieskiego (jeśli blokuje, zsuwa je blisko siebie na środek twarzy)
+    const gloveRadius = 7;
+    const gloveSpread = isBlocking ? 4 : 12; // Zsuwanie rękawic do środka przy bloku
+
+    [-gloveSpread, gloveSpread].forEach(gx => {
+        ctx.beginPath(); 
+        // Przy bloku rękawice wysuwają się też minimalnie bardziej do przodu (-boxerBlue.radius)
+        ctx.arc(gx, -boxerBlue.radius + (isBlocking ? 1 : 4), gloveRadius, 0, Math.PI * 2); 
+        ctx.fillStyle = gloveColor; 
+        ctx.fill(); 
+        ctx.stroke();
     });
 
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
