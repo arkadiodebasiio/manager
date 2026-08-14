@@ -56,8 +56,6 @@ function drawBlueBoxer() {
 
     const gloveRadius = 7;
     
-    // SZEROKI ROZSTAW NIEBIESKIEGO: Powrót do Twoich ulubionych 12 pikseli na bok
-    // Kiedy aktywuje się blok, rękawice schodzą się ciasno do środka na 3 piksele
     let leftGloveX = isBlocking ? -3 : -12;
     let rightGloveX = isBlocking ? 3 : 12;
     let gloveY = -boxerBlue.radius + 4;
@@ -93,22 +91,22 @@ function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // SZEROKI ROZSTAW PRAWEJ RĘKAWICY CZERWONEGO: Ustalone na 12 pikseli w bok
+    // Prawa rękawica czerwonego (szeroko na 12 pikseli)
     ctx.beginPath();
     ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // SZEROKI ROZSTAW LEWEJ RĘKAWICY CZERWONEGO: W spoczynku zaczyna od -12 pikseli
+    // NAPRAWIONA LEWA RĘKAWICA CZERWONEGO: Teraz startuje idealnie symetrycznie od -12 pikseli
     let leftGloveX = currentX - 12; 
     let leftGloveY = currentY - boxerRed.radius + 4;
 
     if (boxerRed.isPunching) {
         if (boxerRed.punchType === 'straight') {
-            // Płynne schodzenie szerokiej ręki do osi środkowej (0) podczas ciosu prostego
-            leftGloveX = currentX - 12 * (1 - pVal);
+            // Płynne przemieszczenie z pozycji szerokiej (-12) do osi środka podczas prostego
+            leftGloveX = (currentX - 12) * (1 - pVal);
             leftGloveY -= pVal * 48;
         } else {
-            // Zamach sierpowy wyprowadzany z szerokiej pozycji wyjściowej
+            // Zamach sierpowy z pozycji szerokiej (-12)
             leftGloveX += Math.sin(boxerRed.punchProgress) * 22;
             leftGloveY -= pVal * 42;
         }
@@ -116,7 +114,7 @@ function drawRedBoxer() {
 
     if (boxerRed.isPunching && Math.abs(leftGloveY - (currentY - boxerRed.radius + 4)) > 5) {
         ctx.beginPath(); 
-        // Ramię dopasowane do szerokiego rozstawu barku (-12)
+        // Początek barku ramienia idealnie zsynchronizowany na -12
         ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
         ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     }
