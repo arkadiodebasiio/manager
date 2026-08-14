@@ -14,37 +14,60 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350
 };
 
-// boxerBlue zyskuje liczniki serii ciosów, rejestr kontuzji oraz statystyki pod debuffy
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, 
     stunTimer: 0,
-    punchStreak: 0,            // Liczy ciosy z rzędu na "6" bez bloku
-    injury: "none",            // Aktywna kontuzja: "none", "eye", "liver", "lip"
-    blockCount: 0,             // Liczy udane bloki pod kontuzję wątroby
-    fatigueMultiplier: 1.0,    // Mnożnik zmęczenia (+3% przy spuchniętej wardze)
-    weakPunchChance: 0.0       // Szansa na słabszy cios (10% przy podbitym oku)
+    punchStreak: 0,            
+    injury: "none",            // "none", "eye", "liver", "lip", "double_eye", "double_liver", "double_lip", "mixed"
+    blockCount: 0,             
+    fatigueMultiplier: 1.0,    
+    weakPunchChance: 0.0,
+    liverBlockInterval: 10     // Co ile bloków siada wątroba (domyślnie 10)
 };
 
 function rollDice() {
     return Math.floor(Math.random() * 6) + 1;
 }
 
-// Funkcja losująca i aplikująca jedną z trzech drobnych kontuzji
+// Funkcja obsługująca kumulację lub nową kontuzję
 function applyMinorInjury() {
-    const roll = Math.floor(Math.random() * 3) + 1; // 1, 2 lub 3
-    if (roll === 1) {
-        boxerBlue.injury = "eye"; // Podbite oko
-        boxerBlue.weakPunchChance = 0.10; // 10% szansy na ciosy słabsze o 50%
-        console.log("KONTUZJA: Podbite oko! 10% szans na ciosy o 50% słabsze.");
-    } else if (roll === 2) {
-        boxerBlue.injury = "liver"; // Strzał w wątrobę
-        boxerBlue.blockCount = 0;
-        console.log("KONTUZJA: Strzał w wątrobę! Co 10 blok przestanie działać.");
-    } else if (roll === 3) {
-        boxerBlue.injury = "lip"; // Spuchnięta warga
-        boxerBlue.fatigueMultiplier = 1.03; // Szybsze męczenie o 3%
-        console.log("KONTUZJA: Spuchnięta warga! Zawodnik męczy się o 3% szybciej.");
+    const roll = Math.floor(Math.random() * 3) + 1; // 1: oko, 2: wątroba, 3: warga
+    let newInjuryType = roll === 1 ? "eye" : (roll === 2 ? "liver" : "lip");
+
+    if (boxerBlue.injury === "none") {
+        // Pierwsza kontuzja
+        boxerBlue.injury = newInjuryType;
+        if (newInjuryType === "eye") {
+            boxerBlue.weakPunchChance = 0.10;
+        } else if (newInjuryType === "liver") {
+            boxerBlue.liverBlockInterval = 10;
+        } else if (newInjuryType === "lip") {
+            boxerBlue.fatigueMultiplier = 1.03;
+        }
+        console.log("KONTUZJA: Wylosowano " + newInjuryType);
+    } else if (boxerBlue.injury === newInjuryType) {
+        // Druga TA SAMA kontuzja -> podwójny debuff!
+        if (newInjuryType === "eye") {
+            boxerBlue.injury = "double_eye";
+            boxerBlue.weakPunchChance = 0.20; // 20% szans na ciosy o 50% słabsze
+            console.log("PODWÓJNA KONTUZJA: Podwójnie podbite oko! Szansa na słabsze ciosy wzrosła do 20%.");
+        } else if (newInjuryType === "liver") {
+            boxerBlue.injury = "double_liver";
+            boxerBlue.liverBlockInterval = 5; // Co 5 blok nie działa zamiast 10
+            console.log("PODWÓJNA KONTUZJA: Zmasakrowana wątroba! Co 5 blok nie działa.");
+        } else if (newInjuryType === "lip") {
+            boxerBlue.injury = "double_lip";
+            boxerBlue.fatigueMultiplier = 1.06; // Męczy się o 6% szybciej
+            console.log("PODWÓJNA KONTUZJA: Mocno rozcięta warga! Zmęczenie wzrosło do 6%.");
+        }
+    } else {
+        // Inna kontuzja niż pierwsza -> stan mieszany
+        boxerBlue.injury = "mixed";
+        if (newInjuryType === "eye" || boxerBlue.weakPunchChance > 0) boxerBlue.weakPunchChance = Math.max(boxerBlue.weakPunchChance, 0.10);
+        if (newInjuryType === "liver" || boxerBlue.liverBlockInterval < 10) boxerBlue.liverBlockInterval = Math.min(boxerBlue.liverBlockInterval, 10);
+        if (newInjuryType === "lip" || boxerBlue.fatigueMultiplier > 1.0) boxerBlue.fatigueMultiplier = Math.max(boxerBlue.fatigueMultiplier, 1.03);
+        console.log("KONTUZJA: Kolejny, inny uraz! Debuffy połączone.");
     }
 }
 
@@ -81,7 +104,6 @@ export function updatePhysics() {
         boxerRed.hasHit = false; 
     }
 
-    // Wyważony system mnożników siły z rzutu kostką
     let diceRoll = rollDice();
     let diceMultiplier = 0.5; 
     if (diceRoll >= 3 && diceRoll <= 5) {
@@ -95,24 +117,19 @@ export function updatePhysics() {
 
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
-            
-            // Sprawdzamy czy niebieski zablokował cios (pobrane z gardy w rendererze)
             const isBlocked = window.isCurrentlyBlockingGarda || false;
 
             if (isBlocked) {
-                // Udany blok przerywa niebezpieczną serię celnych ciosów "na szóstce"
                 boxerBlue.punchStreak = 0;
             } else {
-                // Czyste trafienie: Jeśli padła "szóstka", zwiększamy licznik serii
                 if (diceRoll === 6) {
                     boxerBlue.punchStreak += 1;
-                    // Drugi cios z rzędu na 6 bez bloku pomiędzy nimi = drobna kontuzja
-                    if (boxerBlue.punchStreak >= 2 && boxerBlue.injury === "none") {
+                    if (boxerBlue.punchStreak >= 2) {
                         applyMinorInjury();
+                        boxerBlue.punchStreak = 0; // Reset serii po naliczeniu urazu
                     }
                 }
 
-                // Logika stuna dla czystego sierpa pozostała nienaruszona
                 if (boxerRed.punchType === 'hook' && boxerBlue.stunTimer === 0) {
                     if (Math.random() < 0.20) {
                         boxerBlue.stunTimer = 300; 
