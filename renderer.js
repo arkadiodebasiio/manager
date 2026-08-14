@@ -1,6 +1,5 @@
 import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 
-// Stabilne zmienne stanu obrony
 let isBlocking = false;
 let blockDecisionMade = false;
 
@@ -26,13 +25,10 @@ function drawBlueBoxer() {
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
-    // Pewne i bezpieczne losowanie bloku: od razu gdy czerwony rusza do ataku
     if (boxerRed.isPunching && !blockDecisionMade) {
-        isBlocking = Math.random() < 0.50; // 50% szans na blokowanie
+        isBlocking = Math.random() < 0.50; 
         blockDecisionMade = true;
     }
-    
-    // Reset decyzji, kiedy czerwony kończy cios i wraca na pozycję
     if (!boxerRed.isPunching) {
         isBlocking = false;
         blockDecisionMade = false;
@@ -41,12 +37,11 @@ function drawBlueBoxer() {
     let currentColor = boxerBlue.color;
     let gloveColor = '#d35400'; 
 
-    // Wizualna reakcja w momencie pełnego wyprostowania ciosu czerwonego
     if (boxerRed.isPunching && pVal > 0.85) {
         if (isBlocking) {
-            gloveColor = '#f1c40f'; // Udany blok – żółte rękawice ochronne
+            gloveColor = '#f1c40f'; 
         } else {
-            currentColor = '#ffbebe'; // Brak bloku – czyste trafienie, ciało błyska na czerwono
+            currentColor = '#ffbebe'; 
         }
     }
 
@@ -59,9 +54,8 @@ function drawBlueBoxer() {
     ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Rysowanie małych rękawic (garda zsuwa się ciasno do środka twarzy, gdy niebieski trzyma blok)
     const gloveRadius = 7;
-    const gloveSpread = isBlocking ? 4 : 12; // 4 piksele odstępu to zwarta, podwójna garda
+    const gloveSpread = isBlocking ? 4 : 12; 
 
     [-gloveSpread, gloveSpread].forEach(gx => {
         ctx.beginPath(); 
@@ -107,6 +101,36 @@ function drawRedBoxer() {
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
+
+    // BEZPIECZNA LOGIKA BŁYSKAWICY: Rysujemy ją tylko, gdy cios trafia czysto i nie ma bloku
+    if (boxerRed.isPunching && pVal > 0.85 && !isBlocking) {
+        // Obliczamy globalną pozycję uderzającej rękawicy czerwonego
+        const radAngle = boxerRed.angle;
+        // Przeliczamy lokalne współrzędne rękawicy na globalny układ Canvasu
+        const gloveGlobalX = boxerRed.x + leftGloveX * Math.cos(radAngle - Math.PI/2) - leftGloveY * Math.sin(radAngle - Math.PI/2);
+        const gloveGlobalY = boxerRed.y + leftGloveX * Math.sin(radAngle - Math.PI/2) + leftGloveY * Math.cos(radAngle - Math.PI/2);
+
+        // Punkty pośrednie zygzaka błyskawicy (od rękawicy do środka niebieskiego)
+        const midX1 = gloveGlobalX + (boxerBlue.rx - gloveGlobalX) * 0.33 + (Math.random() - 0.5) * 15;
+        const midY1 = gloveGlobalY + (boxerBlue.ry - gloveGlobalY) * 0.33 + (Math.random() - 0.5) * 15;
+        const midX2 = gloveGlobalX + (boxerBlue.rx - gloveGlobalX) * 0.66 + (Math.random() - 0.5) * 15;
+        const midY2 = gloveGlobalY + (boxerBlue.ry - gloveGlobalY) * 0.66 + (Math.random() - 0.5) * 15;
+
+        ctx.save();
+        ctx.strokeStyle = '#f1c40f'; // Neonowy żółty kolor
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#f1c40f'; // Efekt świecenia neonu
+        
+        ctx.beginPath();
+        ctx.moveTo(gloveGlobalX, gloveGlobalY);
+        ctx.lineTo(midX1, midY1);
+        ctx.lineTo(midX2, midY2);
+        ctx.lineTo(boxerBlue.rx, boxerBlue.ry);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
 }
 
 function loop() {
