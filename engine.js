@@ -14,7 +14,6 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350
 };
 
-// boxerBlue zyskuje licznik ogłuszenia stunTimer (w klatkach)
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0 
@@ -24,10 +23,9 @@ export function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     
-    // Jeśli niebieski jest ogłuszony, jego własny licznik animacji (oddychania) zwalnia lub drży
     if (boxerBlue.stunTimer > 0) {
-        boxerBlue.animTimer += 0.35; // Efekt szybkiego drżenia ze strachu/oszołomienia
-        boxerBlue.stunTimer--; // Odliczanie 3 sekund (1 klatka = ~16.6ms)
+        boxerBlue.animTimer += 0.35; 
+        boxerBlue.stunTimer--; 
     } else {
         boxerBlue.animTimer += 0.133;
     }
@@ -55,16 +53,15 @@ export function updatePhysics() {
     }
 
     if (boxerRed.isPunching) {
-        const prevProgress = boxerRed.punchProgress;
         boxerRed.punchProgress += 0.146; 
 
-        // Wykrywanie momentu uderzenia (szczyt sinusa ciosu)
-        if (Math.sin(boxerRed.punchProgress) > 0.90 && Math.sin(prevProgress) <= 0.90 && !boxerRed.hasHit) {
-            // SPRAWDZANIE OGŁUSZENIA: Tylko przy sierpowym ('hook') i gdy niebieski nie zablokował (obsługiwane też w renderze)
+        // NAPRAWIONE SPRAWDZANIE STUNA: Szerszy i pewny zakres wykrywania trafienia w szczycie ciosu
+        const pVal = Math.sin(boxerRed.punchProgress);
+        if (pVal > 0.75 && !boxerRed.hasHit) {
             if (boxerRed.punchType === 'hook') {
-                const isBlockedNow = window.isCurrentlyBlockingGarda || false;
-                if (!isBlockedNow && Math.random() < 0.20) { // 20% szansy na czystym sierpie
-                    boxerBlue.stunTimer = 180; // 180 klatek = równe 3 sekundy ogłuszenia
+                // Bezpośrednie sprawdzenie stanu blokowania lub losowanie 20% szans na ogłuszenie
+                if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20) {
+                    boxerBlue.stunTimer = 180; // Równe 3 sekundy ogłuszenia
                 }
             }
             boxerRed.hasHit = true;
