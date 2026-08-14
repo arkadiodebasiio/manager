@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokserzy - mocniejsze doskoki</title>
+    <title>Bokserzy - ciosy w gardę</title>
     <style>
         body {
             margin: 0;
@@ -106,11 +106,10 @@
 
         let targetRadius = baseRadius;
         if (boxerRed.isPunching) {
-            // Zmniejszone wartości promienia oznaczają głębszy (mocniejszy) doskok do celu
             targetRadius = boxerRed.punchType === 'straight' ? 78 : 66;
         }
 
-        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.25; // Lekko przyspieszona reakcja doskoku
+        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.25;
 
         boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
         boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * currentOrbitRadius;
@@ -162,6 +161,7 @@
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
+        // Rękawice niebieskiego (tworzą gardę po bokach, zostawiając środek na celownik)
         const gloveRadius = 7;
         ctx.beginPath();
         ctx.arc(-12, -boxerBlue.radius + 4, gloveRadius, 0, Math.PI * 2);
@@ -224,21 +224,23 @@
         ctx.fill();
         ctx.stroke();
 
-        let leftGloveX = currentX - 12;
+        let leftGloveX = currentX; // Wyśrodkowane w osi X, trafia prosto w środek gardy
         let leftGloveY = gloveBaseY;
 
         if (boxerRed.isPunching) {
             if (boxerRed.punchType === 'straight') {
+                // Prosty ląduje bezpośrednio w osi centralnej między rękawicami
                 leftGloveY -= pVal * 42;
             } else {
-                leftGloveX += Math.sin(boxerRed.punchProgress) * 24;
-                leftGloveY -= pVal * 24;
+                // Sierp delikatnie znoszony ku środkowi, by siekał gardę od frontu
+                leftGloveX += Math.sin(boxerRed.punchProgress) * 6;
+                leftGloveY -= pVal * 30;
             }
         }
 
         if (boxerRed.isPunching && Math.abs(leftGloveY - gloveBaseY) > 5) {
             ctx.beginPath();
-            ctx.moveTo(currentX - 12, currentY - 10);
+            ctx.moveTo(currentX - 6, currentY - 10);
             ctx.lineTo(leftGloveX, leftGloveY);
             ctx.strokeStyle = '#e74c3c';
             ctx.lineWidth = 5;
