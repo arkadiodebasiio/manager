@@ -16,25 +16,17 @@ export const boxerRed = {
 
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
-    animTimer: 0, rx: ringCenter, ry: ringCenter, stunEndTime: 0 // Zmiana na znacznik czasu (timestamp)
+    animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0 
 };
 
-let lastFrameTime = performance.now();
-
 export function updatePhysics() {
-    const currentTime = performance.now();
-    const deltaTime = (currentTime - lastFrameTime) / 1000; // Czas w sekundach od ostatniej klatki
-    lastFrameTime = currentTime;
-
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     
-    // Sprawdzanie czasu rzeczywistego dla stuna (używając milisekund)
-    const now = Date.now();
-    const isStunned = boxerBlue.stunEndTime > now;
-
-    if (isStunned) {
+    // Stabilne odliczanie klatek – 300 klatek to równe 5 sekund w 60 FPS
+    if (boxerBlue.stunTimer > 0) {
         boxerBlue.animTimer += 0.35; 
+        boxerBlue.stunTimer--; 
     } else {
         boxerBlue.animTimer += 0.133;
     }
@@ -62,14 +54,14 @@ export function updatePhysics() {
     }
 
     if (boxerRed.isPunching) {
+        const prevProgress = boxerRed.punchProgress;
         boxerRed.punchProgress += 0.146; 
 
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
             if (boxerRed.punchType === 'hook') {
-                if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && !isStunned) {
-                    // Ustawiamy dokładny czas końca stuna: teraz + 5000 ms (5 sekund)
-                    boxerBlue.stunEndTime = Date.now() + 5000; 
+                if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
+                    boxerBlue.stunTimer = 300; // Pancerne 300 klatek (5 sekund)
                 }
             }
             boxerRed.hasHit = true;
