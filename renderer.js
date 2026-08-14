@@ -15,7 +15,7 @@ function drawRing() {
         ctx.lineWidth = 3; ctx.strokeRect(50 - offset/2, 50 - offset/2, 400 + offset, 400 + offset);
     }
 
-    [{x: 50, y: 50, color: '#c0392b'}, {x: 450, y: 50, color: '#2980b9'}, {x: 50, y: 450, color: '#fff'}, {x: 450, y: 450, color: '#fff'}].forEach(c => {
+    [{x: 50, y: 50, color: '#c0392b'}, {x: 450, y: 50, color: '#c0392b'}, {x: 50, y: 450, color: '#fff'}, {x: 450, y: 450, color: '#fff'}].forEach(c => {
         ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, Math.PI * 2); ctx.fillStyle = c.color; ctx.fill();
         ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
     });
@@ -77,8 +77,12 @@ function drawRedBoxer() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
-        activePunchHand = Math.random() < 0.70 ? 'left' : 'right';
-        // Przekazujemy informację o ręce do silnika fizycznego
+        // UZALEŻNIENIE OD KIERUNKU RUCHU (orbitSpeed):
+        // Jeśli orbitSpeed jest ujemny (krąży w lewo), odwracamy proporcję 70/30 na korzyść prawej ręki.
+        const isMovingLeft = boxerRed.orbitSpeed < 0;
+        const leftHandChance = isMovingLeft ? 0.30 : 0.70;
+        
+        activePunchHand = Math.random() < leftHandChance ? 'left' : 'right';
         window.currentActivePunchHand = activePunchHand;
     }
     wasPunchingLastFrame = boxerRed.isPunching;
@@ -97,7 +101,6 @@ function drawRedBoxer() {
     let rightGloveX = 12;
     let rightGloveY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
 
-    // BONUS +10% DO ZASIĘGU WYCIĄGNIĘCIA RĘKI (Zasięg bazowy 48 zwiększa się do 53 pikseli)
     const leftReach = strongHand === 'left' ? 53 : 48;
     const rightReach = strongHand === 'right' ? 53 : 48;
 
