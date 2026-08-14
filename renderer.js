@@ -34,6 +34,16 @@ function drawBlueBoxer() {
             isBlocking = false;
         } else {
             isBlocking = Math.random() < 0.50; 
+            
+            // LOGIKA KONTUZJI WĄTROBY: Jeśli wylosowano blok, sprawdzamy licznik
+            if (isBlocking && boxerBlue.injury === "liver") {
+                boxerBlue.blockCount += 1;
+                if (boxerBlue.blockCount >= 10) {
+                    isBlocking = false; // Co 10 blok zostaje przełamany przez ból wątroby
+                    boxerBlue.blockCount = 0; // Reset licznika
+                    console.log("PRZEŁAMANIE: Ból wątroby uniemożliwił zrobienie bloku!");
+                }
+            }
         }
         blockDecisionMade = true;
         window.isCurrentlyBlockingGarda = isBlocking;
@@ -41,7 +51,6 @@ function drawBlueBoxer() {
     if (!boxerRed.isPunching) {
         isBlocking = false;
         blockDecisionMade = false;
-        window.isCurrentlyBlockingGarda = false;
     }
 
     let currentColor = boxerBlue.color;
