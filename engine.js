@@ -1,21 +1,22 @@
-const canvas = document.getElementById('ringCanvas');
-const ctx = canvas.getContext('2d');
+export const canvas = document.getElementById('ringCanvas');
+export const ctx = canvas.getContext('2d');
 
 canvas.width = canvas.height = 500;
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
-const boxerRed = {
+export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: 0.023, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 0, y: 0
 };
 
-const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
+export const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
 
-const boomEffect = { x: 0, y: 0, opacity: 0, scale: 1, active: false };
+// Bezpieczny stan uderzenia (licznik klatek trzęsienia)
+export const hitEvent = { shake: 0 };
 
-function updatePhysics() {
+export function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     boxerBlue.animTimer += 0.133;
@@ -42,13 +43,18 @@ function updatePhysics() {
 
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += 0.146; 
+        // Wykrywamy moment uderzenia i aktywujemy krótkie drżenie ringu
+        if (Math.sin(boxerRed.punchProgress) > 0.85 && !boxerRed.hasHit) {
+            hitEvent.shake = 6; // siła drżenia w pikselach
+            boxerRed.hasHit = true;
+        }
         if (boxerRed.punchProgress >= Math.PI) boxerRed.isPunching = false;
     }
+
+    if (hitEvent.shake > 0) hitEvent.shake--;
 
     let impactPower = (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.75) ? (Math.sin(boxerRed.punchProgress) - 0.75) * 45 : 0;
     const dx = ringCenter - boxerRed.x, dy = ringCenter - boxerRed.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
     boxerBlue.rx = ringCenter + (dx / dist) * impactPower;
     boxerBlue.ry = ringCenter + (dy / dist) * impactPower;
 }
-
-window.Game = { canvas, ctx, boxerRed, boxerBlue, boomEffect, updatePhysics };
