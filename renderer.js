@@ -146,51 +146,40 @@ function drawRedBoxer() {
     ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Pozycje rękawic
+    // Bezpieczne pozycje rękawic (wewnątrz zakresu widoczności)
     let leftGloveX = -12; 
     let leftGloveY = -boxerRed.radius + 4;
     let rightGloveX = 12;
     let rightGloveY = -boxerRed.radius + 4;
 
-    const leftReach = strongHand === 'left' ? 53 : 48;
-    const rightReach = strongHand === 'right' ? 53 : 48;
+    const maxReach = 25; // Bezpieczny zasięg ciosu w lokalnych współrzędnych
 
     if (boxerRed.isPunching) {
         if (activePunchHand === 'left') {
-            if (boxerRed.punchType === 'straight') {
-                leftGloveX = -12 + (pVal * 12);
-                leftGloveY = (-boxerRed.radius + 4) - (pVal * leftReach);
-            } else {
-                leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
-                leftGloveY = (-boxerRed.radius + 4) - (pVal * (leftReach - 6));
-            }
+            leftGloveX = -12 + (pVal * 6);
+            leftGloveY = (-boxerRed.radius + 4) - (pVal * maxReach);
         } else {
-            if (boxerRed.punchType === 'straight') {
-                rightGloveX = 12 - (pVal * 12);
-                rightGloveY = (-boxerRed.radius + 4) - (pVal * rightReach);
-            } else {
-                rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
-                rightGloveY = (-boxerRed.radius + 4) - (pVal * (rightReach - 6));
-            }
+            rightGloveX = 12 - (pVal * 6);
+            rightGloveY = (-boxerRed.radius + 4) - (pVal * maxReach);
         }
     }
 
-    // Rysowanie lewej rękawicy nad tułowiem
+    // Rysowanie lewej rękawicy
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); 
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Rysowanie prawej rękawicy nad tułowiem
+    // Rysowanie prawej rękawicy
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY + rightPulse, 7, 0, Math.PI * 2); 
     ctx.fillStyle = '#d35400'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // NAPRAWIONY NUMEREK: Poprawne domknięcie stosu transformacji bez zawieszania gry
+    // Numerek postaci
     ctx.save(); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, currentX, currentY); 
     ctx.restore(); 
     
-    ctx.restore(); // Główne przywrócenie stanu dla całej kuleczki
+    ctx.restore(); 
 }
 
 function drawBlockShield() {
