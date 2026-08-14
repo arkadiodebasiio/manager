@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokserzy patrzą na siebie</title>
+    <title>Bokserzy patrzą na siebie - poprawka przodu</title>
     <style>
         body {
             margin: 0;
@@ -47,11 +47,11 @@
         punchProgress: 0,
         isMovingThisJump: false,
         wasAboveZero: true,
-        x: 0, // Pozycja obliczana w locie
+        x: 0,
         y: 0
     };
 
-    // Niebieski bokser (w centrum, rotujący)
+    // Niebieski bokser (w centrum, rotujący przodem)
     const boxerBlue = {
         x: ringCenter.x,
         y: ringCenter.y,
@@ -103,11 +103,9 @@
         boxerRed.punchTimer += 1;
         boxerBlue.animTimer += 0.2;
 
-        // Obliczanie aktualnej pozycji X i Y czerwonego boksera
         boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * orbitRadius;
         boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * orbitRadius;
 
-        // Logika nieliniowych skoków czerwonego
         const currentSin = Math.sin(boxerRed.animTimer);
         if (currentSin > 0 && !boxerRed.wasAboveZero) {
             boxerRed.isMovingThisJump = Math.random() < 0.30;
@@ -118,7 +116,6 @@
             boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
         }
 
-        // Ciosy czerwonego
         if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.04) {
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
@@ -137,10 +134,9 @@
     function drawBlueBoxer() {
         const bounce = Math.sin(boxerBlue.animTimer) * 3;
         
-        // Obliczanie kąta w stronę czerwonego boksera
-        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x);
+        // Kąt do czerwonego + Math.PI odwraca wektor o 180 stopni, dając właściwy PRZÓD postaci
+        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x) + Math.PI;
 
-        // Cień pod niebieskim
         ctx.beginPath();
         ctx.ellipse(boxerBlue.x, boxerBlue.y + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
@@ -148,7 +144,7 @@
 
         ctx.save();
         ctx.translate(boxerBlue.x, boxerBlue.y + bounce);
-        ctx.rotate(angleToRed - Math.PI / 2); // Obrót przodem do czerwonego
+        ctx.rotate(angleToRed - Math.PI / 2); 
 
         // Ciało niebieskiego
         ctx.beginPath();
@@ -159,7 +155,7 @@
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        // Garda niebieskiego (zawsze wycelowana w czerwonego)
+        // Garda niebieskiego skierowana w stronę czerwonego
         const gloveRadius = 7;
         ctx.beginPath();
         ctx.arc(-12, -boxerBlue.radius + 4, gloveRadius, 0, Math.PI * 2);
@@ -173,7 +169,7 @@
         ctx.fill();
         ctx.stroke();
 
-        // Numer "2" (odkręcony, żeby był czytelny w pionie)
+        // Numer "2"
         ctx.save();
         ctx.rotate(-(angleToRed - Math.PI / 2));
         ctx.fillStyle = '#fff';
@@ -193,7 +189,6 @@
         const punchExtension = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) * 35 : 0;
         const bodyLean = punchExtension * 0.25;
 
-        // Cień czerwonego
         ctx.beginPath();
         ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
@@ -206,7 +201,6 @@
         const currentY = -bodyLean;
         const currentX = 0;
 
-        // Ciało czerwonego
         ctx.beginPath();
         ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2);
         ctx.fillStyle = boxerRed.color;
@@ -215,7 +209,6 @@
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        // Garda czerwonego
         const gloveRadius = 7;
         const leftGloveBaseX = currentX - 12;
         const rightGloveBaseX = currentX + 12;
@@ -246,7 +239,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Numer "1"
         ctx.save();
         ctx.translate(currentX, currentY);
         ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
