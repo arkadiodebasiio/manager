@@ -1,127 +1,319 @@
-const canvas = document.getElementById('ringCanvas');
-const ctx = canvas.getContext('2d');
+window.GameEngine = (function() {
+    const canvas = document.getElementById('ringCanvas');
+    const ctx = canvas.getContext('2d');
 
-const ringSize = 500;
-canvas.width = ringSize;
-canvas.height = ringSize;
+    const ringSize = 500;
+    canvas.width = ringSize;
+    canvas.height = ringSize;
 
-const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
-const baseRadius = 100;      
-let currentOrbitRadius = baseRadius; 
+    const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
+    const baseRadius = 100;      
+    let currentOrbitRadius = baseRadius; 
 
-const boxerRed = {
-    angle: Math.PI / 2, 
-    orbitSpeed: 0.023,    
-    radius: 24,
-    color: '#e74c3c',
-    number: '1',
-    animTimer: 0,
-    punchTimer: 0,     
-    isPunching: false, 
-    punchProgress: 0,
-    punchType: 'straight', 
-    isMovingThisJump: false,
-    wasAboveZero: true,
-    x: 0,
-    y: 0
-};
+    const boxerRed = {
+        angle: Math.PI / 2, 
+        orbitSpeed: 0.023,    
+        radius: 24,
+        color: '#e74c3c',
+        number: '1',
+        animTimer: 0,
+        punchTimer: 0,     
+        isPunching: false, 
+        punchProgress: 0,
+        punchType: 'straight', 
+        isMovingThisJump: false,
+        wasAboveZero: true,
+        x: 0,
+        y: 0
+    };
 
-const boxerBlue = {
-    x: ringCenter.x,
-    y: ringCenter.y,
-    radius: 24,
-    color: '#2980b9',
-    number: '2',
-    animTimer: 0,
-    rx: ringCenter.x, 
-    ry: ringCenter.y
-};
+    const boxerBlue = {
+        x: ringCenter.x,
+        y: ringCenter.y,
+        radius: 24,
+        color: '#2980b9',
+        number: '2',
+        animTimer: 0,
+        rx: ringCenter.x, 
+        ry: ringCenter.y
+    };
 
-const hitText = {
-    x: 0,
-    y: 0,
-    opacity: 0,
-    scale: 1,
-    active: false
-};
+    const hitText = {
+        x: 0,
+        y: 0,
+        opacity: 0,
+        scale: 1,
+        active: false
+    };
 
-function update() {
-    boxerRed.animTimer += 0.133;
-    boxerRed.punchTimer += 0.66; 
-    boxerBlue.animTimer += 0.133;
+    function update() {
+        boxerRed.animTimer += 0.133;
+        boxerRed.punchTimer += 0.66; 
+        boxerBlue.animTimer += 0.133;
 
-    let targetRadius = baseRadius;
-    if (boxerRed.isPunching) {
-        targetRadius = boxerRed.punchType === 'straight' ? 62 : 54;
-    }
-
-    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
-
-    boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
-    boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * currentOrbitRadius;
-
-    const currentSin = Math.sin(boxerRed.animTimer);
-    if (currentSin > 0 && !boxerRed.wasAboveZero) {
-        boxerRed.isMovingThisJump = Math.random() < 0.30;
-    }
-    boxerRed.wasAboveZero = (currentSin > 0);
-
-    if (boxerRed.isMovingThisJump && currentSin > 0) {
-        boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
-    }
-
-    if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
-        boxerRed.isPunching = true;
-        boxerRed.punchProgress = 0;
-        boxerRed.punchTimer = 0;
-        boxerRed.punchType = Math.random() < 0.5 ? 'straight' : 'hook';
-        hitText.active = false; 
-    }
-
-    if (boxerRed.isPunching) {
-        const lastProgress = boxerRed.punchProgress;
-        boxerRed.punchProgress += 0.146; 
-
-        if (Math.sin(boxerRed.punchProgress) > 0.95 && Math.sin(lastProgress) <= 0.95 && !hitText.active) {
-            hitText.x = boxerBlue.rx;
-            hitText.y = boxerBlue.ry - 38; 
-            hitText.opacity = 1.0;
-            hitText.scale = 0.5; 
-            hitText.active = true;
+        let targetRadius = baseRadius;
+        if (boxerRed.isPunching) {
+            targetRadius = boxerRed.punchType === 'straight' ? 62 : 54;
         }
 
-        if (boxerRed.punchProgress >= Math.PI) {
+        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
+
+        boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
+        boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * currentOrbitRadius;
+
+        const currentSin = Math.sin(boxerRed.animTimer);
+        if (currentSin > 0 && !boxerRed.wasAboveZero) {
+            boxerRed.isMovingThisJump = Math.random() < 0.30;
+        }
+        boxerRed.wasAboveZero = (currentSin > 0);
+
+        if (boxerRed.isMovingThisJump && currentSin > 0) {
+            boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
+        }
+
+        if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+            boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
-            boxerRed.isPunching = false;
+            boxerRed.punchTimer = 0;
+            boxerRed.punchType = Math.random() < 0.5 ? 'straight' : 'hook';
+            hitText.active = false; 
+        }
+
+        if (boxerRed.isPunching) {
+            const lastProgress = boxerRed.punchProgress;
+            boxerRed.punchProgress += 0.146; 
+
+            if (Math.sin(boxerRed.punchProgress) > 0.95 && Math.sin(lastProgress) <= 0.95 && !hitText.active) {
+                hitText.x = boxerBlue.rx;
+                hitText.y = boxerBlue.ry - 38; 
+                hitText.opacity = 1.0;
+                hitText.scale = 0.5; 
+                hitText.active = true;
+            }
+
+            if (boxerRed.punchProgress >= Math.PI) {
+                boxerRed.punchProgress = 0;
+                boxerRed.isPunching = false;
+            }
+        }
+
+        if (hitText.active && hitText.opacity > 0) {
+            hitText.scale += (1.2 - hitText.scale) * 0.2; 
+            hitText.y -= 0.4; 
+            hitText.opacity -= 0.04; 
+        }
+
+        let impactPower = 0;
+        if (boxerRed.isPunching) {
+            let pVal = Math.sin(boxerRed.punchProgress);
+            if (pVal > 0.75) { 
+                impactPower = (pVal - 0.75) * 45; 
+            }
+        }
+        
+        const dx = ringCenter.x - boxerRed.x;
+        const dy = ringCenter.y - boxerRed.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        boxerBlue.rx = ringCenter.x + (dx / dist) * impactPower;
+        boxerBlue.ry = ringCenter.y + (dy / dist) * impactPower;
+    }
+
+    return {
+        canvas, ctx, ringSize, ringCenter, boxerRed, boxerBlue, hitText, update
+    };
+})();
+(function() {
+    const { canvas, ctx, ringCenter, boxerRed, boxerBlue, hitText, update } = window.GameEngine;
+
+    function drawRing() {
+        ctx.fillStyle = '#d4ac0d';
+        ctx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
+
+        ctx.strokeStyle = '#b7950b';
+        ctx.lineWidth = 2;
+        for (let i = 70; i < canvas.width - 50; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(i, 50);
+            ctx.lineTo(i, canvas.height - 50);
+            ctx.stroke();
+        }
+
+        for (let offset = 10; offset <= 30; offset += 10) {
+            ctx.strokeStyle = offset === 10 ? '#fff' : (offset === 20 ? '#c0392b' : '#2980b9');
+            ctx.lineWidth = 3;
+            ctx.strokeRect(50 - offset/2, 50 - offset/2, canvas.width - 100 + offset, canvas.height - 100 + offset);
+        }
+
+        [
+            {x: 50, y: 50, color: '#c0392b'},
+            {x: canvas.width - 50, y: 50, color: '#2980b9'},
+            {x: 50, y: canvas.height - 50, color: '#fff'},
+            {x: canvas.width - 50, y: canvas.height - 50, color: '#fff'}
+        ].forEach(c => {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = c.color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    }
+
+    function drawBlueBoxer() {
+        const bounce = Math.sin(boxerBlue.animTimer) * 3;
+        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
+
+        ctx.beginPath();
+        ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce);
+        ctx.rotate(angleToRed - Math.PI / 2); 
+
+        ctx.beginPath();
+        ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2);
+        ctx.fillStyle = boxerBlue.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+
+        const gloveRadius = 7;
+        [-12, 12].forEach(gx => {
+            ctx.beginPath();
+            ctx.arc(gx, -boxerBlue.radius + 4, gloveRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#d35400';
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        ctx.save();
+        ctx.rotate(-(angleToRed - Math.PI / 2));
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(boxerBlue.number, 0, 0);
+        ctx.restore();
+        ctx.restore();
+    }
+
+    function drawRedBoxer() {
+        const bounceOffset = Math.sin(boxerRed.animTimer) * 4;
+        const tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
+        const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
+        const bodyLean = pVal * 15;
+
+        ctx.beginPath();
+        ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(boxerRed.x + tiltOffset, boxerRed.y + bounceOffset);
+        ctx.rotate(boxerRed.angle - Math.PI / 2); 
+
+        const currentY = -bodyLean * 0.2;
+        const currentX = 0;
+
+        ctx.beginPath();
+        ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2);
+        ctx.fillStyle = boxerRed.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+
+        const gloveRadius = 7;
+        ctx.beginPath();
+        ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, gloveRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#d35400';
+        ctx.fill();
+        ctx.stroke();
+
+        let leftGloveX = currentX; 
+        let leftGloveY = currentY - boxerRed.radius + 4;
+
+        if (boxerRed.isPunching) {
+            if (boxerRed.punchType === 'straight') {
+                leftGloveY -= pVal * 48;
+            } else {
+                leftGloveX += Math.sin(boxerRed.punchProgress) * 10;
+                leftGloveY -= pVal * 42;
+            }
+        }
+
+        if (boxerRed.isPunching && Math.abs(leftGloveY - (currentY - boxerRed.radius + 4)) > 5) {
+            ctx.beginPath();
+            ctx.moveTo(currentX - 6, currentY - 10);
+            ctx.lineTo(leftGloveX, leftGloveY);
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#fff';
+        }
+
+        ctx.beginPath();
+        ctx.arc(leftGloveX, leftGloveY, gloveRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#d35400';
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(currentX, currentY);
+        ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(boxerRed.number, 0, 0);
+        ctx.restore();
+        ctx.restore(); 
+    }
+
+    function drawHitText() {
+        if (hitText.active && hitText.opacity > 0) {
+            ctx.save();
+            ctx.translate(hitText.x, hitText.y);
+            ctx.scale(hitText.scale, hitText.scale);
+            ctx.globalAlpha = hitText.opacity;
+
+            ctx.font = 'italic bold 22px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 4;
+            ctx.strokeText('BOOM!', 0, 0);
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillText('BOOM!', 0, 0);
+
+            ctx.restore();
         }
     }
 
-    if (hitText.active && hitText.opacity > 0) {
-        hitText.scale += (1.2 - hitText.scale) * 0.2; 
-        hitText.y -= 0.4; 
-        hitText.opacity -= 0.04; 
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawRing();
+        update();
+        drawBlueBoxer();
+        drawRedBoxer();
+        drawHitText(); 
+        requestAnimationFrame(loop);
     }
 
-    let impactPower = 0;
-    if (boxerRed.isPunching) {
-        let pVal = Math.sin(boxerRed.punchProgress);
-        if (pVal > 0.75) { 
-            impactPower = (pVal - 0.75) * 45; 
-        }
-    }
-    
-    const dx = ringCenter.x - boxerRed.x;
-    const dy = ringCenter.y - boxerRed.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    
-    boxerBlue.rx = ringCenter.x + (dx / dist) * impactPower;
-    boxerBlue.ry = ringCenter.y + (dy / dist) * impactPower;
-}
+    loop();
+})();
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokserzy - Dwa Równe Pliki</title>
+    <title>Bokserzy - Naprawione</title>
     <style>
         body {
             margin: 0;
