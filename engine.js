@@ -1,19 +1,21 @@
-export const canvas = document.getElementById('ringCanvas');
-export const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('ringCanvas');
+const ctx = canvas.getContext('2d');
 
 canvas.width = canvas.height = 500;
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
-export const boxerRed = {
+const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: 0.023, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 0, y: 0
 };
 
-export const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
+const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
 
-export function updatePhysics() {
+const boomEffect = { x: 0, y: 0, opacity: 0, scale: 1, active: false };
+
+function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     boxerBlue.animTimer += 0.133;
@@ -49,3 +51,5 @@ export function updatePhysics() {
     boxerBlue.ry = ringCenter + (dy / dist) * impactPower;
 }
 
+// Udostępniamy obiekty globalnie, aby renderer.js miał do nich pełny, nieblokowany dostęp
+window.Game = { canvas, ctx, boxerRed, boxerBlue, boomEffect, updatePhysics };
