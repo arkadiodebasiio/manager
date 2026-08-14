@@ -1,5 +1,8 @@
-const { canvas, ctx, boxerRed, boxerBlue, boomEffect, updatePhysics } = window.Game;
-let lastPunchState = false;
+import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
+
+// Lokalny efekt napisu wewnątrz renderera (bez żadnego eksportowania z engine)
+const boom = { x: 0, y: 0, alpha: 0, scale: 0.5, show: false };
+let prevPunch = false;
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -40,14 +43,15 @@ function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
-    if (boxerRed.isPunching && pVal > 0.85 && !lastPunchState) {
-        boomEffect.x = boxerBlue.rx;
-        boomEffect.y = boxerBlue.ry - 38;
-        boomEffect.opacity = 1.0;
-        boomEffect.scale = 0.5;
-        boomEffect.active = true;
+    // Wykrywanie szczytu uderzenia i aktywacja napisu BOOM lokalnie
+    if (boxerRed.isPunching && pVal > 0.8 && !prevPunch) {
+        boom.x = boxerBlue.rx;
+        boom.y = boxerBlue.ry - 35;
+        boom.alpha = 1.0;
+        boom.scale = 0.6;
+        boom.show = true;
     }
-    lastPunchState = boxerRed.isPunching && pVal > 0.5;
+    prevPunch = boxerRed.isPunching && pVal > 0.4;
 
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
@@ -80,17 +84,24 @@ function drawRedBoxer() {
 }
 
 function drawBoomText() {
-    if (boomEffect.active) {
-        boomEffect.scale += (1.2 - boomEffect.scale) * 0.2; 
-        boomEffect.y -= 0.4; 
-        boomEffect.opacity -= 0.04; 
-        if (boomEffect.opacity <= 0) { boomEffect.active = false; return; }
-        
-        ctx.save(); ctx.translate(boomEffect.x, boomEffect.y); ctx.scale(boomEffect.scale, boomEffect.scale);
-        ctx.globalAlpha = boomEffect.opacity; ctx.font = 'italic bold 22px Arial, sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.strokeStyle = '#000';
-        ctx.lineWidth = 4; ctx.strokeText('BOOM!', 0, 0); ctx.fillStyle = '#f1c40f';
-        ctx.fillText('BOOM!', 0, 0); ctx.restore();
+    if (boom.show) {
+        boom.scale += 0.03;
+        boom.alpha -= 0.03;
+        if (boom.alpha <= 0) { boom.show = false; return; }
+
+        ctx.save();
+        ctx.translate(boom.x, boom.y);
+        ctx.scale(boom.scale, boom.scale);
+        ctx.globalAlpha = boom.alpha;
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.strokeText('BOOM!', 0, 0);
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillText('BOOM!', 0, 0);
+        ctx.restore();
     }
 }
 
