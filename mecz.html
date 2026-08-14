@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokserzy - proste i sierpy</title>
+    <title>Bokserzy - mniejszy dystans walki</title>
     <style>
         body {
             margin: 0;
@@ -32,9 +32,11 @@
     canvas.height = ringSize;
 
     const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
-    const orbitRadius = 110; 
+    
+    // Zmniejszony dystans bazowy (z 120 na 100 pikseli)
+    const baseRadius = 100;      
+    let currentOrbitRadius = baseRadius; 
 
-    // Czerwony bokser (krążący, bije proste i sierpy)
     const boxerRed = {
         angle: Math.PI / 2, 
         orbitSpeed: 0.035,
@@ -45,14 +47,13 @@
         punchTimer: 0,     
         isPunching: false, 
         punchProgress: 0,
-        punchType: 'straight', // 'straight' (prosty) lub 'hook' (sierp)
+        punchType: 'straight', 
         isMovingThisJump: false,
         wasAboveZero: true,
         x: 0,
         y: 0
     };
 
-    // Niebieski bokser (w centrum, rotujący przodem)
     const boxerBlue = {
         x: ringCenter.x,
         y: ringCenter.y,
@@ -104,8 +105,16 @@
         boxerRed.punchTimer += 1;
         boxerBlue.animTimer += 0.2;
 
-        boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * orbitRadius;
-        boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * orbitRadius;
+        let targetRadius = baseRadius;
+        if (boxerRed.isPunching) {
+            // Doskoki dopasowane do nowej, bliższej odległości bazowej
+            targetRadius = boxerRed.punchType === 'straight' ? 84 : 72;
+        }
+
+        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.2;
+
+        boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
+        boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
         const currentSin = Math.sin(boxerRed.animTimer);
         if (currentSin > 0 && !boxerRed.wasAboveZero) {
@@ -117,7 +126,6 @@
             boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
         }
 
-        // Inicjacja ciosu (losujemy czy prosty, czy sierp)
         if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.045) {
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
@@ -126,7 +134,7 @@
         }
 
         if (boxerRed.isPunching) {
-            boxerRed.punchProgress += 0.25;
+            boxerRed.punchProgress += 0.22; 
             if (boxerRed.punchProgress >= Math.PI) {
                 boxerRed.punchProgress = 0;
                 boxerRed.isPunching = false;
@@ -211,29 +219,24 @@
         const rightGloveBaseX = currentX + 12;
         const gloveBaseY = currentY - boxerRed.radius + 4;
 
-        // Prawa rękawica (garda)
         ctx.beginPath();
         ctx.arc(rightGloveBaseX, gloveBaseY + Math.sin(boxerRed.animTimer * 2) * 2, gloveRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
 
-        // Lewa rękawica – rozróżnienie na prosty i sierp
         let leftGloveX = currentX - 12;
         let leftGloveY = gloveBaseY;
 
         if (boxerRed.isPunching) {
             if (boxerRed.punchType === 'straight') {
-                // Cios prosty – w górę
-                leftGloveY -= pVal * 35;
+                leftGloveY -= pVal * 42;
             } else {
-                // Cios sierpowny – krążny ruch z boku do środka
-                leftGloveX += Math.sin(boxerRed.punchProgress) * 22;
-                leftGloveY -= pVal * 18;
+                leftGloveX += Math.sin(boxerRed.punchProgress) * 24;
+                leftGloveY -= pVal * 24;
             }
         }
 
-        // Ramię
         if (boxerRed.isPunching && Math.abs(leftGloveY - gloveBaseY) > 5) {
             ctx.beginPath();
             ctx.moveTo(currentX - 12, currentY - 10);
