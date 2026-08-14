@@ -65,32 +65,6 @@ function drawBlueBoxer() {
         ctx.stroke();
     });
 
-    // BEZPIECZNY EFEKT TARCZY: Rysujemy ją tylko w momencie maksymalnego kontaktu ciosu przy aktywnym bloku
-    if (boxerRed.isPunching && pVal > 0.85 && isBlocking) {
-        ctx.save();
-        ctx.globalAlpha = 0.75; // Lekka przezroczystość, by nie zasłonić kuleczek całkowicie
-        ctx.fillStyle = '#f1c40f'; // Żółty kolor tarczy ochronnej
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        
-        // Rysujemy mały, zaokrąglony kształt tarczy tuż przed gardą niebieskiego boksera
-        ctx.beginPath();
-        ctx.arc(0, -boxerBlue.radius - 8, 14, 0, Math.PI, true); // Łuk tarczy
-        ctx.lineTo(0, -boxerBlue.radius - 26); // Szpic na dole tarczy
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        
-        // Dodatkowa mała wewnętrzna linia dla lepszego wyglądu retro tarczy
-        ctx.beginPath();
-        ctx.moveTo(0, -boxerBlue.radius - 8);
-        ctx.lineTo(0, -boxerBlue.radius - 22);
-        ctx.strokeStyle = '#d35400';
-        ctx.stroke();
-        
-        ctx.restore();
-    }
-
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
 }
@@ -129,12 +103,48 @@ function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
+// NOWA, NIEZALEŻNA FUNKCJA RYSOWANIA TARCZY NA WSPÓŁRZĘDNYCH GLOBALNYCH
+function drawBlockShield() {
+    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
+    
+    // Tarcza rysuje się nad głową niebieskiego tylko w szczytowym momencie bloku
+    if (boxerRed.isPunching && pVal > 0.85 && isBlocking) {
+        ctx.save();
+        // Ustalamy stałą pozycję nad niebieską kuleczką na ekranie
+        const shieldX = boxerBlue.rx;
+        const shieldY = boxerBlue.ry - 36;
+
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#f1c40f'; // Żółte retro retro
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        // Rysowanie ikony tarczy klasyczną ścieżką wektorową Canvas
+        ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); 
+        ctx.lineTo(shieldX, shieldY + 16); 
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Linia wewnętrzna tarczy (detal graficzny)
+        ctx.beginPath();
+        ctx.moveTo(shieldX, shieldY);
+        ctx.lineTo(shieldX, shieldY + 12);
+        ctx.strokeStyle = '#d35400';
+        ctx.stroke();
+
+        ctx.restore();
+    }
+}
+
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawRing(); 
     updatePhysics(); 
     drawBlueBoxer(); 
     drawRedBoxer();
+    drawBlockShield(); // Wywołanie rysowania tarczy na samym wierzchu
     requestAnimationFrame(loop);
 }
 
