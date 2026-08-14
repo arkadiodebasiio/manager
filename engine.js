@@ -23,6 +23,7 @@ export function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     
+    // Niezależne i zablokowane przed zakłóceniami odliczanie stuna
     if (boxerBlue.stunTimer > 0) {
         boxerBlue.animTimer += 0.35; 
         boxerBlue.stunTimer--; 
@@ -59,9 +60,9 @@ export function updatePhysics() {
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
             if (boxerRed.punchType === 'hook') {
+                // Dodatkowy warunek ochronny: odnawiamy lub nakładamy ogłuszenie tylko jeśli przeciwnik nie blokuje
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20) {
-                    // PRZEDŁUŻENIE STUNA: Zmieniono ze 180 na 300 klatek (równe 5 sekund)
-                    boxerBlue.stunTimer = 300; 
+                    boxerBlue.stunTimer = 300; // Pancerne 300 klatek bez ryzyka przerwania przez klatki ciosów
                 }
             }
             boxerRed.hasHit = true;
