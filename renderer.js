@@ -3,6 +3,7 @@ import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 let isBlocking = false;
 let blockDecisionMade = false;
 let activePunchHand = 'left';
+let wasPunchingLastFrame = false; // Zapamiętuje poprzednią klatkę, aby bezpiecznie wylosować rękę
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -75,10 +76,11 @@ function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, tiltOffset = Math.cos(boxerRed.animTimer) * 1.5;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
-    // Losowanie aktywnej ręki przy starcie każdego nowego ciosu (70% lewa / 30% prawa)
-    if (boxerRed.isPunching && boxerRed.punchProgress < 0.1) {
+    // NAPRAWIONE WYKRYWANIE STARTU CIOSU: Losujemy rękę dokładnie w klatce, w której isPunching zmienia się z false na true
+    if (boxerRed.isPunching && !wasPunchingLastFrame) {
         activePunchHand = Math.random() < 0.70 ? 'left' : 'right';
     }
+    wasPunchingLastFrame = boxerRed.isPunching;
 
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
@@ -94,7 +96,6 @@ function drawRedBoxer() {
     let rightGloveX = 12;
     let rightGloveY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
 
-    // Przeliczanie pozycji ciosu lewą ręką
     if (boxerRed.isPunching && activePunchHand === 'left') {
         if (boxerRed.punchType === 'straight') {
             leftGloveX = -12 + (pVal * 12);
@@ -105,7 +106,6 @@ function drawRedBoxer() {
         }
     }
 
-    // Przeliczanie pozycji ciosu prawą ręką
     if (boxerRed.isPunching && activePunchHand === 'right') {
         if (boxerRed.punchType === 'straight') {
             rightGloveX = 12 - (pVal * 12);
@@ -116,14 +116,12 @@ function drawRedBoxer() {
         }
     }
 
-    // Rysowanie lewego ramienia (widoczne tylko gdy faktycznie leci cios lewą ręką)
     if (boxerRed.isPunching && activePunchHand === 'left' && pVal > 0.05) {
         ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
         ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     }
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Rysowanie prawego ramienia (naprawione - teraz aktywuje się poprawnie przy ciosie prawą ręką)
     if (boxerRed.isPunching && activePunchHand === 'right' && pVal > 0.05) {
         ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(rightGloveX, rightGloveY);
         ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
