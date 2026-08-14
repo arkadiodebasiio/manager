@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokserzy - mniejszy dystans walki</title>
+    <title>Bokserzy - mocniejsze doskoki</title>
     <style>
         body {
             margin: 0;
@@ -33,7 +33,6 @@
 
     const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
     
-    // Zmniejszony dystans bazowy (z 120 na 100 pikseli)
     const baseRadius = 100;      
     let currentOrbitRadius = baseRadius; 
 
@@ -107,11 +106,11 @@
 
         let targetRadius = baseRadius;
         if (boxerRed.isPunching) {
-            // Doskoki dopasowane do nowej, bliższej odległości bazowej
-            targetRadius = boxerRed.punchType === 'straight' ? 84 : 72;
+            // Zmniejszone wartości promienia oznaczają głębszy (mocniejszy) doskok do celu
+            targetRadius = boxerRed.punchType === 'straight' ? 78 : 66;
         }
 
-        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.2;
+        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.25; // Lekko przyspieszona reakcja doskoku
 
         boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
         boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * currentOrbitRadius;
@@ -209,7 +208,7 @@
 
         ctx.beginPath();
         ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2);
-        ctx.fillStyle = boxerRed.color;
+        ctx.fillStyle = '#e74c3c';
         ctx.fill();
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#fff';
