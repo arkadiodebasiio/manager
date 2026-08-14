@@ -19,6 +19,11 @@ export const boxerBlue = {
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0 
 };
 
+// Funkcja rzutu kostką 1-6
+function rollDice() {
+    return Math.floor(Math.random() * 6) + 1;
+}
+
 export function updatePhysics() {
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
@@ -53,9 +58,7 @@ export function updatePhysics() {
     }
 
     if (boxerRed.isPunching) {
-        // ZMIANA PRĘDKOŚCI: proste są o 15% szybsze (0.168) niż sierpy (0.146)
-        const punchSpeed = boxerRed.punchType === 'straight' ? 0.168 : 0.146;
-        boxerRed.punchProgress += punchSpeed; 
+        boxerRed.punchProgress += 0.146; 
 
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
@@ -70,11 +73,21 @@ export function updatePhysics() {
         if (boxerRed.punchProgress >= Math.PI) boxerRed.isPunching = false;
     }
 
-    let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
+    // Wyważony system mnożników siły (1-2: słaby, 3-5: mocny standard, 6: po prostu porządny cios)
+    let diceRoll = rollDice();
+    let diceMultiplier = 0.5; // Dla rzutów 1 i 2 (lekkie muśnięcie)
+    
+    if (diceRoll >= 3 && diceRoll <= 5) {
+        diceMultiplier = 0.9; // Dla rzutów 3, 4, 5 (wyważony, standardowy cios)
+    } else if (diceRoll === 6) {
+        diceMultiplier = 1.15; // Dla rzutu 6 (czyste, pełne uderzenie, ale bez przesady)
+    }
+
+    let basePower = (boxerRed.punchType === 'hook' ? 54 : 45) * diceMultiplier; 
     if (boxerRed.isPunching) {
         const currentHand = window.currentActivePunchHand || 'left';
         if (currentHand === strongHand) {
-            basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
+            basePower *= 1.1; 
         }
     }
 
