@@ -35,13 +35,11 @@ function drawBlueBoxer() {
         } else {
             isBlocking = Math.random() < 0.50; 
             
-            // LOGIKA KONTUZJI WĄTROBY: Jeśli wylosowano blok, sprawdzamy licznik
             if (isBlocking && boxerBlue.injury === "liver") {
                 boxerBlue.blockCount += 1;
                 if (boxerBlue.blockCount >= 10) {
-                    isBlocking = false; // Co 10 blok zostaje przełamany przez ból wątroby
-                    boxerBlue.blockCount = 0; // Reset licznika
-                    console.log("PRZEŁAMANIE: Ból wątroby uniemożliwił zrobienie bloku!");
+                    isBlocking = false; 
+                    boxerBlue.blockCount = 0; 
                 }
             }
         }
@@ -76,6 +74,18 @@ function drawBlueBoxer() {
     ctx.fillStyle = currentColor; 
     ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+
+    // ZESPAWANE Z POSTACIĄ: Znacznik obraca się i porusza razem z niebieskim
+    if (boxerBlue.injury === "eye") {
+        ctx.beginPath(); ctx.arc(-7, -8, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(125, 60, 152, 0.85)'; ctx.fill();
+    } else if (boxerBlue.injury === "liver") {
+        ctx.beginPath(); ctx.arc(10, 4, 6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(39, 174, 96, 0.85)'; ctx.fill();
+    } else if (boxerBlue.injury === "lip") {
+        ctx.beginPath(); ctx.ellipse(0, -14, 6, 3, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(192, 57, 43, 0.95)'; ctx.fill();
+    }
 
     const gloveRadius = 7;
     let leftGloveX = isBlocking ? -3 : -12;
