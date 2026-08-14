@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Bokser w ringu - cios prosty</title>
+    <title>Bokser w ringu - cios przed siebie</title>
     <style>
         body {
             margin: 0;
@@ -34,14 +34,14 @@
     // Obiekt boksera
     const boxer = {
         x: canvas.width / 2,
-        y: canvas.height / 2 + 20,
+        y: canvas.height / 2 + 30,
         radius: 24,
         color: '#e74c3c',
         number: '1',
         animTimer: 0,
-        punchTimer: 0,     // licznik sterujący cyklem ciosu
-        isPunching: false, // flaga czy aktualnie zadaje cios
-        punchProgress: 0   // jak daleko wysunęła się ręka (0 do 1)
+        punchTimer: 0,     
+        isPunching: false, 
+        punchProgress: 0   
     };
 
     function drawRing() {
@@ -85,16 +85,15 @@
         boxer.animTimer += 0.15;
         boxer.punchTimer += 1;
 
-        // Co około 100 klatek inicjujemy cios prosty (lewy prosty)
-        if (!boxer.isPunching && boxer.punchTimer > 90 && Math.random() < 0.05) {
+        // Inicjacja ciosu w przód
+        if (!boxer.isPunching && boxer.punchTimer > 80 && Math.random() < 0.05) {
             boxer.isPunching = true;
             boxer.punchProgress = 0;
             boxer.punchTimer = 0;
         }
 
-        // Obsługa wysuwania i chowania rękawicy w ciosie
         if (boxer.isPunching) {
-            boxer.punchProgress += 0.2; // prędkość wystrzału i powrotu
+            boxer.punchProgress += 0.25; // Szybki cios
             if (boxer.punchProgress >= Math.PI) {
                 boxer.punchProgress = 0;
                 boxer.isPunching = false;
@@ -103,19 +102,23 @@
     }
 
     function drawBoxer() {
-        const bounceOffset = Math.sin(boxer.animTimer) * 6;
-        const tiltOffset = Math.cos(boxer.animTimer) * 2;
+        const bounceOffset = Math.sin(boxer.animTimer) * 5;
+        const tiltOffset = Math.cos(boxer.animTimer) * 1.5;
 
-        const currentY = boxer.y + bounceOffset;
+        // Efekt wysunięcia tułowia do przodu przy ciosie
+        const punchExtension = boxer.isPunching ? Math.sin(boxer.punchProgress) * 35 : 0;
+        const bodyLean = punchExtension * 0.3; 
+
+        const currentY = boxer.y + bounceOffset - bodyLean;
         const currentX = boxer.x + tiltOffset;
 
-        // Cień
+        // Cień pod bokserem
         ctx.beginPath();
-        ctx.ellipse(boxer.x, boxer.y + boxer.radius + 6, boxer.radius - Math.abs(bounceOffset), 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(boxer.x, boxer.y + boxer.radius + 4, boxer.radius - Math.abs(bounceOffset), 6, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.fill();
 
-        // Ciało
+        // Ciało kuleczki
         ctx.beginPath();
         ctx.arc(currentX, currentY, boxer.radius, 0, Math.PI * 2);
         ctx.fillStyle = boxer.color;
@@ -124,39 +127,42 @@
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        // Rękawice i animacja ciosu
+        // Pozycja gardy (rękawice ustawione z przodu kuleczki, lekko rozstawione)
         const gloveRadius = 7;
-        const gloveY = currentY + Math.sin(boxer.animTimer * 2) * 3 - 2;
+        const leftGloveBaseX = currentX - 12;
+        const rightGloveBaseX = currentX + 12;
+        const gloveBaseY = currentY - boxer.radius + 4;
 
-        // Prawa rękawica (zostaje w gardzie)
+        // Prawa rękawica (zostaje w gardzie przy ciele)
         ctx.beginPath();
-        ctx.arc(currentX + boxer.radius + 3, gloveY, gloveRadius, 0, Math.PI * 2);
+        ctx.arc(rightGloveBaseX, gloveBaseY + Math.sin(boxer.animTimer * 2) * 2, gloveRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
 
-        // Lewa rękawica (wystrzeliwana do przodu przy ciosie - funkcja sin daje ruch w przód i z powrotem)
-        const punchExtension = boxer.isPunching ? Math.sin(boxer.punchProgress) * 32 : 0;
-        
-        ctx.beginPath();
-        ctx.arc(currentX - boxer.radius - 3 - punchExtension, gloveY, gloveRadius, 0, Math.PI * 2);
-        ctx.fillStyle = '#d35400';
-        ctx.fill();
-        ctx.stroke();
+        // Lewa rękawica (wystrzeliwuje prosto PRZED SIEBIE - do góry)
+        const finalLeftGloveY = gloveBaseY - punchExtension;
 
-        // Linia ramienia podczas ciosu dla lepszego efektu
+        // Rysowanie wysuniętego ramienia (linii łączącej ciało z rękawicą)
         if (boxer.isPunching && punchExtension > 5) {
             ctx.beginPath();
-            ctx.moveTo(currentX - boxer.radius, gloveY);
-            ctx.lineTo(currentX - boxer.radius - 3 - punchExtension, gloveY);
+            ctx.moveTo(leftGloveBaseX, currentY - 10);
+            ctx.lineTo(leftGloveBaseX, finalLeftGloveY);
             ctx.strokeStyle = '#e74c3c';
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 5;
             ctx.stroke();
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#fff';
         }
 
-        // Numerek
+        // Rysowanie lewej rękawicy
+        ctx.beginPath();
+        ctx.arc(leftGloveBaseX, finalLeftGloveY, gloveRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#d35400';
+        ctx.fill();
+        ctx.stroke();
+
+        // Numerek na środku
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
