@@ -12,18 +12,39 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            position: relative;
         }
         canvas {
             display: block;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
+        /* Prosty, czysty napis HTML/CSS zamiast psucia grafiki w Canvasie */
+        #boomText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%) scale(0);
+            color: #f1c40f;
+            font-size: 28px;
+            font-weight: bold;
+            font-style: italic;
+            text-shadow: 2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
+            pointer-events: none;
+            transition: transform 0.1s ease-out, opacity 0.3s ease-in;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
 
-<canvas id="ringCanvas"></canvas>
+<div id="container">
+    <canvas id="ringCanvas"></canvas>
+    <div id="boomText">BOOM!</div>
+</div>
 
-<!-- Ważna kolejność ładowania skryptów -->
 <script src="engine.js"></script>
 <script src="renderer.js"></script>
 
@@ -32,76 +53,46 @@
 window.GameEngine = (function() {
     const canvas = document.getElementById('ringCanvas');
     const ctx = canvas.getContext('2d');
+    const boomEl = document.getElementById('boomText');
 
-    const ringSize = 500;
-    canvas.width = ringSize;
-    canvas.height = ringSize;
-
-    const ringCenter = { x: canvas.width / 2, y: canvas.height / 2 };
-    const baseRadius = 100;      
+    canvas.width = canvas.height = 500;
+    const ringCenter = 250, baseRadius = 100;      
     let currentOrbitRadius = baseRadius; 
 
     const boxerRed = {
-        angle: Math.PI / 2, 
-        orbitSpeed: 0.023,    
-        radius: 24,
-        color: '#e74c3c',
-        number: '1',
-        animTimer: 0,
-        punchTimer: 0,     
-        isPunching: false, 
-        punchProgress: 0,
-        punchType: 'straight', 
-        isMovingThisJump: false,
-        wasAboveZero: true,
-        hasHit: false,
-        x: 0,
-        y: 0
+        angle: Math.PI / 2, orbitSpeed: 0.023, radius: 24, color: '#e74c3c', number: '1',
+        animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
+        isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 0, y: 0
     };
 
-    const boxerBlue = {
-        x: ringCenter.x,
-        y: ringCenter.y,
-        radius: 24,
-        color: '#2980b9',
-        number: '2',
-        animTimer: 0,
-        rx: ringCenter.x, 
-        ry: ringCenter.y
-    };
+    const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
 
-    const hitText = {
-        x: 0,
-        y: 0,
-        opacity: 0,
-        scale: 1,
-        active: false
-    };
+    function triggerBoomEffect() {
+        if (!boomEl) return;
+        boomEl.style.opacity = "1";
+        boomEl.style.transform = "translate(-50%, -120%) scale(1.3)";
+        setTimeout(() => {
+            boomEl.style.opacity = "0";
+            boomEl.style.transform = "translate(-50%, -150%) scale(0.8)";
+        }, 200);
+    }
 
     function update() {
         boxerRed.animTimer += 0.133;
         boxerRed.punchTimer += 0.66; 
         boxerBlue.animTimer += 0.133;
 
-        let targetRadius = baseRadius;
-        if (boxerRed.isPunching) {
-            targetRadius = boxerRed.punchType === 'straight' ? 62 : 54;
-        }
-
+        let targetRadius = boxerRed.isPunching ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
-        boxerRed.x = ringCenter.x + Math.cos(boxerRed.angle) * currentOrbitRadius;
-        boxerRed.y = ringCenter.y + Math.sin(boxerRed.angle) * currentOrbitRadius;
+        boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+        boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
         const currentSin = Math.sin(boxerRed.animTimer);
-        if (currentSin > 0 && !boxerRed.wasAboveZero) {
-            boxerRed.isMovingThisJump = Math.random() < 0.30;
-        }
+        if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
         boxerRed.wasAboveZero = (currentSin > 0);
 
-        if (boxerRed.isMovingThisJump && currentSin > 0) {
-            boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
-        }
+        if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
 
         if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.isPunching = true;
@@ -113,64 +104,35 @@ window.GameEngine = (function() {
 
         if (boxerRed.isPunching) {
             boxerRed.punchProgress += 0.146; 
-
             if (Math.sin(boxerRed.punchProgress) > 0.90 && !boxerRed.hasHit) {
-                hitText.x = boxerBlue.rx;
-                hitText.y = boxerBlue.ry - 38;
-                hitText.opacity = 1.0;
-                hitText.scale = 0.5;
-                hitText.active = true;
+                triggerBoomEffect();
                 boxerRed.hasHit = true; 
             }
-
-            if (boxerRed.punchProgress >= Math.PI) {
-                boxerRed.punchProgress = 0;
-                boxerRed.isPunching = false;
-            }
+            if (boxerRed.punchProgress >= Math.PI) boxerRed.isPunching = false;
         }
 
-        if (hitText.active) {
-            hitText.scale += (1.2 - hitText.scale) * 0.2; 
-            hitText.y -= 0.4; 
-            hitText.opacity -= 0.04; 
-            if (hitText.opacity <= 0) hitText.active = false;
-        }
-
-        let impactPower = 0;
-        if (boxerRed.isPunching) {
-            let pVal = Math.sin(boxerRed.punchProgress);
-            if (pVal > 0.75) impactPower = (pVal - 0.75) * 45; 
-        }
-        
-        const dx = ringCenter.x - boxerRed.x;
-        const dy = ringCenter.y - boxerRed.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        
-        boxerBlue.rx = ringCenter.x + (dx / dist) * impactPower;
-        boxerBlue.ry = ringCenter.y + (dy / dist) * impactPower;
+        let impactPower = (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.75) ? (Math.sin(boxerRed.punchProgress) - 0.75) * 45 : 0;
+        const dx = ringCenter - boxerRed.x, dy = ringCenter - boxerRed.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        boxerBlue.rx = ringCenter + (dx / dist) * impactPower;
+        boxerBlue.ry = ringCenter + (dy / dist) * impactPower;
     }
 
-    return { canvas, ctx, ringCenter, boxerRed, boxerBlue, hitText, update };
+    return { canvas, ctx, boxerRed, boxerBlue, update };
 })();
 (function() {
-    const { canvas, ctx, ringCenter, boxerRed, boxerBlue, hitText, update } = window.GameEngine;
+    const { canvas, ctx, boxerRed, boxerBlue, update } = window.GameEngine;
 
     function drawRing() {
-        ctx.fillStyle = '#d4ac0d';
-        ctx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
-
-        ctx.strokeStyle = '#b7950b';
-        ctx.lineWidth = 2;
-        for (let i = 70; i < canvas.width - 50; i += 40) {
-            ctx.beginPath(); ctx.moveTo(i, 50); ctx.lineTo(i, canvas.height - 50); ctx.stroke();
-        }
+        ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
+        ctx.strokeStyle = '#b7950b'; ctx.lineWidth = 2;
+        for (let i = 70; i < 450; i += 40) { ctx.beginPath(); ctx.moveTo(i, 50); ctx.lineTo(i, 450); ctx.stroke(); }
 
         for (let offset = 10; offset <= 30; offset += 10) {
             ctx.strokeStyle = offset === 10 ? '#fff' : (offset === 20 ? '#c0392b' : '#2980b9');
-            ctx.lineWidth = 3; ctx.strokeRect(50 - offset/2, 50 - offset/2, canvas.width - 100 + offset, canvas.height - 100 + offset);
+            ctx.lineWidth = 3; ctx.strokeRect(50 - offset/2, 50 - offset/2, 400 + offset, 400 + offset);
         }
 
-        [{x: 50, y: 50, color: '#c0392b'}, {x: canvas.width - 50, y: 50, color: '#2980b9'}, {x: 50, y: canvas.height - 50, color: '#fff'}, {x: canvas.width - 50, y: canvas.height - 50, color: '#fff'}].forEach(c => {
+        [{x: 50, y: 50, color: '#c0392b'}, {x: 450, y: 50, color: '#2980b9'}, {x: 50, y: 450, color: '#fff'}, {x: 450, y: 450, color: '#fff'}].forEach(c => {
             ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, Math.PI * 2); ctx.fillStyle = c.color; ctx.fill();
             ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
         });
@@ -184,7 +146,6 @@ window.GameEngine = (function() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
 
         ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
-
         ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.color; ctx.fill();
         ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
@@ -230,18 +191,9 @@ window.GameEngine = (function() {
         ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
     }
 
-    function drawHitText() {
-        if (hitText.active && hitText.opacity > 0) {
-            ctx.save(); ctx.translate(hitText.x, hitText.y); ctx.scale(hitText.scale, hitText.scale); ctx.globalAlpha = hitText.opacity;
-            ctx.font = 'italic bold 22px Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeText('BOOM!', 0, 0);
-            ctx.fillStyle = '#f1c40f'; ctx.fillText('BOOM!', 0, 0); ctx.restore();
-        }
-    }
-
     function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawRing(); update(); drawBlueBoxer(); drawRedBoxer(); drawHitText();
+        drawRing(); update(); drawBlueBoxer(); drawRedBoxer();
         requestAnimationFrame(loop);
     }
 
