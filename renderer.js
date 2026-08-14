@@ -1,6 +1,6 @@
 import { canvas, ctx, boxerRed, boxerBlue, updatePhysics } from './engine.js';
 
-// Lokalny stan obrony niebieskiego boksera
+// Stabilne zmienne stanu obrony
 let isBlocking = false;
 let blockDecisionMade = false;
 
@@ -26,25 +26,27 @@ function drawBlueBoxer() {
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
-    // Logika podejmowania decyzji o bloku (na początku ciosu czerwonego)
-    if (boxerRed.isPunching && pVal > 0.1 && pVal < 0.3 && !blockDecisionMade) {
-        isBlocking = Math.random() < 0.4; // 40% szans na udany blok ciosu
+    // Pewne i bezpieczne losowanie bloku: od razu gdy czerwony rusza do ataku
+    if (boxerRed.isPunching && !blockDecisionMade) {
+        isBlocking = Math.random() < 0.50; // 50% szans na blokowanie
         blockDecisionMade = true;
     }
+    
+    // Reset decyzji, kiedy czerwony kończy cios i wraca na pozycję
     if (!boxerRed.isPunching) {
         isBlocking = false;
         blockDecisionMade = false;
     }
 
-    // Zmiana koloru ciała lub rękawic w zależności od powodzenia obrony
     let currentColor = boxerBlue.color;
-    let gloveColor = '#d35400'; // Standardowy brązowy/pomarańczowy kolor retro rękawic
+    let gloveColor = '#d35400'; 
 
+    // Wizualna reakcja w momencie pełnego wyprostowania ciosu czerwonego
     if (boxerRed.isPunching && pVal > 0.85) {
         if (isBlocking) {
-            gloveColor = '#f1c40f'; // Rękawice świecą na żółto przy udanym bloku
+            gloveColor = '#f1c40f'; // Udany blok – żółte rękawice ochronne
         } else {
-            currentColor = '#ffbebe'; // Czyste trafienie na twarz (błysk ciała)
+            currentColor = '#ffbebe'; // Brak bloku – czyste trafienie, ciało błyska na czerwono
         }
     }
 
@@ -57,13 +59,12 @@ function drawBlueBoxer() {
     ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Rysowanie rękawic niebieskiego (jeśli blokuje, zsuwa je blisko siebie na środek twarzy)
+    // Rysowanie małych rękawic (garda zsuwa się ciasno do środka twarzy, gdy niebieski trzyma blok)
     const gloveRadius = 7;
-    const gloveSpread = isBlocking ? 4 : 12; // Zsuwanie rękawic do środka przy bloku
+    const gloveSpread = isBlocking ? 4 : 12; // 4 piksele odstępu to zwarta, podwójna garda
 
     [-gloveSpread, gloveSpread].forEach(gx => {
         ctx.beginPath(); 
-        // Przy bloku rękawice wysuwają się też minimalnie bardziej do przodu (-boxerBlue.radius)
         ctx.arc(gx, -boxerBlue.radius + (isBlocking ? 1 : 4), gloveRadius, 0, Math.PI * 2); 
         ctx.fillStyle = gloveColor; 
         ctx.fill(); 
