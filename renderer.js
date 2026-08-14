@@ -20,11 +20,22 @@ function drawBlueBoxer() {
     const bounce = Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
 
+    // OBLICZANIE BŁYSKU: Sprawdzamy w locie, jak głęboko jest cios czerwonego
+    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
+    
+    // Jeśli cios dociera do celu (pVal > 0.85), zmieniamy kolor na czerwono-biały rozbłysk
+    let currentColor = boxerBlue.color;
+    if (boxerRed.isPunching && pVal > 0.85) {
+        currentColor = '#ffbebe'; // Kolor rozbłysku po otrzymaniu ciosu
+    }
+
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
 
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
-    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.color; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); 
+    ctx.fillStyle = currentColor; // Użycie dynamicznego koloru
+    ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
     [-12, 12].forEach(gx => {
