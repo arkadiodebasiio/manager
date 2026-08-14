@@ -2,15 +2,20 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Kuleczka Bokser</title>
+    <title>Bokser w ringu - przeskoki</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #1a472a; /* Kolor boiska/maty */
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         canvas {
             display: block;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
     </style>
 </head>
@@ -22,85 +27,123 @@
     const canvas = document.getElementById('ringCanvas');
     const ctx = canvas.getContext('2d');
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+    // Ustawienia stałego rozmiaru ringu
+    const ringSize = 500;
+    canvas.width = ringSize;
+    canvas.height = ringSize;
 
-    // Obiekt boksera (kuleczki)
+    // Obiekt boksera
     const boxer = {
         x: canvas.width / 2,
-        y: canvas.height / 2,
-        radius: 20,          // rozmiar kuleczki
-        speed: 3,            // prędkość biegu
-        vx: 2,
-        vy: 1.5,
-        color: '#e74c3c',    // czerwony kolorek jak w managerze
-        number: '9'          // numer na koszulce/plecach
+        y: canvas.height / 2 + 20,
+        radius: 24,
+        color: '#e74c3c',
+        number: '1',
+        animTimer: 0 // Zmienna do animacji skakania
     };
 
-    function update() {
-        // Ruch kuleczki
-        boxer.x += boxer.vx;
-        boxer.y += boxer.vy;
+    function drawRing() {
+        // Podłoga ringu (deski / płótno)
+        ctx.fillStyle = '#d4ac0d'; // klasyczny odcień płótna ringu
+        ctx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
 
-        // Odbijanie od krawędzi ekranu
-        if (boxer.x - boxer.radius < 0 || boxer.x + boxer.radius > canvas.width) {
-            boxer.vx *= -1;
+        // Tekstura desek/płótna (delikatne paski)
+        ctx.strokeStyle = '#b7950b';
+        ctx.lineWidth = 2;
+        for (let i = 70; i < canvas.width - 50; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(i, 50);
+            ctx.lineTo(i, canvas.height - 50);
+            ctx.stroke();
         }
-        if (boxer.y - boxer.radius < 0 || boxer.y + boxer.radius > canvas.height) {
-            boxer.vy *= -1;
+
+        // Narożniki ringu (słupki)
+        const corners = [
+            {x: 50, y: 50, color: '#c0392b'},     // lewy górny (czerwony)
+            {x: canvas.width - 50, y: 50, color: '#2980b9'}, // prawy górny (niebieski)
+            {x: 50, y: canvas.height - 50, color: '#fff'},   // lewy dolny (biały)
+            {x: canvas.width - 50, y: canvas.height - 50, color: '#fff'} // prawy dolny
+        ];
+
+        // Sznury ringu (3 linie)
+        for (let offset = 10; offset <= 30; offset += 10) {
+            ctx.strokeStyle = offset === 10 ? '#fff' : (offset === 20 ? '#c0392b' : '#2980b9');
+            ctx.lineWidth = 3;
+            ctx.strokeRect(50 - offset/2, 50 - offset/2, canvas.width - 100 + offset, canvas.height - 100 + offset);
         }
+
+        // Rysowanie słupków w rogach
+        corners.forEach(c => {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = c.color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
     }
 
-    function draw() {
-        // Czyszczenie tła (efekt zielonej murawy/maty)
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function update() {
+        // Zwiększamy licznik animacji, żeby wywołać efekt rytmicznego skakania
+        boxer.animTimer += 0.15;
+    }
 
-        // Rysowanie cienia kuleczki
+    function drawBoxer() {
+        // Obliczenie pionowego wyskoku (funkcja sinusa daje płynny ruch góra-dół)
+        const bounceOffset = Math.sin(boxer.animTimer) * 6;
+        // Delikatne kołysanie na boki (balans tułowia)
+        const tiltOffset = Math.cos(boxer.animTimer) * 2;
+
+        const currentY = boxer.y + bounceOffset;
+        const currentX = boxer.x + tiltOffset;
+
+        // Cień na matowie ringu (zmienia wielkość w zależności od wyskoku)
         ctx.beginPath();
-        ctx.arc(boxer.x + 3, boxer.y + 3, boxer.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.ellipse(boxer.x, boxer.y + boxer.radius + 6, boxer.radius - Math.abs(bounceOffset), 6, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.fill();
 
-        // Rysowanie głównego ciała kuleczki
+        // Ciało kuleczki (bokser)
         ctx.beginPath();
-        ctx.arc(boxer.x, boxer.y, boxer.radius, 0, Math.PI * 2);
+        ctx.arc(currentX, currentY, boxer.radius, 0, Math.PI * 2);
         ctx.fillStyle = boxer.color;
         ctx.fill();
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#fff';
         ctx.stroke();
 
-        // Rysowanie małych rękawic bokserskich (po bokach kuleczki)
-        const gloveRadius = 6;
+        // Małe rękawice bokserskie (skaczą lekko w rytm z bokserem, z lekkim opóźnieniem)
+        const gloveY = currentY + Math.sin(boxer.animTimer * 2) * 3 - 2;
+        const gloveRadius = 7;
+
         // Lewa rękawica
         ctx.beginPath();
-        ctx.arc(boxer.x - boxer.radius - 2, boxer.y - 4, gloveRadius, 0, Math.PI * 2);
+        ctx.arc(currentX - boxer.radius - 3, gloveY, gloveRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
 
         // Prawa rękawica
         ctx.beginPath();
-        ctx.arc(boxer.x + boxer.radius + 2, boxer.y - 4, gloveRadius, 0, Math.PI * 2);
+        ctx.arc(currentX + boxer.radius + 3, gloveY, gloveRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#d35400';
         ctx.fill();
         ctx.stroke();
 
-        // Rysowanie numerka w środku kuleczki (styl retro CM/FM)
+        // Numerek w stylu retro w środku kuleczki
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px sans-serif';
+        ctx.font = 'bold 15px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(boxer.number, boxer.x, boxer.y);
+        ctx.fillText(boxer.number, currentX, currentY);
     }
 
     function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawRing();
         update();
-        draw();
+        drawBoxer();
         requestAnimationFrame(loop);
     }
 
