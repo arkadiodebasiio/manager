@@ -5,12 +5,7 @@ canvas.width = canvas.height = 500;
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
-// LOSOWANIE MOCNIEJSZEJ RĘKI (50% szans: 'left' lub 'right')
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
-
-// KIERUNEK RUCHU: Bokser kręci się w osi przeciwnej do swojej mocniejszej ręki.
-// Jeśli mocniejsza jest lewa, orbitSpeed jest dodatni (krąży w prawo / zgodnie z zegarem).
-// Jeśli mocniejsza jest prawa, orbitSpeed jest ujemny (krąży w lewo / przeciwnie do zegara).
 const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
 
 export const boxerRed = {
@@ -49,7 +44,6 @@ export function updatePhysics() {
     boxerRed.wasAboveZero = (currentSin > 0);
 
     if (boxerRed.isMovingThisJump && currentSin > 0) {
-        // Ruch wykorzystuje wyliczony wcześniej kierunek (dodatni lub ujemny)
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
@@ -57,7 +51,8 @@ export function updatePhysics() {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
         boxerRed.punchTimer = 0;
-        boxerRed.punchType = Math.random() < 0.5 ? 'straight' : 'hook';
+        // ZMIANA PROPORCJI: 70% ciosów prostych, 30% sierpowych
+        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
         boxerRed.hasHit = false; 
     }
 
@@ -66,13 +61,12 @@ export function updatePhysics() {
         if (boxerRed.punchProgress >= Math.PI) boxerRed.isPunching = false;
     }
 
-    // OBLICZANIE MOCY ODEPCHNIĘCIA: Jeśli cios jest zadawany mocniejszą ręką, odepchnięcie (impactPower) jest o 10% silniejsze
-    let basePower = 45;
+    // OBLICZANIE MOCY ODEPCHNIĘCIA: Sierpowe ('hook') mają +20% siły, mocniejsza ręka daje dodatkowy bonus
+    let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
     if (boxerRed.isPunching) {
-        // Pobieramy informację o ręce z rendera przez stan globalny lub domyślny podział 70/30 (obsługiwany niżej w pętli)
         const currentHand = window.currentActivePunchHand || 'left';
         if (currentHand === strongHand) {
-            basePower = 50; // Bonus +10% do siły odepchnięcia ringu dla silniejszej ręki
+            basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
         }
     }
 
