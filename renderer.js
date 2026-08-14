@@ -4,6 +4,7 @@ let isBlocking = false;
 let blockDecisionMade = false;
 let activePunchHand = 'left';
 let wasPunchingLastFrame = false;
+let starAngle = 0; // Kąt obrotu gwiazdek nad głową
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
@@ -15,7 +16,7 @@ function drawRing() {
         ctx.lineWidth = 3; ctx.strokeRect(50 - offset/2, 50 - offset/2, 400 + offset, 400 + offset);
     }
 
-    [{x: 50, y: 50, color: '#c0392b'}, {x: 450, y: 50, color: '#c0392b'}, {x: 50, y: 450, color: '#fff'}, {x: 450, y: 450, color: '#fff'}].forEach(c => {
+    [{x: 50, y: 50, color: '#c0392b'}, {x: 450, y: 50, color: '#2980b9'}, {x: 50, y: 450, color: '#fff'}, {x: 450, y: 450, color: '#fff'}].forEach(c => {
         ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, Math.PI * 2); ctx.fillStyle = c.color; ctx.fill();
         ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
     });
@@ -28,12 +29,19 @@ function drawBlueBoxer() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
     if (boxerRed.isPunching && !blockDecisionMade) {
-        isBlocking = Math.random() < 0.50; 
+        // JEŚLI JEST OGŁUSZONY (stunTimer > 0) -> Szansa na blok wynosi 0% (nie potrafi trzymać gardy)
+        if (boxerBlue.stunTimer > 0) {
+            isBlocking = false;
+        } else {
+            isBlocking = Math.random() < 0.50; 
+        }
         blockDecisionMade = true;
+        window.isCurrentlyBlockingGarda = isBlocking; // Wysyłamy informację do engine.js
     }
     if (!boxerRed.isPunching) {
         isBlocking = false;
         blockDecisionMade = false;
+        window.isCurrentlyBlockingGarda = false;
     }
 
     let currentColor = boxerBlue.color;
@@ -47,6 +55,11 @@ function drawBlueBoxer() {
         }
     }
 
+    // Jeśli ogłuszony i nikt go nie bije, kuleczka lekko miga na ciemniejszy niebieski ze zmęczenia
+    if (boxerBlue.stunTimer > 0 && currentColor === boxerBlue.color) {
+        currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
+    }
+
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
 
@@ -57,9 +70,10 @@ function drawBlueBoxer() {
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
     const gloveRadius = 7;
+    // Jeśli ogłuszony, ręce opadają bezwładnie szeroko na dół (+10 pikseli w dół ringu)
     let leftGloveX = isBlocking ? -3 : -12;
     let rightGloveX = isBlocking ? 3 : 12;
-    let gloveY = -boxerBlue.radius + 4;
+    let gloveY = -boxerBlue.radius + (boxerBlue.stunTimer > 0 ? 12 : 4);
 
     if (isBlocking) {
         gloveY = -boxerBlue.radius + 1;
@@ -70,6 +84,29 @@ function drawBlueBoxer() {
 
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
+
+    // RYSOWANIE RETRO GWIAZDEK OGŁUSZENIA NAD GŁOWĄ (GLOBALNY UKŁAD)
+    if (boxerBlue.stunTimer > 0) {
+        starAngle += 0.15; // Prędkość wirowania gwiazdek wokół głowy
+        ctx.save();
+        ctx.translate(boxerBlue.rx, boxerBlue.ry - 38);
+        
+        // Rysujemy 3 małe, żółte gwiazdki wirujące po elipsie
+        for (let i = 0; i < 3; i++) {
+            const currentAngle = starAngle + (i * (Math.PI * 2 / 3));
+            const starX = Math.cos(currentAngle) * 16;
+            const starY = Math.sin(currentAngle) * 5; // Elipsa w rzucie izometrycznym
+            
+            ctx.beginPath();
+            ctx.arc(starX, starY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#f1c40f'; // Gwiazdka retro żółta
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
 }
 
 function drawRedBoxer() {
@@ -77,11 +114,8 @@ function drawRedBoxer() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
-        // UZALEŻNIENIE OD KIERUNKU RUCHU (orbitSpeed):
-        // Jeśli orbitSpeed jest ujemny (krąży w lewo), odwracamy proporcję 70/30 na korzyść prawej ręki.
         const isMovingLeft = boxerRed.orbitSpeed < 0;
         const leftHandChance = isMovingLeft ? 0.30 : 0.70;
-        
         activePunchHand = Math.random() < leftHandChance ? 'left' : 'right';
         window.currentActivePunchHand = activePunchHand;
     }
@@ -96,6 +130,9 @@ function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
+    ctx.beginPath(); ctx.arc(currentX + 12, currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+
     let leftGloveX = -12; 
     let leftGloveY = currentY - boxerRed.radius + 4;
     let rightGloveX = 12;
@@ -106,21 +143,17 @@ function drawRedBoxer() {
 
     if (boxerRed.isPunching && activePunchHand === 'left') {
         if (boxerRed.punchType === 'straight') {
-            leftGloveX = -12 + (pVal * 12);
-            leftGloveY -= pVal * leftReach;
+            leftGloveX = -12 + (pVal * 12); leftGloveY -= pVal * leftReach;
         } else {
-            leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
-            leftGloveY -= pVal * (leftReach - 6);
+            leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22); leftGloveY -= pVal * (leftReach - 6);
         }
     }
 
     if (boxerRed.isPunching && activePunchHand === 'right') {
         if (boxerRed.punchType === 'straight') {
-            rightGloveX = 12 - (pVal * 12);
-            rightGloveY -= pVal * rightReach;
+            rightGloveX = 12 - (pVal * 12); rightGloveY -= pVal * rightReach;
         } else {
-            rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
-            rightGloveY -= pVal * (rightReach - 6);
+            rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22); rightGloveY -= pVal * (rightReach - 6);
         }
     }
 
@@ -145,8 +178,7 @@ function drawBlockShield() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     if (boxerRed.isPunching && pVal > 0.85 && isBlocking) {
         ctx.save();
-        const shieldX = boxerBlue.rx;
-        const shieldY = boxerBlue.ry - 36;
+        const shieldX = boxerBlue.rx; const shieldY = boxerBlue.ry - 36;
         ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
