@@ -142,53 +142,44 @@ function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    let leftGloveX = -12; 
-    let leftGloveY = currentY - boxerRed.radius + 4;
-    let rightGloveX = 12;
-    let rightGloveY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
+    // Wyliczanie pozycji rękawic czerwonego
+    let leftX = -12, leftY = currentY - boxerRed.radius + 4;
+    let rightX = 12, rightY = currentY - boxerRed.radius + 4 + Math.sin(boxerRed.animTimer * 2) * 2;
 
     const leftReach = strongHand === 'left' ? 53 : 48;
     const rightReach = strongHand === 'right' ? 53 : 48;
 
-    if (boxerRed.isPunching && activePunchHand === 'left') {
-        if (boxerRed.punchType === 'straight') {
-            leftGloveX = -12 + (pVal * 12);
-            leftGloveY -= pVal * leftReach;
+    if (boxerRed.isPunching) {
+        if (activePunchHand === 'left') {
+            if (boxerRed.punchType === 'straight') {
+                leftX = -12 + (pVal * 12);
+                leftY -= pVal * leftReach;
+            } else {
+                leftX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
+                leftY -= pVal * (leftReach - 6);
+            }
         } else {
-            leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
-            leftGloveY -= pVal * (leftReach - 6);
+            if (boxerRed.punchType === 'straight') {
+                rightX = 12 - (pVal * 12);
+                rightY -= pVal * rightReach;
+            } else {
+                rightX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
+                rightY -= pVal * (rightReach - 6);
+            }
         }
     }
 
-    if (boxerRed.isPunching && activePunchHand === 'right') {
-        if (boxerRed.punchType === 'straight') {
-            rightGloveX = 12 - (pVal * 12);
-            rightGloveY -= pVal * rightReach;
-        } else {
-            rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
-            rightGloveY -= pVal * (rightReach - 6);
-        }
-    }
+    // Bezpośrednie rysowanie lewej ręki i rękawicy
+    ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftX, leftY);
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); 
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Lewa ręka (linia ramienia) - zawsze widoczna
-    if (boxerRed.isPunching && activePunchHand === 'left' && pVal > 0.05) {
-        ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
-        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    } else {
-        ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(-12, currentY - boxerRed.radius + 4);
-        ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    }
-    ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
-
-    // Prawa ręka (linia ramienia) - zawsze widoczna
-    if (boxerRed.isPunching && activePunchHand === 'right' && pVal > 0.05) {
-        ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(rightGloveX, rightGloveY);
-        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    } else {
-        ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(12, currentY - boxerRed.radius + 4);
-        ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    }
-    ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    // Bezpośrednie rysowanie prawej ręki i rękawicy
+    ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(rightX, rightY);
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); 
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
