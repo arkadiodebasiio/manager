@@ -140,7 +140,10 @@ function drawRedBoxer() {
 
     const currentY = -bodyLean * 0.2, currentX = 0;
     
-    // Pozycje rękawic wewnątrz układu współrzędnych postaci
+    // Naturalne punkty barków
+    const leftShoulderX = -10, leftShoulderY = currentY - 8;
+    const rightShoulderX = 10, rightShoulderY = currentY - 8;
+
     let leftGloveX = -12; 
     let leftGloveY = currentY - boxerRed.radius + 4;
     let rightGloveX = 12;
@@ -149,42 +152,43 @@ function drawRedBoxer() {
     const leftReach = strongHand === 'left' ? 53 : 48;
     const rightReach = strongHand === 'right' ? 53 : 48;
 
-    if (boxerRed.isPunching && activePunchHand === 'left') {
-        if (boxerRed.punchType === 'straight') {
-            leftGloveX = -12 + (pVal * 12);
-            leftGloveY -= pVal * leftReach;
+    if (boxerRed.isPunching) {
+        if (activePunchHand === 'left') {
+            if (boxerRed.punchType === 'straight') {
+                leftGloveX = -12 + (pVal * 12);
+                leftGloveY -= pVal * leftReach;
+            } else {
+                leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
+                leftGloveY -= pVal * (leftReach - 6);
+            }
         } else {
-            leftGloveX = -12 + (Math.sin(boxerRed.punchProgress) * 22);
-            leftGloveY -= pVal * (leftReach - 6);
+            if (boxerRed.punchType === 'straight') {
+                rightGloveX = 12 - (pVal * 12);
+                rightGloveY -= pVal * rightReach;
+            } else {
+                rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
+                rightGloveY -= pVal * (rightReach - 6);
+            }
         }
     }
 
-    if (boxerRed.isPunching && activePunchHand === 'right') {
-        if (boxerRed.punchType === 'straight') {
-            rightGloveX = 12 - (pVal * 12);
-            rightGloveY -= pVal * rightReach;
-        } else {
-            rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
-            rightGloveY -= pVal * (rightReach - 6);
-        }
-    }
+    // NAJPIERW RYSUJEMY CIAŁO (będzie pod spodem)
+    ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Rysowanie lewego ramienia i rękawicy (wewnątrz save/restore)
-    ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
+    // TERAZ RYSUJEMY LEWĄ RĘKĘ (będzie nad kulką na wierzchu)
+    ctx.beginPath(); ctx.moveTo(leftShoulderX, leftShoulderY); ctx.lineTo(leftGloveX, leftGloveY);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); 
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Rysowanie prawego ramienia i rękawicy (wewnątrz save/restore)
-    ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(rightGloveX, rightGloveY);
+    // TERAZ RYSUJEMY PRAWĄ RĘKĘ (będzie nad kulką na wierzchu)
+    ctx.beginPath(); ctx.moveTo(rightShoulderX, rightShoulderY); ctx.lineTo(rightGloveX, rightGloveY);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); 
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Rysowanie tułowia / koła i numerka
-    ctx.beginPath(); ctx.arc(currentX, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-
+    // Numerek na sam koniec
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
