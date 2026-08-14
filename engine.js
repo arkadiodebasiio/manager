@@ -53,15 +53,15 @@ export function updatePhysics() {
     }
 
     if (boxerRed.isPunching) {
+        const prevProgress = boxerRed.punchProgress;
         boxerRed.punchProgress += 0.146; 
 
-        // NAPRAWIONE SPRAWDZANIE STUNA: Szerszy i pewny zakres wykrywania trafienia w szczycie ciosu
         const pVal = Math.sin(boxerRed.punchProgress);
         if (pVal > 0.75 && !boxerRed.hasHit) {
             if (boxerRed.punchType === 'hook') {
-                // Bezpośrednie sprawdzenie stanu blokowania lub losowanie 20% szans na ogłuszenie
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20) {
-                    boxerBlue.stunTimer = 180; // Równe 3 sekundy ogłuszenia
+                    // PRZEDŁUŻENIE STUNA: Zmieniono ze 180 na 300 klatek (równe 5 sekund)
+                    boxerBlue.stunTimer = 300; 
                 }
             }
             boxerRed.hasHit = true;
