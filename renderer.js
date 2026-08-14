@@ -27,7 +27,7 @@ function drawBlueBoxer() {
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    const isStunned = boxerBlue.stunEndTime > Date.now();
+    const isStunned = boxerBlue.stunTimer > 0;
     
     if (boxerRed.isPunching && !blockDecisionMade) {
         if (isStunned) {
@@ -56,7 +56,7 @@ function drawBlueBoxer() {
     }
 
     if (isStunned && currentColor === boxerBlue.color) {
-        currentColor = Math.floor(Date.now() / 100) % 2 === 0 ? '#1f618d' : boxerBlue.color;
+        currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
     }
 
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
@@ -148,7 +148,7 @@ function drawRedBoxer() {
             rightGloveY -= pVal * rightReach;
         } else {
             rightGloveX = 12 - (Math.sin(boxerRed.punchProgress) * 22);
-            rightGfoveY -= pVal * (rightReach - 6);
+            rightGloveY -= pVal * (rightReach - 6);
         }
     }
 
