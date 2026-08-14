@@ -170,35 +170,25 @@ function drawRedBoxer() {
         }
     }
 
-    // Rysowanie lewej ręki/linii do rękawicy
-    ctx.beginPath(); 
-    ctx.moveTo(currentX - 12, currentY - 10); 
-    ctx.lineTo(leftGloveX, leftGloveY);
-    ctx.strokeStyle = '#c0392b'; 
-    ctx.lineWidth = 5; 
-    ctx.stroke(); 
-    ctx.lineWidth = 2; 
-    ctx.strokeStyle = '#fff';
-    ctx.beginPath(); 
-    ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); 
-    ctx.fillStyle = '#d35400'; 
-    ctx.fill(); 
-    ctx.stroke();
+    // Lewa ręka (linia ramienia) - zawsze widoczna
+    if (boxerRed.isPunching && activePunchHand === 'left' && pVal > 0.05) {
+        ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(leftGloveX, leftGloveY);
+        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    } else {
+        ctx.beginPath(); ctx.moveTo(currentX - 12, currentY - 10); ctx.lineTo(-12, currentY - boxerRed.radius + 4);
+        ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    }
+    ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Rysowanie prawej ręki/linii do rękawicy
-    ctx.beginPath(); 
-    ctx.moveTo(currentX + 12, currentY - 10); 
-    ctx.lineTo(rightGloveX, rightGloveY);
-    ctx.strokeStyle = '#c0392b'; 
-    ctx.lineWidth = 5; 
-    ctx.stroke(); 
-    ctx.lineWidth = 2; 
-    ctx.strokeStyle = '#fff';
-    ctx.beginPath(); 
-    ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); 
-    ctx.fillStyle = '#d35400'; 
-    ctx.fill(); 
-    ctx.stroke();
+    // Prawa ręka (linia ramienia) - zawsze widoczna
+    if (boxerRed.isPunching && activePunchHand === 'right' && pVal > 0.05) {
+        ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(rightGloveX, rightGloveY);
+        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    } else {
+        ctx.beginPath(); ctx.moveTo(currentX + 12, currentY - 10); ctx.lineTo(12, currentY - boxerRed.radius + 4);
+        ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    }
+    ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.translate(currentX, currentY); ctx.rotate(-(boxerRed.angle - Math.PI / 2)); 
     ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
