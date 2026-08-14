@@ -1,14 +1,17 @@
 export const canvas = document.getElementById('ringCanvas');
 export const ctx = canvas.getContext('2d');
 
-canvas.width = canvas.height = 500;
+// Wymuszamy poprawne, pełne wymiary płótna
+canvas.width = 500;
+canvas.height = 500;
+
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
 export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: 0.023, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
-    isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 0, y: 0
+    isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350
 };
 
 export const boxerBlue = { x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', animTimer: 0, rx: ringCenter, ry: ringCenter };
