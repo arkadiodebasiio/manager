@@ -1,7 +1,6 @@
 import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
-let comboGlowTimer = 0; 
 let blackPulseTimer = 0; 
 
 export function drawBlueBoxer() {
@@ -127,14 +126,14 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = isPunchingAny;
 
-    if ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0) {
-        comboGlowTimer = 35; 
+    // POPRAWKA: Zarządzanie czasem świecenia combo przypisane bezpiecznie do stanu boksera
+    if (!boxerBlue.isKnockedDown && ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0)) {
+        boxerRed.comboGlowTimer = 35; 
     }
 
-    const isCurrentlyInCombo = comboGlowTimer > 0;
-    if (comboGlowTimer > 0) comboGlowTimer--; 
+    const isCurrentlyInCombo = boxerRed.comboGlowTimer > 0 && !boxerBlue.isKnockedDown;
+    if (boxerRed.comboGlowTimer > 0) boxerRed.comboGlowTimer--; 
 
-    // Dynamiczne dopasowanie barw pod ładowanie superciosu
     let dynamicColor = boxerRed.color;
     let dynamicBorder = isCurrentlyInCombo ? '#2ecc71' : '#fff';
     let borderSize = isCurrentlyInCombo ? 4 : 2;
