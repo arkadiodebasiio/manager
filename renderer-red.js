@@ -1,23 +1,23 @@
-import { boxerRed, boxerBlue, strongHand, getSuperChargeState } from './engine.js';
+// renderer-red.js
+import { boxerRed, boxerBlue, strongHand } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false;
 let comboGlowTimer = 0; 
 
-export function drawRedBoxer() {
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+export function drawRedBoxer(ctx) {
     if (!ctx || !boxerRed || !boxerBlue) return;
 
-    const superState = getSuperChargeState();
-    const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
+    const isChargingSuper = boxerRed.isChargingSuper;
+    const superFrames = boxerRed.superChargeFrames;
+
+    const bounceOffset = Math.sin(boxerRed.animTimer) * 4;
+    const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
+    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
+    const bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
         activePunchHand = Math.random() < (boxerRed.orbitSpeed < 0 ? 0.30 : 0.70) ? 'left' : 'right';
-        if (typeof window !== 'undefined') {
-            window.currentActivePunchHand = activePunchHand;
-        }
+        boxerRed.currentHand = activePunchHand;
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
@@ -36,8 +36,8 @@ export function drawRedBoxer() {
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    if (superState.isCharging) {
-        const pulseSuper = 0.4 + Math.abs(Math.sin(superState.frames * 0.15)) * 0.6;
+    if (isChargingSuper) {
+        const pulseSuper = 0.4 + Math.abs(Math.sin(superFrames * 0.15)) * 0.6;
         ctx.lineWidth = 5;
         ctx.strokeStyle = `rgba(241, 196, 15, ${pulseSuper})`;
     } else {
@@ -61,7 +61,7 @@ export function drawRedBoxer() {
         }
     }
 
-    const superGloveColor = superState.isCharging ? '#f1c40f' : '#d35400';
+    const superGloveColor = isChargingSuper ? '#f1c40f' : '#d35400';
 
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
@@ -77,4 +77,3 @@ export function drawRedBoxer() {
 }
 
 export function drawBlockShield() {}
-
