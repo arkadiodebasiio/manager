@@ -1,4 +1,4 @@
-import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js';
+import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown, ctx } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 let comboGlowTimer = 0; 
@@ -6,11 +6,8 @@ let blackPulseTimer = 0;
 
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerBlue || !boxerRed) return;
+    if (!canvas || !ctx || !boxerBlue || !boxerRed) return;
 
-    // Pobranie pewnego stanu knockdownu z silnika fizyki
     const down = isBlueKnockedDown();
 
     if (down) {
@@ -111,9 +108,7 @@ export function drawBlueBoxer() {
 
 export function drawRedBoxer() {
     const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerRed || !boxerBlue) return;
+    if (!canvas || !ctx || !boxerRed || !boxerBlue) return;
 
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
@@ -165,21 +160,23 @@ export function drawRedBoxer() {
 
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
+    
+    // POPRAWKA: Dokończenie prawej rękawicy i numeru zawodnika "1"
     ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
-
+    
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boxerRed.number, 0, currentY); ctx.restore(); ctx.restore(); 
+    ctx.fillText(boxerRed.number, 0, currentY); ctx.restore(); ctx.restore();
 }
 
+// NOWOŚĆ: Dodanie brakującej funkcji osłony bloku dla Niebieskiego
 export function drawBlockShield() {
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerRed || !boxerBlue) return;
-
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    if (boxerBlue.isBlockingNow && pVal > 0) {
-        // Tarcza
-    }
+    if (!ctx || !boxerBlue || !boxerBlue.isBlockingNow || boxerBlue.isKnockedDown) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(boxerBlue.rx, boxerBlue.ry, boxerBlue.radius + 8, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(46, 204, 113, 0.4)'; 
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.restore();
 }
