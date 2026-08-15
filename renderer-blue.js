@@ -1,5 +1,6 @@
 // renderer-blue.js
-import { boxerRed, boxerBlue } from './boxer-stats.js'; // ZMIANA TUTAJ
+import { boxerRed, boxerBlue } from './boxer-stats.js';
+import { isBlueKnockedDown } from './engine.js';
 
 let blackPulseTimer = 0;
 let starAngle = 0;
@@ -7,7 +8,7 @@ let starAngle = 0;
 export function drawBlueBoxer(ctx) {
     if (!ctx || !boxerBlue || !boxerRed) return;
 
-    const down = boxerBlue.isKnockedDown;
+    const down = isBlueKnockedDown();
 
     if (down) {
         blackPulseTimer += 0.05;
