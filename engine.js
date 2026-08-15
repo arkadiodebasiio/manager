@@ -2,6 +2,8 @@
 import { ringCenter, baseRadius, strongHand, boxerRed, boxerBlue } from './boxer-stats.js';
 import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './combat-logic.js';
 
+let currentOrbitRadius = baseRadius; 
+
 // Funkcje pomocnicze dla plików graficznych (renderers)
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
@@ -44,21 +46,17 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // ORYGINALNA MATEMATYKA DYSTANSU (Weryfikacja linijka po linijce):
-    // Odległość zbliżenia zależy bezpośrednio od typu ciosu i fazy punchProgress.
-    let punchOffset = 0;
-    if (boxerRed.isPunching) {
-        // Obliczamy wysunięcie na podstawie sinusa postępu ciosu
-        const reachFactor = Math.sin(boxerRed.punchProgress);
-        const maxReach = boxerRed.punchType === 'straight' ? 38 : (boxerRed.punchType === 'super' ? 46 : 24);
-        punchOffset = reachFactor * maxReach;
-    }
+    // PRZYWRÓCONA FIZYKA: Płynne, ale natychmiastowe (mnożnik 1.0) przechodzenie promieni walki
+    const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
+    
+    // Klasyczne, oryginalne odległości ringu dla bicia i odskoku
+    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
+    
+    // Mnożnik 1.0 sprawia, że postać natychmiast i bez opóźnień wykonuje doskok i potężny odskok
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 1.0;
 
-    // Promień orbity zmniejsza się o wysunięcie ciosu i NATYCHMIAST wraca do baseRadius (100) gdy cios się kończy!
-    const activeRadius = baseRadius - punchOffset;
-
-    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * activeRadius;
-    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * activeRadius;
+    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
     const currentSin = Math.sin(boxerRed.animTimer);
     if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
