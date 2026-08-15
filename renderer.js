@@ -1,4 +1,4 @@
-import { canvas, ctx, updatePhysics, boxerRed } from './engine.js';
+import { canvas, ctx, updatePhysics } from './engine.js';
 import { drawBlueBoxer, drawRedBoxer, drawBlockShield } from './renderer-hands.js';
 
 function drawRing() {
