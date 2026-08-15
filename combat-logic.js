@@ -14,13 +14,13 @@ export function handleBotAttackDecisions(bR) {
     if (!b.isKnockedDown && b.stunTimer <= 0 && !b.isPunching && !b.isChargingSuper) {
         if (b.punchQueue && b.punchQueue.length > 0 && b.punchCooldown === 0) { 
             b.punchType = b.punchQueue.shift(); b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false; 
-            b.punchRoll = Math.floor(Math.random() * 6) + 1; // POPRAWKA: Losowanie ręki od razu przy decyzji o ciosie!
+            b.punchRoll = Math.floor(Math.random() * 6) + 1;
             r.isBlockingNow = Math.random() < 0.5; 
         }
         else if ((!b.punchQueue || b.punchQueue.length === 0) && b.punchTimer > 60 && Math.random() < 0.03) {
             if (b.superCooldown <= 0 && Math.random() < 0.4) { b.isChargingSuper = true; b.superChargeTimer = 180; b.superCooldown = 5400; b.punchTimer = 0; return; }
             b.punchType = Math.random() < 0.7 ? 'straight' : 'hook'; b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false;
-            b.punchRoll = Math.floor(Math.random() * 6) + 1; // POPRAWKA: Losowanie ręki od razu przy decyzji o ciosie!
+            b.punchRoll = Math.floor(Math.random() * 6) + 1;
             r.isBlockingNow = Math.random() < 0.5;
             if (!b.punchQueue) b.punchQueue = []; let roll = Math.random(); if (roll < 0.01) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.06) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.21) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); }
         }
@@ -83,7 +83,6 @@ export function drawBlueBoxer() {
     if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { leftY = -boxerBlue.radius - 2; rightY = -boxerBlue.radius - 2; }
     else if (boxerBlue.isPunching) {
         let rch = boxerBlue.punchType === 'super' ? 44 : 30;
-        // PANCERNY WARUNEK: Jeśli punchRoll nie istnieje lub jest parzysty - bije lewa, jeśli nieparzysty - bije prawa!
         if (!boxerBlue.punchRoll || boxerBlue.punchRoll % 2 === 0) { 
             leftY = (-boxerBlue.radius + 4) - (pValB * rch); 
             leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); 
@@ -94,11 +93,12 @@ export function drawBlueBoxer() {
             leftY = -boxerBlue.radius + 6; 
         }
     }
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lX, lY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rX, rY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    // POPRAWIONE RĘCE: Zmiana starego gY na prawidłowe lY oraz rY!
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftX, leftY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightX, rightY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
-    ctx.beginPath(); ctx.arc(lX, lY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(rX, rY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
     ctx.save(); ctx.rotate(-(angle + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
     if (isStun) { sA += 0.15; ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y - 38); for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(Math.cos(sA + i * (Math.PI * 2 / 3)) * 16, Math.sin(sA + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2); ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); } ctx.restore(); }
 }
