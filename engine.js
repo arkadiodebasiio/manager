@@ -29,7 +29,6 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // Jeśli niebieski leży, zamrażamy całą fizykę ruchu ringu
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
@@ -86,7 +85,6 @@ export function updatePhysics() {
         }
 
         if (shouldPunch) {
-            // Nokdaun z przemęczenia, jeśli wróg jest ogłuszony, a wchodzi seria 3 lub 4 ciosów
             if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
                 boxerBlue.isKnockedDown = true; 
                 boxerRed.punchQueue = [];
