@@ -41,12 +41,11 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // Wyliczanie dystansu i doskoku
     const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'hook' ? 54 : 62) : baseRadius;
     
     if (boxerRed.isSuperPunching) {
-        targetRadius = 55; // Doskok przy superciosie
+        targetRadius = 55; 
     }
     
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
@@ -95,14 +94,6 @@ export function updatePhysics() {
                 if (boxerBlue.isBlockingNow) {
                     boxerBlue.consecutiveSixes = 0;
                 } else {
-                    // BEZPOŚREDNIE LOSOWANIE KONTUZJI PRZY TRAFIENIU SUPER CIOSYEM
-                    if (Math.random() < 0.15) {
-                        const injuryType = Math.floor(Math.random() * 3);
-                        if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
-                        if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
-                        if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
-                    }
-
                     if (Math.random() < 0.70) {
                         boxerBlue.isKnockedDown = true;
                         boxerRed.punchQueue = [];
@@ -185,8 +176,8 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                // BEZPOŚREDNIE LOSOWANIE KONTUZJI PRZY ZWYKŁYM TRAFIENIU
-                if (Math.random() < 0.15) {
+                // WARUNEK: Dokładnie i tylko 20% szansy na kontuzję przy uderzeniu sierpowym (hook)
+                if (boxerRed.punchType === 'hook' && Math.random() < 0.20) {
                     const injuryType = Math.floor(Math.random() * 3);
                     if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
                     if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
