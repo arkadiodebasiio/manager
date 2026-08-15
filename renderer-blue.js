@@ -1,5 +1,5 @@
 // renderer-blue.js
-import { boxerRed, boxerBlue } from './boxer-stats.js'; // ZMIANA: import bezpośrednio ze stats
+import { boxerRed, boxerBlue } from './boxer-stats.js';
 import { isBlueKnockedDown } from './engine.js';
 
 let blackPulseTimer = 0;
