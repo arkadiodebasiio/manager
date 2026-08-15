@@ -11,7 +11,10 @@ function drawRedBoxer() {
     redWasPunchingLastFrame = boxerRed.isPunching;
 
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = isCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
-    ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounce); ctx.rotate(Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) - Math.PI / 2);
+    ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounce); 
+    
+    // NAPRAWIONY OBRÓT: Zmieniono na + Math.PI / 2, żeby czerwony patrzył TWARZĄ do niebieskiego
+    ctx.rotate(Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI / 2);
 
     ctx.beginPath(); ctx.arc(0, 0, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = boxerRed.isChargingSuper ? 5 : 2; ctx.strokeStyle = boxerRed.isChargingSuper ? `rgba(241, 196, 15, ${0.4 + Math.abs(Math.sin(boxerRed.superChargeFrames * 0.15)) * 0.6})` : '#fff'; ctx.stroke();
@@ -35,17 +38,15 @@ function drawRedBoxer() {
         }
     }
 
-    const redGloveColor = boxerRed.isChargingSuper ? '#f1c40f' : '#d35400';
+    const redGloveColor = boxerRed.isChargingSuper ? '#f1c40f' : '#d35400'; // Czerwone/żółte rękawice dla CZERWONEGO
     
-    // LEWA RĘKA CZERWONEGO (Biała obwódka wpisana całkowicie na sztywno)
     ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(leftGloveX, leftGloveY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = redGloveColor; ctx.fill(); ctx.stroke();
     
-    // PRAWA RĘKA CZERWONEGO (Biała obwódka wpisana całkowicie na sztywno)
     ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(rightGloveX, rightGloveY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = redGloveColor; ctx.fill(); ctx.stroke();
 
-    ctx.save(); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore();
+    ctx.save(); ctx.rotate(Math.PI); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore();
 }
 
 function drawBlueBoxer() {
@@ -56,7 +57,6 @@ function drawBlueBoxer() {
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + (down ? boxerBlue.radius * 1.5 : boxerBlue.radius), boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce + (down ? 15 : 0)); ctx.rotate(Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) - Math.PI / 2);
     
-    // Zmiana koloru ciała przy oberwaniu ciosu (warunek uproszczony i bezpieczny)
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); 
     ctx.fillStyle = (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.85 && !isBlock) ? '#ffbebe' : c; 
     ctx.fill();
@@ -73,14 +73,12 @@ function drawBlueBoxer() {
     let leftGloveY = gY;
     let rightGloveY = gY + (isBlock || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2);
 
-    // KONTROLA KOLORU RĘKAWIC NIEBIESKIEGO: Złota tarcza przy bloku, w innym wypadku bokserska rękawica
-    const blueGloveColor = isBlock ? '#f1c40f' : '#d35400';
+    // KONTROLA KOLORU RĘKAWIC NIEBIESKIEGO: Żółta tarcza przy bloku, w innym wypadku NIEBIESKA rękawica (#1f618d)
+    const blueGloveColor = isBlock ? '#f1c40f' : '#1f618d';
 
-    // Lewa ręka niebieskiego (Ramię czysto niebieskie, rękawica odcięta białą obwódką lub czarną przy glebie)
     ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(leftGloveX, leftGloveY); ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = down ? '#000' : '#fff'; ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = blueGloveColor; ctx.fill(); ctx.stroke();
     
-    // Prawe ramię niebieskiego (Ramię czysto niebieskie, rękawica odcięta białą obwódką lub czarną przy glebie)
     ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(rightGloveX, rightGloveY); ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = down ? '#000' : '#fff'; ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = blueGloveColor; ctx.fill(); ctx.stroke();
 
