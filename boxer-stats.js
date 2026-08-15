@@ -30,8 +30,7 @@ export const boxerRed = {
     currentHand: 'left',
     isChargingSuper: false,
     superChargeFrames: 0,
-    superPunchTimer: 2700,
-    isComboExecuting: false
+    superPunchTimer: 2700
 };
 
 export const boxerBlue = { 
