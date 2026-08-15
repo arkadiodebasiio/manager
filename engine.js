@@ -18,7 +18,7 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
     
-    // ZMIENNE SUPER PUNCH
+    // Stany Super Puncha
     isSuperPunching: false,
     superPunchTimer: 0
 };
@@ -31,13 +31,17 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // Jeśli niebieski leży, zamrażamy akcje
-    if (boxerBlue.isKnockedDown) {
-        boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
-        boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
-        return;
-    }
+    // 1. GWARANTOWANE AKTUALIZOWANIE WSPÓŁRZĘDNYCH (Zapobiega czarnemu ekranowi)
+    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
+    boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
+    boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
+
+    // Jeśli niebieski leży, tylko aktualizujemy jego pozycję i przerywamy walkę
+    if (boxerBlue.isKnockedDown) return; 
+
+    // Timery i modyfikatory prędkości niebieskiego
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -54,16 +58,14 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // OBSŁUGA AKTYWNEGO ŁADOWANIA SUPER PUNCH
+    // 2. LOGIKA AKTYWNEGO ŁADOWANIA SUPER PUNCH
     if (boxerRed.isSuperPunching) {
         boxerRed.superPunchTimer++;
         
-        // W połowie ładowania niebieski decyduje o bloku
         if (boxerRed.superPunchTimer === 90) {
             boxerBlue.isBlockingNow = Math.random() < 0.50; 
         }
 
-        // Koniec ładowania (3 sekundy = 180 klatek) -> Odpalenie ciosu!
         if (boxerRed.superPunchTimer >= 180) {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0;
@@ -81,14 +83,11 @@ export function updatePhysics() {
         }
     }
 
-    // Poruszanie się i orbita działają normalnie (chyba że trwa Super Punch, wtedy czerwony zastyga w zamachu)
+    // 3. SKAKANIE I ORBITA CZERWONEGO (Działa tylko gdy nie ładuje Super Puncha)
     if (!boxerRed.isSuperPunching) {
         const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
         let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
-
-        boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
-        boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
         const currentSin = Math.sin(boxerRed.animTimer);
         if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
@@ -97,11 +96,11 @@ export function updatePhysics() {
         if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // Inicjacja zwykłych ciosów lub losowanie Super Puncha
+    // 4. INICJACJA I LOSOWANIE CIOSÓW
     if (!boxerRed.isPunching && !boxerRed.isSuperPunching) {
         let shouldPunch = false;
 
-        // Szansa na Super Punch (raz na ok. 2 minuty walki przy 60fps)
+        // Raz na ok. 2 minuty walki szansa na Super Punch
         if (boxerRed.punchQueue.length === 0 && Math.random() < (1 / 4500)) { 
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
@@ -125,7 +124,6 @@ export function updatePhysics() {
         }
 
         if (shouldPunch) {
-            // Nokdaun z przemęczenia, jeśli wróg jest ogłuszony, a wchodzi seria 3 lub 4 ciosów
             if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
                 boxerBlue.isKnockedDown = true; 
                 boxerRed.punchQueue = [];
@@ -142,9 +140,8 @@ export function updatePhysics() {
         }
     }
 
+    // 5. OBSŁUGA STANDARDOWEGO UDERZENIA
     let calculatedImpact = 0;
-
-    // Obsługa zwykłego uderzenia
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.155 : 0.132);
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -188,8 +185,4 @@ export function updatePhysics() {
             }
         }
     }
-
-    // Płynny powrót i reakcja na ciosy niebieskiego boksera
-    boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
-    boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
 }
