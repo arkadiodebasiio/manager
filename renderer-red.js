@@ -1,10 +1,8 @@
 // renderer-red.js
-import { boxerRed, boxerBlue, strongHand } from './boxer-stats.js';
-import { getSuperChargeState } from './engine.js';
+var activePunchHand = 'left';
+var wasPunchingLastFrame = false;
 
-let activePunchHand = 'left', wasPunchingLastFrame = false;
-
-export function drawRedBoxer(ctx) {
+function drawRedBoxer(ctx) {
     if (!ctx || !boxerRed || !boxerBlue) return;
 
     const superState = getSuperChargeState();
@@ -19,8 +17,6 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // JEDYNE I BEZPIECZNE WYKRYWANIE COMBO: Świeci na zielono tylko podczas uderzenia, 
-    // gdy w kolejce czekają już kolejne zaplanowane ciosy (od drugiego uderzenia wzwyż)
     const isRealComboActive = boxerRed.isPunching && boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
 
     ctx.beginPath(); 
@@ -37,14 +33,9 @@ export function drawRedBoxer(ctx) {
     
     if (superState.isCharging) {
         const pulseSuper = 0.4 + Math.abs(Math.sin(superState.frames * 0.15)) * 0.6;
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = `rgba(241, 196, 15, ${pulseSuper})`;
-    } else if (isRealComboActive) {
-        ctx.lineWidth = 4; 
-        ctx.strokeStyle = '#2ecc71'; 
+        ctx.lineWidth = 5; ctx.strokeStyle = `rgba(241, 196, 15, ${pulseSuper})`;
     } else {
-        ctx.lineWidth = 2; 
-        ctx.strokeStyle = '#fff'; 
+        ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; 
     }
     ctx.stroke();
 
@@ -66,18 +57,15 @@ export function drawRedBoxer(ctx) {
     const superGloveColor = superState.isCharging ? '#f1c40f' : '#d35400';
 
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; 
-    ctx.strokeStyle = isRealComboActive ? '#2ecc71' : '#fff';
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = superGloveColor; ctx.fill(); ctx.stroke();
 
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; 
-    ctx.strokeStyle = isRealComboActive ? '#2ecc71' : '#fff';
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
     ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = superGloveColor; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, currentY); ctx.restore(); ctx.restore(); 
 }
-
-export function drawBlockShield() {}
+function drawBlockShield() {}
