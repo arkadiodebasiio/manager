@@ -42,7 +42,9 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // 1. ZAWSZE, BEZWARUNKOWO ZMNIEJSZAMY COOLDOWN (Naprawa szalonych serii!)
+    if (boxerBlue.isKnockedDown) return; 
+
+    // Zmniejszanie cooldownu w każdej klatce
     if (boxerRed.punchCooldown > 0) {
         boxerRed.punchCooldown--;
     }
@@ -60,8 +62,6 @@ export function updatePhysics() {
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
     boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
     boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
-
-    if (boxerBlue.isKnockedDown) return; 
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
@@ -116,6 +116,7 @@ export function updatePhysics() {
                 boxerRed.superPunchProgress = 0;
                 boxerRed.hasHit = false;
                 boxerBlue.isBlockingNow = false;
+                boxerRed.punchCooldown = 40; // Odpoczynek po potężnym superciosie
             }
         }
         return; 
@@ -130,7 +131,7 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // Szansa na Super Punch – bez przerywania pętli odnowień ciosów!
+        // Szansa na Super Punch
         if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && boxerRed.punchCooldown === 0 && Math.random() < (1 / 4000)) {
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
@@ -218,9 +219,9 @@ export function updatePhysics() {
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
-            if (!boxerBlue.isKnockedDown) {
-                boxerRed.punchCooldown = 15; // Sztywny, wyraźny odpoczynek po każdym ciosie
-            }
+            
+            // PANCERNA POPRAWKA: Sztywny odpoczynek po każdym uderzeniu (zarówno single jak i combo)
+            boxerRed.punchCooldown = boxerRed.punchQueue.length > 0 ? 12 : 35;
         }
     }
 }
