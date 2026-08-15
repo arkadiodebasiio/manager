@@ -7,8 +7,6 @@ export function drawRedBoxer() {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const bounceOffset = boxerRed.isChargingSuper ? 0 : Math.sin(boxerRed.animTimer) * 4;
-    
-    // NAPRAWIONY KĄT: Odwrócenie wektora o 180 stopni, aby ręce leciały w stronę niebieskiego
     const angleToBlue = Math.atan2(boxerBlue.y - boxerRed.y, boxerBlue.x - boxerRed.x) + Math.PI;
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
@@ -35,16 +33,19 @@ export function drawRedBoxer() {
     } 
     else if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
     else if (boxerRed.isPunching) {
-        let reach = boxerRed.punchType === 'super' ? 36 : 24; 
+        // DYNAMICZNY ZASIĘG CZERWONEGO: Wylicza odległość i wydłuża ręce prosto do niebieskiego
+        const dx = boxerBlue.x - boxerRed.x, dy = boxerBlue.y - boxerRed.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        let reach = dist - boxerRed.radius - 10;
         let currentReach = pVal * reach;
 
         if (activePunchHand === 'left') {
             leftY = (-boxerRed.radius + 4) - currentReach;
-            leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 15) : -12;
+            leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : -12;
             rightY = -boxerRed.radius + 6;
         } else {
             rightY = (-boxerRed.radius + 4) - currentReach;
-            rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 15) : 12;
+            rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : 12;
             leftY = -boxerRed.radius + 6;
         }
     }
