@@ -1,132 +1,195 @@
-import { boxerRed, boxerBlue, strongHand } from './engine.js';
+export const canvas = document.getElementById('ringCanvas');
+export const ctx = canvas ? canvas.getContext('2d') : null;
 
-let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
-
-export function drawBlueBoxer() {
-    // Dynamiczne i bezpieczne pobranie kontekstu wewnątrz funkcji rysującej
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerBlue || !boxerRed) return;
-
-    const bounce = Math.sin(boxerBlue.animTimer) * 3;
-    const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    const isStunned = boxerBlue.stunTimer > 0;
-    
-    const isBlocking = boxerBlue.isBlockingNow;
-
-    let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
-    if (boxerRed.isPunching && pVal > 0.85) { if (isBlocking) gloveColor = '#f1c40f'; else currentColor = '#ffbebe'; }
-    if (isStunned && currentColor === boxerBlue.color) currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
-
-    ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
-    ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
-    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-
-    if (boxerBlue.eyeLevel > 0) {
-        const isMax = boxerBlue.eyeLevel >= 2;
-        ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); 
-        ctx.fillStyle = isMax ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; 
-        ctx.fill();
-    }
-    
-    if (boxerBlue.liverLevel > 0) {
-        const isMax = boxerBlue.liverLevel >= 2;
-        ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); 
-        ctx.fillStyle = isMax ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; 
-        ctx.fill();
-    }
-    
-    if (boxerBlue.lipLevel > 0) {
-        const isMax = boxerBlue.lipLevel >= 2;
-        ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); 
-        ctx.fillStyle = isMax ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; 
-        ctx.fill();
-    }
-
-    let leftGloveX = isBlocking ? -3 : -12, rightGloveX = isBlocking ? 3 : 12, gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
-    if (isBlocking) gloveY = -boxerBlue.radius + 1;
-    ctx.beginPath(); ctx.arc(leftGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-    ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
-
-    if (isStunned) {
-        starAngle += 0.15; ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry - 38);
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath(); ctx.arc(Math.cos(starAngle + i * (Math.PI * 2 / 3)) * 16, Math.sin(starAngle + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-        }
-        ctx.restore();
-    }
+if (canvas) {
+    canvas.width = 500;
+    canvas.height = 500;
 }
 
-export function drawRedBoxer() {
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerRed || !boxerBlue) return;
+const ringCenter = 250, baseRadius = 100;      
+let currentOrbitRadius = baseRadius; 
 
-    const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
+export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
+const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
 
-    if (boxerRed.isPunching && !wasPunchingLastFrame) {
-        activePunchHand = Math.random() < (boxerRed.orbitSpeed < 0 ? 0.30 : 0.70) ? 'left' : 'right';
-        
-        if (typeof window !== 'undefined') {
-            window.currentActivePunchHand = activePunchHand;
+export const boxerRed = {
+    angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
+    animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
+    isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
+    punchRoll: 1,
+    totalSixes: 0,
+    comboLeft: 0 // Licznik serii: ile dodatkowych ciosów ma natychmiast paść po obecnym
+};
+
+export const boxerBlue = { 
+    x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
+    animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
+    blockCount: 0,
+    isBlockingNow: false, 
+    eyeLevel: 0,
+    lipLevel: 0,
+    liverLevel: 0
+};
+
+export function updatePhysics() {
+    const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
+    const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
+
+    boxerRed.animTimer += 0.133;
+    
+    if (!boxerRed.isPunching) {
+        boxerRed.punchTimer += 0.66; 
+    }
+    
+    boxerBlue.animTimer += 0.133 * blueSpeedModifier;
+
+    if (boxerBlue.stunTimer > 0) {
+        boxerBlue.stunTimer -= (1 * blueSpeedModifier); 
+        if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
+    }
+
+    let targetRadius = boxerRed.isPunching ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
+
+    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
+
+    const currentSin = Math.sin(boxerRed.animTimer);
+    if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
+    boxerRed.wasAboveZero = (currentSin > 0);
+
+    if (boxerRed.isMovingThisJump && currentSin > 0) {
+        boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
+    }
+
+    // Standardowa aktywacja ciosu (tylko gdy czerwony odpoczywa i minął czas)
+    if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+        boxerRed.isPunching = true;
+        boxerRed.punchProgress = 0;
+        boxerRed.punchTimer = 0;
+        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+        boxerRed.hasHit = false; 
+        boxerRed.comboLeft = 0; // Reset serii na starcie
+
+        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
+        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+            boxerBlue.blockCount += 1;
+            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+            if (boxerBlue.blockCount >= breakLimit) {
+                boxerBlue.isBlockingNow = false; 
+                boxerBlue.blockCount = 0;
+            }
         }
     }
-    wasPunchingLastFrame = boxerRed.isPunching;
 
-    ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
-    ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
-
-    const currentY = -bodyLean * 0.2;
-    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-
-    let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
-    const leftReach = strongHand === 'left' ? 32 : 24, rightReach = strongHand === 'right' ? 32 : 24;
+    let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
-        gloveY -= pVal * (activePunchHand === 'left' ? (boxerRed.punchType === 'straight' ? leftReach : leftReach - 4) : (boxerRed.punchType === 'straight' ? rightReach : rightReach - 4));
-        if (boxerRed.punchType !== 'straight') {
-            if (activePunchHand === 'left') leftGloveX = -12 + Math.sin(boxerRed.punchProgress) * 22;
-            else rightGloveX = 12 - Math.sin(boxerRed.punchProgress) * 22;
+        if (boxerRed.punchType === 'straight') {
+            boxerRed.punchProgress += 0.155; 
         } else {
-            if (activePunchHand === 'left') leftGloveX = -12 + pVal * 12;
-            else rightGloveX = 12 - pVal * 12;
+            boxerRed.punchProgress += 0.132; 
+        }
+
+        const pVal = Math.sin(boxerRed.punchProgress);
+        
+        if (pVal > 0.75 && !boxerRed.hasHit) {
+            boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
+
+            if (!boxerBlue.isBlockingNow) {
+                if (boxerRed.punchRoll === 6) {
+                    boxerRed.totalSixes += 1; 
+
+                    if (boxerRed.totalSixes % 3 === 0) {
+                        const options = ["eye", "lip", "liver"];
+                        const chosen = options[Math.floor(Math.random() * options.length)];
+
+                        if (chosen === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+                        if (chosen === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+                        if (chosen === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+                    }
+                }
+
+                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
+                    boxerBlue.stunTimer = 300; 
+                }
+            }
+            boxerRed.hasHit = true;
+        }
+
+        if (pVal > 0.75) {
+            let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
+            
+            const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
+            
+            if (currentHand === strongHand) {
+                basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
+            }
+
+            if (boxerRed.punchRoll === 6) {
+                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
+            } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
+                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
+            } else {
+                calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
+            }
+
+            if (boxerBlue.lipLevel === 1) {
+                calculatedImpact *= 0.90; 
+            } else if (boxerBlue.lipLevel >= 2) {
+                calculatedImpact *= 0.80; 
+            }
+
+            if (boxerBlue.eyeLevel === 1) {
+                if (Math.random() < 0.10) calculatedImpact = 0;
+            } else if (boxerBlue.eyeLevel >= 2) {
+                if (Math.random() < 0.20) calculatedImpact = 0;
+            }
+        }
+
+        // KONIEC ANIMAJI CIOSU
+        if (boxerRed.punchProgress >= Math.PI) {
+            // Jeśli czerwony ma jeszcze ciosy do wykonania w serii combo
+            if (boxerRed.comboLeft > 0) {
+                boxerRed.comboLeft--;
+                boxerRed.punchProgress = 0; // Natychmiastowy twardy reset pozycji ręki
+                boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; // Losujemy typ kolejnego ciosu
+                boxerRed.hasHit = false;
+
+                // Wyliczenie bloku dla nowego ciosu w serii
+                boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+            } else {
+                // Jeśli seria się skończyła, sprawdzamy szansę na uruchomienie NOWEGO combo
+                const rand = Math.random();
+                if (rand < 0.05) {
+                    boxerRed.comboLeft = 2; // 5% na serię potrójną (2 dodatkowe ciosy)
+                    boxerRed.punchProgress = 0; // Odpalany od razu kolejny cios
+                    boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+                    boxerRed.hasHit = false;
+                    boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+                } else if (rand < 0.35) { // 0.05 + 0.30 = 0.35 -> 30% na serię podwójną
+                    boxerRed.comboLeft = 1; // 1 dodatkowy cios
+                    boxerRed.punchProgress = 0; // Odpalany od razu kolejny cios
+                    boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+                    boxerRed.hasHit = false;
+                    boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+                } else {
+                    // Zwykły pojedynczy cios, brak combo – wyłączamy walkę i czekamy na odpoczynek
+                    boxerRed.isPunching = false;
+                    boxerBlue.isBlockingNow = false; 
+                }
+            }
         }
     }
 
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    const dx = ringCenter - boxerRed.x;
+    const dy = ringCenter - boxerRed.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-    const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    const targetRx = ringCenter + (dx / dist) * calculatedImpact;
+    const targetRy = ringCenter + (dy / dist) * calculatedImpact;
 
-    ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boxerRed.number, 0, currentY); ctx.restore(); ctx.restore(); 
-}
-
-export function drawBlockShield() {
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerRed || !boxerBlue) return;
-
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
-        ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
-        ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
-        ctx.restore();
-    }
+    boxerBlue.rx += (targetRx - boxerBlue.rx) * 0.2;
+    boxerBlue.ry += (targetRy - boxerBlue.ry) * 0.2;
 }
