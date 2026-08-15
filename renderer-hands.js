@@ -1,8 +1,8 @@
-import { boxerRed, boxerBlue, strongHand } from './engine.js';
+import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
-let comboGlowTimer = 0; // Licznik świecenia zielonej obwódki dla CZERWONEGO
-let blackPulseTimer = 0; // Licznik do pulsowania czarnej obwódki niebieskiego
+let comboGlowTimer = 0; 
+let blackPulseTimer = 0; 
 
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
@@ -10,45 +10,40 @@ export function drawBlueBoxer() {
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerBlue || !boxerRed) return;
 
-    // Aktualizacja licznika pulsowania nawet przy zamrożonej fizyce updatePhysics
-    if (boxerBlue.isKnockedDown) {
+    // Pobranie pewnego stanu knockdownu z silnika fizyki
+    const down = isBlueKnockedDown();
+
+    if (down) {
         blackPulseTimer += 0.05;
     }
 
-    const bounce = boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer) * 3;
+    const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    const isStunned = boxerBlue.stunTimer > 0 && !boxerBlue.isKnockedDown;
-    
-    const isBlocking = boxerBlue.isBlockingNow && !boxerBlue.isKnockedDown;
+    const isStunned = boxerBlue.stunTimer > 0 && !down;
+    const isBlocking = boxerBlue.isBlockingNow && !down;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
     if (boxerRed.isPunching && pVal > 0.85) { if (isBlocking) gloveColor = '#f1c40f'; else currentColor = '#ffbebe'; }
     if (isStunned && currentColor === boxerBlue.color) currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
 
-    // Wizualne zblednięcie po nokdaunie
-    if (boxerBlue.isKnockedDown) {
+    if (down) {
         currentColor = '#abc4d6';
     }
 
-    // RYSOWANIE CIENIA (przy knockdownie odsuwa się, dając efekt upadku)
     ctx.beginPath(); 
-    const shadowYOffset = boxerBlue.isKnockedDown ? boxerBlue.radius * 1.5 : boxerBlue.radius;
+    const shadowYOffset = down ? boxerBlue.radius * 1.5 : boxerBlue.radius;
     ctx.ellipse(boxerBlue.rx, boxerBlue.ry + shadowYOffset, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); 
-    
-    // Pozycja upadku – przesunięcie środka ludzika lekko w dół
-    const fallY = boxerBlue.isKnockedDown ? 15 : 0;
+    const fallY = down ? 15 : 0;
     ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce + fallY); 
     ctx.rotate(angleToRed - Math.PI / 2); 
     
-    // RYSOWANIE CIAŁA NIEBIESKIEGO
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); 
 
-    // CZARNA PULSUJĄCA OBWÓDKA
-    if (boxerBlue.isKnockedDown) {
+    if (down) {
         const pulseAlpha = 0.3 + Math.abs(Math.sin(blackPulseTimer)) * 0.7; 
         ctx.lineWidth = 4; 
         ctx.strokeStyle = `rgba(0, 0, 0, ${pulseAlpha})`;
@@ -79,10 +74,9 @@ export function drawBlueBoxer() {
         ctx.fill();
     }
 
-    // ROZŁOŻENIE RĄK W POZIOMIE
     let leftGloveX, rightGloveX, gloveY;
 
-    if (boxerBlue.isKnockedDown) {
+    if (down) {
         leftGloveX = -boxerBlue.radius - 14;  
         rightGloveX = boxerBlue.radius + 14; 
         gloveY = 0;                          
@@ -94,13 +88,13 @@ export function drawBlueBoxer() {
     }
 
     ctx.beginPath(); ctx.moveTo(isBlocking ? -3 : -12, 0); ctx.lineTo(leftGloveX, gloveY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(isBlocking ? 3 : 12, 0); ctx.lineTo(rightGloveX, gloveY + (isBlocking || boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(isBlocking ? 3 : 12, 0); ctx.lineTo(rightGloveX, gloveY + (isBlocking || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
 
-    ctx.lineWidth = boxerBlue.isKnockedDown ? 3 : 2;
-    ctx.strokeStyle = boxerBlue.isKnockedDown ? '#000' : '#fff';
+    ctx.lineWidth = down ? 3 : 2;
+    ctx.strokeStyle = down ? '#000' : '#fff';
 
     ctx.beginPath(); ctx.arc(leftGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking || boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
@@ -139,13 +133,11 @@ export function drawRedBoxer() {
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; 
 
-    // CIEŃ CZERWONEGO
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
-    // RYSOWANIE CZERWONEGO
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
