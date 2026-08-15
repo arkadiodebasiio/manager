@@ -24,7 +24,7 @@ export const boxerBlue = {
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
     
-    consecutiveSixes: 0,  // Wciąż używamy tej zmiennej jako licznika mocnych ciosów (5 i 6)
+    consecutiveSixes: 0,  
     isKnockedDown: false  
 };
 
@@ -72,15 +72,28 @@ export function updatePhysics() {
 
             const comboRoll = Math.random();
             if (comboRoll < 0.01) {
+                // Seria 4 ciosów (inicjujący + 3 w kolejce)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.06) {
+                // Seria 3 ciosów (inicjujący + 2 w kolejce)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.21) {
+                // Seria 2 ciosów
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
 
         if (shouldPunch) {
+            // NOWY WARUNEK: Jeśli niebieski jest ogłuszony, a czerwony odpala serię 3 lub 4 ciosów...
+            // (Sprawdzamy punchQueue.length przed rozpoczęciem ciosu: 2 oznacza serię 3 ciosów, 3 oznacza serię 4 ciosów)
+            if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
+                boxerBlue.isKnockedDown = true; // Natychmiastowy nokdaun ze zmęczenia/ogłuszenia!
+                boxerRed.punchQueue = [];
+                boxerRed.isPunching = false;
+                boxerBlue.stunTimer = 0;
+                return; // Przerywamy wyprowadzanie ciosu, wróg już leży
+            }
+
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
             boxerRed.punchTimer = 0;
@@ -98,22 +111,17 @@ export function updatePhysics() {
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            // RESET SERII: Jeśli niebieski zablokuje cios, pasie mocnych uderzeń mówimy "żegnamy"
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                // WARUNEK NOKDAUNU: Cios o sile 5 LUB 6 wchodzi czysto
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveSixes += 1; 
-                    
-                    // Drugie z rzędu potężne trafienie bez bloku kończy się nokdaunem!
                     if (boxerBlue.consecutiveSixes >= 2) {
                         boxerBlue.isKnockedDown = true; 
                         boxerRed.isPunching = false;
                         boxerRed.punchQueue = [];
                     }
                 }
-                // Słabsze ciosy czyste (1-4) NIE kasują licznika (niebieski zbiera kumulację ciosów na szczękę)
 
                 if (!boxerBlue.isKnockedDown) {
                     let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
