@@ -18,7 +18,7 @@ export const boxerRed = {
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
-    injury: "none", blockCount: 0 
+    lightInjury: "none", blockCount: 0 // Wprowadzona zmienna lightInjury zgodnie z wytycznymi
 };
 
 export function updatePhysics() {
@@ -68,8 +68,10 @@ export function updatePhysics() {
         
         // MOMENT TRAFIENIA
         if (pVal > 0.75 && !boxerRed.hasHit) {
+            // Losowanie kością K6 dla siły odrzucenia dokładnie w punkcie styku z celem
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
+            // OGŁUSZENIE (Stun): Przywrócone do czystej 20% szansy przy sierpie, niezależnie od wyniku kostki
             if (boxerRed.punchType === 'hook') {
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
                     boxerBlue.stunTimer = 300; 
@@ -78,7 +80,7 @@ export function updatePhysics() {
             boxerRed.hasHit = true;
         }
 
-        // Kalkulacja odrzucenia
+        // Wyważona kalkulacja siły odrzucenia oparta na rzucie kością
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             const currentHand = window.currentActivePunchHand || 'left';
@@ -87,11 +89,11 @@ export function updatePhysics() {
             }
 
             if (boxerRed.punchRoll === 6) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
+                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  // Silny cios - najmocniejszy
             } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
+                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  // Średni cios
             } else {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
+                calculatedImpact = (pVal - 0.75) * basePower * 0.15; // Słaby cios
             }
         }
 
