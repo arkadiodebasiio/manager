@@ -64,7 +64,6 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // --- POPRAWIONA LOGIKA: Cooldown już NIE TRZYMA bota blisko niebieskiego! ---
     const isActuallyAttacking = boxerRed.isPunching || boxerRed.punchQueue.length > 0;
     let targetRadius = isActuallyAttacking ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
@@ -210,7 +209,17 @@ export function updatePhysics() {
             boxerRed.isPunching = false;
             boxerRed.punchProgress = 0;
             boxerRed.punchCooldown = boxerRed.punchType === 'hook' ? 22 : 14;
+
+            // --- NOWA POPRAWKA: Jeśli w kolejce bota nie ma ciosów, niebieski natychmiast OPUSZCZA GARDĘ ---
+            if (boxerRed.punchQueue.length === 0) {
+                boxerBlue.isBlockingNow = false;
+                boxerBlue.blockCount = 0; // Resetujemy licznik uderzeń w tarczę
+            }
         }
+    }
+    // Zabezpieczenie: Jeśli czerwony w ogóle nie atakuje i nie ma ciosów, niebieski nie ma prawa stać w bloku
+    else if (boxerRed.punchQueue.length === 0) {
+        boxerBlue.isBlockingNow = false;
     }
 
     if (boxerBlue.pendingKnockdown) {
