@@ -1,5 +1,3 @@
-import { handleSuperPunch } from './combat-logic.js';
-
 export const canvas = document.getElementById('ringCanvas');
 export const ctx = canvas ? canvas.getContext('2d') : null;
 
@@ -22,11 +20,7 @@ export const boxerRed = {
     totalSixes: 0,
     punchQueue: [],    
     punchCooldown: 0,
-    comboGlowTimer: 0, // Zabezpieczenie przed błędem koloru combo w nowej walce
-    hp: 100,
-    isChargingSuper: false,
-    superChargeProgress: 0,
-    isSuperPunching: false
+    hp: 100 
 };
 
 export const boxerBlue = { 
@@ -43,32 +37,14 @@ export const boxerBlue = {
     consecutiveBigHits: 0 
 };
 
-export function isBlueKnockedDown() {
-    return boxerBlue.isKnockedDown || boxerBlue.pendingKnockdown;
-}
-
 export function updatePhysics() {
-    // Sprawdzenie nokdaunu przeciwnika
-    if (boxerBlue.isKnockedDown || boxerBlue.pendingKnockdown) {
-        boxerBlue.isKnockedDown = true;
+    // Trwała przerwa w meczu po zaliczeniu nokdaunu
+    if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
         return; 
     }
 
-    // Uruchomienie zewnętrznej logiki superciosu z pliku combat-logic.js
-    handleSuperPunch();
-
-    // Jeśli trwa ładowanie lub zadawanie superciosu, modyfikujemy promień ringu i pomijamy standardowe ciosy
-    if (boxerRed.isChargingSuper || boxerRed.isSuperPunching) {
-        let superTargetRadius = boxerRed.isSuperPunching ? 54 : 70;
-        currentOrbitRadius += (superTargetRadius - currentOrbitRadius) * 0.16;
-        boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
-        boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
-        return; 
-    }
-
-    // FIZYKA STANDARDOWEJ WALKI
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
