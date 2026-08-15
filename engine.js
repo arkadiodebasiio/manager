@@ -38,6 +38,12 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
+    // ZABEZPIECZENIE: Jeśli z jakiegoś powodu współrzędne renderowania zniknęły, przywróć je na środek
+    if (isNaN(boxerBlue.rx) || isNaN(boxerBlue.ry)) {
+        boxerBlue.rx = ringCenter;
+        boxerBlue.ry = ringCenter;
+    }
+
     // Trwała przerwa w meczu po zaliczeniu nokdaunu
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
