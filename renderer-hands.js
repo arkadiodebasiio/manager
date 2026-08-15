@@ -1,7 +1,7 @@
-// Importujemy ZMIENNĄ comboGlowTimer bezpośrednio z silnika gry
-import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown, comboGlowTimer } from './engine.js';
+import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
+let comboGlowTimer = 0; 
 let blackPulseTimer = 0; 
 
 export function drawBlueBoxer() {
@@ -127,9 +127,13 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // --- USUNĘLIŚMY STARY ROZJEŻDŻAJĄCY SIĘ WARUNEK IF ---
-    // Plik graficzny teraz tylko sprawdza wartość z silnika i nie modyfikuje jej samoczynnie
+    // --- CZYSZCZENIE: Świeci tylko gdy w tablicy combo czekają kolejne uderzenia ---
+    if (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) {
+        comboGlowTimer = 35; 
+    }
+
     const isCurrentlyInCombo = comboGlowTimer > 0;
+    if (comboGlowTimer > 0) comboGlowTimer--; 
 
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
