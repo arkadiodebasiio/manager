@@ -148,17 +148,5 @@ export function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-export function drawBlockShield() {
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerRed || !boxerBlue) return;
-
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
-        ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
-        ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.restore();
-    }
-}
+// PRZYWRÓCONA ORYGINALNA PUSTA FUNKCJA (Tarcza rysuje się z zewnętrznego kodu gry)
+export function drawBlockShield() {}
