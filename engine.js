@@ -14,7 +14,7 @@ export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: BASE_SPEED * redDir, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
-    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
+    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100, isBlockingNow: false,
     isChargingSuper: false, superChargeTimer: 0, superCooldown: Math.floor(Math.random() * 5400) 
 };
 export const boxerBlue = { 
