@@ -1,7 +1,7 @@
 import { boxerRed, boxerBlue, strongHand } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false;
-let pulseTimer = 0; // Globalna zmienna do płynnego pulsu obwódki
+let pulseTimer = 0; 
 
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
@@ -16,40 +16,54 @@ export function drawBlueBoxer() {
     const bounce = boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
     
-    // TUŁÓW ZAWSZE NIEBIESKI – usunięte jakiekolwiek miganie i zmiana koloru środka!
     let currentColor = boxerBlue.color;
     let gloveColor = '#d35400'; 
     
     if (boxerBlue.isKnockedDown) {
-        gloveColor = '#7f8c8d'; // Tylko rękawice stają się bezwładnie szare
+        gloveColor = '#7f8c8d'; 
     }
 
-    // Cień pod zawodnikiem
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     
-    // Rysowanie tułowia (zawsze niebieski)
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); 
     ctx.fillStyle = currentColor; 
     ctx.fill(); 
     
-    // PULSUJĄCA OBWÓDKA: Tylko ona reaguje na nokdaun
     if (boxerBlue.isKnockedDown) {
-        ctx.lineWidth = 4 + Math.sin(pulseTimer) * 1.5; // Płynna zmiana grubości
-        ctx.strokeStyle = '#1a252f'; // Ciemnoszary / czarny kolor obwódki
+        ctx.lineWidth = 4 + Math.sin(pulseTimer) * 1.5; 
+        ctx.strokeStyle = '#1a252f'; 
     } else {
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#fff'; // Klasyczna biała obwódka w walce
+        ctx.strokeStyle = '#fff'; 
     }
     ctx.stroke();
 
-    // Ręce rozjechane na boki przy leżeniu
     let leftGloveX = boxerBlue.isKnockedDown ? -32 : (boxerBlue.isBlockingNow ? -3 : -12);
     let rightGloveX = boxerBlue.isKnockedDown ? 32 : (boxerBlue.isBlockingNow ? 3 : 12);
     let gloveY = boxerBlue.isKnockedDown ? 4 : (-boxerBlue.radius + 4);
 
+    // Ręce (patyczki) niebieskiego boksera
+    ctx.beginPath();
+    ctx.moveTo(boxerBlue.isBlockingNow ? -3 : -12, 0);
+    ctx.lineTo(leftGloveX, gloveY);
+    ctx.strokeStyle = boxerBlue.color;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(boxerBlue.isBlockingNow ? 3 : 12, 0);
+    ctx.lineTo(rightGloveX, gloveY);
+    ctx.strokeStyle = boxerBlue.color;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    // Rękawice niebieskiego
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = boxerBlue.isKnockedDown ? '#1a252f' : '#fff';
+    
     ctx.beginPath(); ctx.arc(leftGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.arc(rightGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     
@@ -81,7 +95,6 @@ export function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(0, 0, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; ctx.stroke();
 
-    // WYLICZANIE POZYCJI RĘKAWIC CZERWONEGO
     let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
     if (boxerRed.isPunching) {
         gloveY -= pVal * 28;
@@ -89,19 +102,25 @@ export function drawRedBoxer() {
         else rightGloveX = 12 - pVal * 12;
     }
 
-    // RYSOWANIE PATYCZKÓW (RAMION) DLA CZERWONEGO – PRZYWRÓCONE!
+    // GWARANTOWANE I POPRAWIONE RYSOWANIE RAMION (PATYCZKÓW) CZERWONEGO
     ctx.beginPath(); 
     ctx.moveTo(-12, 0); 
     ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
+    ctx.strokeStyle = '#e74c3c'; 
+    ctx.lineWidth = 5; 
+    ctx.stroke();
 
     ctx.beginPath(); 
     ctx.moveTo(12, 0); 
     ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
+    ctx.strokeStyle = '#e74c3c'; 
+    ctx.lineWidth = 5; 
+    ctx.stroke();
 
-    // Rysowanie samych rękawic na końcach patyczków
-    ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
+    // Rysowanie obwódek i rękawic (nadpisujemy parametry stroke)
+    ctx.lineWidth = 2; 
+    ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
+    
     ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
