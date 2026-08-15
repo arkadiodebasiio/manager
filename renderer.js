@@ -1,8 +1,65 @@
-import { canvas, ctx, updatePhysics } from './engine.js';
+import { canvas, ctx, updatePhysics, boxerRed, boxerBlue } from './engine.js';
 import { drawBlueBoxer, drawRedBoxer, drawBlockShield } from './renderer-hands.js';
 
 if (!window.currentActivePunchHand) {
     window.currentActivePunchHand = 'left';
+}
+
+// LOGIKA SUPERCIOSU - działa niezależnie w tle, bez zamrażania ringu
+let superTimer = Math.random() * 5400; // 1.5 minuty (90s * 60 FPS)
+let superProgress = 0;
+let isSuperCharging = false;
+let isSuperPunching = false;
+let superHit = false;
+
+function handleSuper() {
+    if (boxerBlue.isKnockedDown || boxerBlue.pendingKnockdown) return;
+
+    // 1. Odliczanie czasu w tle
+    if (!isSuperCharging && !isSuperPunching && !boxerRed.isPunching) {
+        superTimer--;
+        if (superTimer <= 0) {
+            isSuperCharging = true;
+            boxerRed.isSuperCharging = true; // Zawiadamiamy renderer o pulsowaniu barw
+            superProgress = 0;
+        }
+    }
+
+    // 2. Ładowanie przez 3 sekundy (180 klatek)
+    if (isSuperCharging) {
+        superProgress++;
+        if (superProgress >= 180) {
+            isSuperCharging = false;
+            boxerRed.isSuperCharging = false;
+            isSuperPunching = true;
+            boxerRed.punchProgress = 0;
+            superHit = false;
+            boxerBlue.isBlockingNow = Math.random() < 0.50; // Losowy blok przeciwnika
+        }
+    }
+
+    // 3. Wyprowadzenie uderzenia przez symulację flag silnika
+    if (isSuperPunching) {
+        boxerRed.isPunching = true;
+        boxerRed.punchType = 'hook'; // Ładne wysunięcie ręki boksera jako sierpowy
+
+        const pVal = Math.sin(boxerRed.punchProgress);
+        if (pVal > 0.90 && !superHit) {
+            if (!boxerBlue.isBlockingNow) {
+                // BRAK BLOKU = NATYCHMIASTOWY NOKDAUN
+                boxerBlue.pendingKnockdown = true;
+                boxerBlue.isKnockedDown = true;
+                boxerBlue.hp = 0;
+            }
+            superHit = true;
+        }
+
+        if (boxerRed.punchProgress >= Math.PI) {
+            isSuperPunching = false;
+            // Ponowne losowanie na kolejne ~1.5 minuty
+            superTimer = 5400 + (Math.random() * 1800); 
+        }
+    }
 }
 
 function drawRing() {
@@ -23,6 +80,7 @@ function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawRing(); 
     updatePhysics(); 
+    handleSuper(); // Uruchomienie bezpiecznego superciosu w każdej klatce ringu
     drawBlueBoxer(); 
     drawRedBoxer();
     drawBlockShield(); 
