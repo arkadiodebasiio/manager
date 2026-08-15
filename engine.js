@@ -16,7 +16,8 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    isChargingSuper: false, superChargeTimer: 0, superCooldown: 0 
+    isChargingSuper: false, superChargeTimer: 0,
+    superCooldown: 5400 // Bezwzględna blokada na 1,5 minuty ringu od momentu startu gry
 };
 
 export const boxerBlue = { 
