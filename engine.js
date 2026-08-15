@@ -58,37 +58,18 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    if (!boxerRed.isPunching) {
-        if (boxerRed.comboLeft > 0) {
-            boxerRed.comboDelay--;
-            if (boxerRed.comboDelay <= 0) {
-                boxerRed.isPunching = true;
-                boxerRed.punchProgress = 0;
-                boxerRed.punchTimer = 0; 
-                boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
-                boxerRed.hasHit = false; 
-                boxerRed.comboLeft--; 
-                boxerRed.comboDelay = 8; // Twardy reset opóźnienia dla kolejnego ciosu
-
-                boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-                if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
-                    boxerBlue.blockCount += 1;
-                    const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
-                    if (boxerBlue.blockCount >= breakLimit) {
-                        boxerBlue.isBlockingNow = false; 
-                        boxerBlue.blockCount = 0;
-                    }
-                }
-            }
-        } else if (boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+    // Zarządzanie przerwą między ciosami w serii combo
+    if (!boxerRed.isPunching && boxerRed.comboLeft > 0) {
+        boxerRed.comboDelay--;
+        if (boxerRed.comboDelay <= 0) {
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
-            boxerRed.punchTimer = 0;
-            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+            boxerRed.punchTimer = 0; 
+            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
             boxerRed.hasHit = false; 
+            boxerRed.comboLeft--; 
 
             boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-
             if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
                 boxerBlue.blockCount += 1;
                 const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
@@ -96,6 +77,25 @@ export function updatePhysics() {
                     boxerBlue.isBlockingNow = false; 
                     boxerBlue.blockCount = 0;
                 }
+            }
+        }
+    } 
+    // Standardowe wyprowadzanie ciosów bazowych
+    else if (!boxerRed.isPunching && boxerRed.comboLeft === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+        boxerRed.isPunching = true;
+        boxerRed.punchProgress = 0;
+        boxerRed.punchTimer = 0;
+        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+        boxerRed.hasHit = false; 
+
+        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
+        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+            boxerBlue.blockCount += 1;
+            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+            if (boxerBlue.blockCount >= breakLimit) {
+                boxerBlue.isBlockingNow = false; 
+                boxerBlue.blockCount = 0;
             }
         }
     }
@@ -138,7 +138,6 @@ export function updatePhysics() {
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             
-            // NAPRAWA: Bezpieczne odczytanie aktywnej ręki bez crashowania Node.js / GitHub Actions
             const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
             
             if (currentHand === strongHand) {
@@ -170,15 +169,19 @@ export function updatePhysics() {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
 
+            // Losowanie kolejnego combo odbywa się TYLKO gdy całkowicie skończyliśmy poprzednią serię
             if (boxerRed.comboLeft === 0) {
                 const rand = Math.random();
                 if (rand < 0.05) {
                     boxerRed.comboLeft = 2;   
-                    boxerRed.comboDelay = 8;  
+                    boxerRed.comboDelay = 8;  // Odstęp czasowy ustawiamy bezpiecznie tutaj
                 } else if (rand < 0.35) {     
                     boxerRed.comboLeft = 1;   
                     boxerRed.comboDelay = 8;  
                 }
+            } else {
+                // Jeśli jesteśmy w trakcie serii, po zakończeniu ciosu po prostu odnawiamy delay dla następnego uderzenia
+                boxerRed.comboDelay = 8;
             }
         }
     }
