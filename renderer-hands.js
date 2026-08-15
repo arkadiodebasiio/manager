@@ -2,6 +2,7 @@ import { boxerRed, boxerBlue, strongHand } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 let comboGlowTimer = 0; // Licznik świecenia zielonej obwódki dla CZERWONEGO
+let blackPulseTimer = 0; // Licznik do pulsowania czarnej obwódki niebieskiego
 
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
@@ -9,23 +10,40 @@ export function drawBlueBoxer() {
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerBlue || !boxerRed) return;
 
-    const bounce = Math.sin(boxerBlue.animTimer) * 3;
+    const bounce = boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    const isStunned = boxerBlue.stunTimer > 0;
+    const isStunned = boxerBlue.stunTimer > 0 && !boxerBlue.isKnockedDown;
     
-    const isBlocking = boxerBlue.isBlockingNow;
+    const isBlocking = boxerBlue.isBlockingNow && !boxerBlue.isKnockedDown;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
     if (boxerRed.isPunching && pVal > 0.85) { if (isBlocking) gloveColor = '#f1c40f'; else currentColor = '#ffbebe'; }
     if (isStunned && currentColor === boxerBlue.color) currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
 
+    // Jeśli leży w nokdaunie, jego ciało blednie, wskazując na brak przytomności
+    if (boxerBlue.isKnockedDown) {
+        currentColor = '#abc4d6';
+    }
+
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     
-    // Niebieski MA ZAWSZE białą obwódkę (#fff) i stałą grubość (2)
-    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    // RYSOWANIE CIAŁA NIEBIESKIEGO
+    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); 
+
+    // OBLICZANIE CZARNEJ PULSUJĄCEJ OBWÓDKI PRZY NOKDAUNIE
+    if (boxerBlue.isKnockedDown) {
+        blackPulseTimer += 0.08;
+        const pulseAlpha = 0.4 + Math.sin(blackPulseTimer) * 0.6; // Płynne pulsowanie od lekkiej czerni do głębokiej czerni
+        ctx.lineWidth = 4; // Pogrubiona obwódka dla widocznego efektu
+        ctx.strokeStyle = `rgba(0, 0, 0, ${pulseAlpha})`;
+    } else {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#fff'; // Standardowa biała obwódka
+    }
+    ctx.stroke();
 
     if (boxerBlue.eyeLevel > 0) {
         const isMax = boxerBlue.eyeLevel >= 2;
@@ -48,10 +66,30 @@ export function drawBlueBoxer() {
         ctx.fill();
     }
 
-    let leftGloveX = isBlocking ? -3 : -12, rightGloveX = isBlocking ? 3 : 12, gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
-    if (isBlocking) gloveY = -boxerBlue.radius + 1;
+    // USTAWIENIE RĄK: Szeroko rozłożone na boki w poziomie przy nokdaunie, standardowe przy walce
+    let leftGloveX, rightGloveX, gloveY;
+
+    if (boxerBlue.isKnockedDown) {
+        leftGloveX = -boxerBlue.radius - 12;  // Maksymalnie wysunięta w lewo
+        rightGloveX = boxerBlue.radius + 12; // Maksymalnie wysunięta w prawo
+        gloveY = 0;                          // Wyrównane idealnie w linii poziomej ramion
+    } else {
+        leftGloveX = isBlocking ? -3 : -12;
+        rightGloveX = isBlocking ? 3 : 12;
+        gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
+        if (isBlocking) gloveY = -boxerBlue.radius + 1;
+    }
+
+    // Rysowanie ramion i rękawic z uwzględnieniem nowej pozycji rozłożonej
+    ctx.beginPath(); ctx.moveTo(isBlocking ? -3 : -12, 0); ctx.lineTo(leftGloveX, gloveY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(isBlocking ? 3 : 12, 0); ctx.lineTo(rightGloveX, gloveY + (isBlocking || boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+
+    ctx.lineWidth = boxerBlue.isKnockedDown ? 3 : 2;
+    ctx.strokeStyle = boxerBlue.isKnockedDown ? '#000' : '#fff';
+
     ctx.beginPath(); ctx.arc(leftGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking || boxerBlue.isKnockedDown ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
+    
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
 
@@ -89,17 +127,16 @@ export function drawRedBoxer() {
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; 
 
-    // CIEŃ CZERWONEGO (Zielony neon przy combo, szary standardowo)
+    // CIEŃ CZERWONEGO
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
-    // RYSOWANIE CZERWONEGO Z ZIELONĄ OBWÓDKĄ COMBO
+    // RYSOWANIE CZERWONEGO
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    // ZIELONY NEON: Pogrubiona, jaskrawa obwódka przy combo (grubość 4), biała na co dzień (grubość 2)
     ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
     ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
     ctx.stroke();
@@ -139,6 +176,6 @@ export function drawBlockShield() {
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     if (boxerBlue.isBlockingNow && pVal > 0) {
-        // Tarcza rysuje się poprawnie, jeśli warunki są spełnione
+        // Tarcza
     }
 }
