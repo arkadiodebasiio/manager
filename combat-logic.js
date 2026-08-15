@@ -15,7 +15,7 @@ export function handleSuperPunchTiming(boxerRed, boxerBlue) {
             boxerRed.isChargingSuper = true;
             boxerRed.superChargeFrames = 180; 
             boxerRed.punchQueue = []; 
-            boxerRed.isComboExecuting = false; // BEZWZGLĘDNA BLOKADA: Super Punch resetuje świecenie na zielono
+            boxerRed.isComboExecuting = false; 
         }
     }
 
@@ -28,7 +28,7 @@ export function handleSuperPunchTiming(boxerRed, boxerBlue) {
             boxerRed.punchProgress = 0;
             boxerRed.punchType = 'super'; 
             boxerRed.hasHit = false;
-            boxerRed.isComboExecuting = false; // Super Punch świeci na żółto, nie na zielono!
+            boxerRed.isComboExecuting = false; 
             boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
         }
         return true; 
