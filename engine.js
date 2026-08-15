@@ -20,7 +20,8 @@ export const boxerRed = {
     totalSixes: 0,
     punchQueue: [],    
     punchCooldown: 0,
-    hp: 100 
+    hp: 100,
+    isExecutingCombo: false // NOWA FLAGA: pilnuje czy trwa seria ciosów
 };
 
 export const boxerBlue = { 
@@ -38,7 +39,6 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // Trwała przerwa w meczu po zaliczeniu nokdaunu
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
@@ -86,38 +86,43 @@ export function updatePhysics() {
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
+            // Jeśli kolejka się opróżniła i ten cios się skończy, wyłączymy flagę combo
+            if (boxerRed.punchQueue.length === 0) {
+                boxerRed.isExecutingCombo = true; 
+            }
         } 
         else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
+            boxerRed.isExecutingCombo = false; // Reset przy zwykłym pojedynczym ciosie
 
             const comboRoll = Math.random();
             const isStunnedNow = boxerBlue.stunTimer > 0;
 
             if (comboRoll < 0.01) {
-                // 1% na serię POCZWÓRNĄ (3 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.isExecutingCombo = true; // Włączamy flagę combo!
                 
-                // NOWY WARUNEK: Zamroczenie + Seria Poczwórna = Automatyczny Nokdaun
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
                     boxerRed.punchQueue = []; 
+                    boxerRed.isExecutingCombo = false;
                 }
             } else if (comboRoll < 0.06) {
-                // 5% na serię POTRÓJNĄ (2 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.isExecutingCombo = true; // Włączamy flagę combo!
                 
-                // NOWY WARUNEK: Zamroczenie + Seria Potrójna = Automatyczny Nokdaun
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
                     boxerRed.punchQueue = []; 
+                    boxerRed.isExecutingCombo = false;
                 }
             } else if (comboRoll < 0.21) {
-                // 15% na serię PODWÓJNĄ (1 dodatkowy cios)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.isExecutingCombo = true; // Włączamy flagę combo!
             }
         }
 
@@ -172,6 +177,7 @@ export function updatePhysics() {
                     if (boxerBlue.consecutiveBigHits >= 2) {
                         boxerBlue.pendingKnockdown = true;
                         boxerRed.punchQueue = [];
+                        boxerRed.isExecutingCombo = false;
                     }
                 } else {
                     boxerBlue.consecutiveBigHits = 0; 
@@ -215,6 +221,11 @@ export function updatePhysics() {
             boxerRed.isPunching = false;
             boxerRed.punchProgress = 0;
             boxerRed.punchCooldown = boxerRed.punchType === 'hook' ? 22 : 14;
+            
+            // Jeśli to był ostatni cios z serii, gasimy flagę combo
+            if (boxerRed.punchQueue.length === 0) {
+                boxerRed.isExecutingCombo = false;
+            }
         }
     }
 
