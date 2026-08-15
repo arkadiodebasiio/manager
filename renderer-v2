@@ -12,8 +12,6 @@ function drawRedBoxer() {
 
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = isCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounce); 
-    
-    // TWARZĄ W TWARZ: Poprawny kąt matematyczny
     ctx.rotate(Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) - Math.PI / 2);
 
     ctx.beginPath(); ctx.arc(0, 0, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
@@ -40,7 +38,6 @@ function drawRedBoxer() {
 
     const redGloveColor = boxerRed.isChargingSuper ? '#f1c40f' : '#d35400';
     
-    // CZERWONY MA CZERWONE RĘKAWICE Z BIAŁĄ OBWÓDKĄ
     ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(leftGloveX, leftGloveY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = redGloveColor; ctx.fill(); ctx.stroke();
     
@@ -51,14 +48,15 @@ function drawRedBoxer() {
 }
 
 function drawBlueBoxer() {
-    const down = isBlueKnockedDown(); if (down) blueBlackPulseTimer += 0.05;
+    // NAPRAWIONE: Bezpośredni odczyt zmiennej logicznej zamiast wywoływania zablokowanej funkcji
+    const down = boxerBlue.isKnockedDown; 
+    if (down) blueBlackPulseTimer += 0.05;
+
     const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3, isStun = boxerBlue.stunTimer > 0 && !down, isBlock = boxerBlue.isBlockingNow && !down;
     let c = down ? '#abc4d6' : (isStun && Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color);
 
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + (down ? boxerBlue.radius * 1.5 : boxerBlue.radius), boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce + (down ? 15 : 0)); 
-    
-    // TWARZĄ W TWARZ: Poprawny kąt matematyczny
     ctx.rotate(Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) - Math.PI / 2);
     
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); 
@@ -77,7 +75,6 @@ function drawBlueBoxer() {
     let leftGloveY = gY;
     let rightGloveY = gY + (isBlock || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2);
 
-    // BŁĘKITNE/NIEBIESKIE RĘKAWICE DLA NIEBIESKIEGO (Garda = żółta)
     const blueGloveColor = isBlock ? '#f1c40f' : '#3498db';
 
     ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(leftGloveX, leftGloveY); ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 5; ctx.stroke();
@@ -117,4 +114,3 @@ function drawRing() {
 
 function gameLoop() { updatePhysics(); drawRing(); requestAnimationFrame(gameLoop); }
 if (canvas) gameLoop();
-
