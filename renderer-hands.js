@@ -59,8 +59,6 @@ export function drawBlueBoxer() {
 
 export function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
-    
-    // NAPRAWA: Usunięto punchSpeedMultiplier. Czerwony bije zawsze ze swoją pełną prędkością!
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
@@ -108,7 +106,7 @@ export function drawBlockShield() {
     if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
         ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
         ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); stroke();
+        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
         ctx.restore();
     }
