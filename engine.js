@@ -40,27 +40,13 @@ export const boxerBlue = {
     isKnockedDown: false  
 };
 
-function rollInjury() {
-    if (Math.random() < 0.15) { 
-        const injuryType = Math.floor(Math.random() * 3);
-        if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
-        if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
-        if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
-        
-        if (boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3) {
-            boxerBlue.stunTimer = 90; 
-        }
-    }
-}
-
 export function updatePhysics() {
-    // PRZYWRÓCONE KLASYCZNE WYLICZANIE ORBITY (Zabezpieczenie przed znikaniem pomarańczowej kropki)
+    // Wyliczanie dystansu i doskoku
     const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'hook' ? 54 : 62) : baseRadius;
     
-    // Nadpisanie orbity tylko i wyłącznie na czas trwania superciosu
     if (boxerRed.isSuperPunching) {
-        targetRadius = 55; // Doskok do bliskiego dystansu walki
+        targetRadius = 55; // Doskok przy superciosie
     }
     
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
@@ -109,7 +95,14 @@ export function updatePhysics() {
                 if (boxerBlue.isBlockingNow) {
                     boxerBlue.consecutiveSixes = 0;
                 } else {
-                    rollInjury();
+                    // BEZPOŚREDNIE LOSOWANIE KONTUZJI PRZY TRAFIENIU SUPER CIOSYEM
+                    if (Math.random() < 0.15) {
+                        const injuryType = Math.floor(Math.random() * 3);
+                        if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+                        if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+                        if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+                    }
+
                     if (Math.random() < 0.70) {
                         boxerBlue.isKnockedDown = true;
                         boxerRed.punchQueue = [];
@@ -141,8 +134,7 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // Szansa na supercios raz na około minuty (częstsze losowanie ułatwiające testy!)
-        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 2500)) {
+        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 4000)) {
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
             boxerRed.isSuperPunchStriking = false;
@@ -193,7 +185,13 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                rollInjury();
+                // BEZPOŚREDNIE LOSOWANIE KONTUZJI PRZY ZWYKŁYM TRAFIENIU
+                if (Math.random() < 0.15) {
+                    const injuryType = Math.floor(Math.random() * 3);
+                    if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+                    if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+                    if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+                }
 
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveSixes += 1; 
