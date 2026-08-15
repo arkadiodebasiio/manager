@@ -19,10 +19,8 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // SAMODZIELNE WYKRYWANIE COMBO W GRAFICE: Świeci na zielono TYLKO podczas uderzenia, gdy w kolejce czekają kolejne ciosy
-    const isRealComboActive = boxerRed.isPunching && boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
+    const isRealComboActive = boxerRed.isComboExecuting === true;
 
-    // Rysowanie cienia lub zielonej poświaty pod nogami
     ctx.beginPath(); 
     ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isRealComboActive ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; 
@@ -35,7 +33,6 @@ export function drawRedBoxer(ctx) {
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    // Dobór koloru obwódki (Żółty przy super ciosie, Zielony przy trwającym combo, Biały przy normalnym ruchu/ciosie)
     if (superState.isCharging) {
         const pulseSuper = 0.4 + Math.abs(Math.sin(superState.frames * 0.15)) * 0.6;
         ctx.lineWidth = 5;
