@@ -18,7 +18,7 @@ export const boxerRed = {
     isChargingSuper: false, superChargeTimer: 0, superCooldown: Math.floor(Math.random() * 5400) 
 };
 export const boxerBlue = { 
-    angle: Math.PI, orbitSpeed: BASE_SPEED * blueDir, radius: 24, color: '#2980b9', number: '2', 
+    angle: Math.PI / 2 + Math.PI, orbitSpeed: BASE_SPEED * blueDir, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, x: 150, y: 250, stunTimer: 0, blockCount: 0, isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
     isKnockedDown: false, pendingKnockdown: false, consecutiveBigHits: 0, isMovingThisJump: false, wasAboveZero: true,
     punchTimer: 0, punchCooldown: 0, punchQueue: [], superCooldown: Math.floor(Math.random() * 5400), isPunching: false, punchProgress: 0, punchType: 'straight', hasHit: false, isChargingSuper: false, superChargeTimer: 0
@@ -46,8 +46,8 @@ export function updatePhysics() {
         r.superChargeTimer--; currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
         if (r.superChargeTimer <= 0) { r.isChargingSuper = false; r.punchType = 'super'; r.isPunching = true; r.punchProgress = 0; r.hasHit = false; b.isBlockingNow = b.stunTimer > 0 ? false : Math.random() < 0.50; }
     } else {
-        // POPRAWKA ODLEGŁOŚCI: Czerwony skraca dystans dynamicznie w osi okręgu
-        let targetRadius = (r.isPunching || r.punchQueue.length > 0) ? (r.punchType === 'straight' ? 62 : 54) : baseRadius;
+        // Zacieśniamy orbitę ringu podczas ciosów, żeby zbliżyć ich fizycznie do siebie
+        let targetRadius = (r.isPunching || r.punchQueue.length > 0 || b.isPunching) ? 44 : 85;
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
     }
     if (b.isChargingSuper) {
@@ -57,13 +57,16 @@ export function updatePhysics() {
     const redSin = Math.sin(r.animTimer); if (redSin > 0 && !r.wasAboveZero && !r.isChargingSuper) r.isMovingThisJump = Math.random() < 0.30; r.wasAboveZero = (redSin > 0); if (r.isMovingThisJump && redSin > 0 && !r.isChargingSuper) r.angle -= r.orbitSpeed * redSin;
     const blueSin = Math.sin(b.animTimer); if (blueSin > 0 && !b.wasAboveZero && b.stunTimer <= 0) b.isMovingThisJump = Math.random() < 0.30; b.wasAboveZero = (blueSin > 0); if (b.isMovingThisJump && blueSin > 0 && b.stunTimer <= 0) b.angle -= b.orbitSpeed * blueSin;
 
-    // IDEALNIE ZSYNCHRONIZOWANE OSI POZYCJI DLA OBU STRON
+    // IDEALNA KLINCHOWA SYNCHRONIZACJA: Niebieski krąży dokładnie naprzeciwko czerwonego
     r.x = ringCenter + Math.cos(r.angle) * currentOrbitRadius; 
     r.y = ringCenter + Math.sin(r.angle) * currentOrbitRadius;
-    b.x = ringCenter + Math.cos(b.angle) * baseRadius; 
-    b.y = ringCenter + Math.sin(b.angle) * baseRadius;
+    
+    // Niebieski jest zawsze po drugiej stronie tego samego okręgu dynamicznego!
+    b.x = ringCenter + Math.cos(r.angle + Math.PI) * currentOrbitRadius; 
+    b.y = ringCenter + Math.sin(r.angle + Math.PI) * currentOrbitRadius;
 
     handleBotAttackDecisions(baseRadius); processPunchExecution();
     if (b.pendingKnockdown) { b.isKnockedDown = true; b.pendingKnockdown = false; }
 }
 export function isBlueKnockedDown() { return boxerBlue.isKnockedDown; }
+
