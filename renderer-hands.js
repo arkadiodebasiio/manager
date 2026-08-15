@@ -45,7 +45,6 @@ export function drawBlueBoxer() {
     let rightGloveX = boxerBlue.isKnockedDown ? 32 : (boxerBlue.isBlockingNow ? 3 : 12);
     let gloveY = boxerBlue.isKnockedDown ? 4 : (-boxerBlue.radius + 4);
 
-    // Ręce (patyczki) niebieskiego boksera
     ctx.beginPath();
     ctx.moveTo(boxerBlue.isBlockingNow ? -3 : -12, 0);
     ctx.lineTo(leftGloveX, gloveY);
@@ -60,7 +59,6 @@ export function drawBlueBoxer() {
     ctx.lineWidth = 5;
     ctx.stroke();
 
-    // Rękawice niebieskiego
     ctx.lineWidth = 2;
     ctx.strokeStyle = boxerBlue.isKnockedDown ? '#1a252f' : '#fff';
     
@@ -102,7 +100,6 @@ export function drawRedBoxer() {
         else rightGloveX = 12 - pVal * 12;
     }
 
-    // Rysowanie ramion (patyczków) czerwonego
     ctx.beginPath(); 
     ctx.moveTo(-12, 0); 
     ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
@@ -117,7 +114,6 @@ export function drawRedBoxer() {
     ctx.lineWidth = 5; 
     ctx.stroke();
 
-    // Rękawice czerwonego
     ctx.lineWidth = 2; 
     ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
     
@@ -128,4 +124,18 @@ export function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-export function drawBlockShield() {}
+// PRZYWRÓCONA W PEŁNI DZIAŁAJĄCA TARCZA BLOKU (To naprawia błąd kwadratu!)
+export function drawBlockShield() {
+    const canvas = document.getElementById('ringCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !boxerRed || !boxerBlue) return;
+
+    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
+    if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
+        ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
+        ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+}
