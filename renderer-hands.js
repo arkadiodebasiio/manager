@@ -12,8 +12,9 @@ export function drawRedBoxer() {
     const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
+    // Losowanie ręki atakującej na początku ciosu
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
-        activePunchHand = Math.random() < (boxerRed.orbitSpeed < 0 ? 0.30 : 0.70) ? 'left' : 'right';
+        activePunchHand = Math.random() < 0.5 ? 'left' : 'right';
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
@@ -38,41 +39,39 @@ export function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(0, -bodyLean * 0.2, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     ctx.lineWidth = lineWidth; ctx.strokeStyle = strokeColor; ctx.stroke();
 
-    // --- CAŁKOWICIE NOWA LOGIKA SEPARACJI RĄK ---
-    // Bazowe, czyste pozycje spoczynkowe przy tułowiu
-    let leftGloveX = -12, leftGloveY = -boxerRed.radius + 4;
-    let rightGloveX = 12, rightGloveY = -boxerRed.radius + 4;
-
-    const leftReach = strongHand === 'left' ? 32 : 24;
-    const rightReach = strongHand === 'right' ? 32 : 24;
+    // CAŁKOWICIE ODSEPAROWANE RĘCE - BRAK WSPÓLNYCH ZMIENNYCH
+    let leftX = -12, leftY = -boxerRed.radius + 4;
+    let rightX = 12, rightY = -boxerRed.radius + 4;
 
     if (boxerRed.isChargingSuper && !boxerRed.isPunching) {
-        // Obie ręce wysuwają się symetrycznie do przodu podczas ładowania
-        leftGloveY = -boxerRed.radius - 2;
-        rightGloveY = -boxerRed.radius - 2;
-    } else if (boxerRed.isPunching) {
-        // Jeśli bot aktywnie wyprowadza cios, bije tylko jedna ręka! Druga wraca na pozycję obronną (-boxerRed.radius + 4)
-        if (activePunchHand === 'left') {
-            let reach = boxerRed.punchType === 'super' ? 42 : leftReach;
-            leftGloveY = (-boxerRed.radius + 4) - (pVal * reach);
-            leftGloveX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 22) : (-12 + pVal * 12);
-        } else {
-            let reach = boxerRed.punchType === 'super' ? 42 : rightReach;
-            rightGloveY = (-boxerRed.radius + 4) - (pVal * reach);
-            rightGloveX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 22) : (12 - pVal * 12);
-        }
+        // STAN 1: Tylko ładowanie - obie z przodu
+        leftY = -boxerRed.radius - 2;
+        rightY = -boxerRed.radius - 2;
+    } 
+    else if (boxerRed.isPunching && activePunchHand === 'left') {
+        // STAN 2: Bije LEWA - prawa SZTYWNO wraca do obrony
+        let reach = boxerRed.punchType === 'super' ? 44 : 30;
+        leftY = (-boxerRed.radius + 4) - (pVal * reach);
+        leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : (-12 + pVal * 10);
+        rightY = -boxerRed.radius + 6; // Prawa chowa się głęboko za brodę
+    } 
+    else if (boxerRed.isPunching && activePunchHand === 'right') {
+        // STAN 3: Bije PRAWA - lewa SZTYWNO wraca do obrony
+        let reach = boxerRed.punchType === 'super' ? 44 : 30;
+        rightY = (-boxerRed.radius + 4) - (pVal * reach);
+        rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : (12 - pVal * 10);
+        leftY = -boxerRed.radius + 6; // Lewa chowa się głęboko za brodę
     }
 
     // Rysowanie lewej ręki
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, leftGloveY);
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftX, leftY);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
-    ctx.beginPath(); ctx.arc(leftGloveX, leftGloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    // Rysowanie prawej ręki (dodajemy lekkie pulsowanie ruchu tylko gdy bot odpoczywa)
-    const rightIdlePulse = (boxerRed.isPunching || boxerRed.isChargingSuper) ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, rightGloveY + rightIdlePulse);
+    // Rysowanie prawej ręki
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightX, rightY);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
-    ctx.beginPath(); ctx.arc(rightGloveX, rightGloveY + rightIdlePulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
