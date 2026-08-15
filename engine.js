@@ -45,8 +45,9 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
+    // Dynamiczny powrót na linię ringu (mnożnik 1.0)
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
-    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
+    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 112 : (boxerRed.punchType === 'super' ? 120 : 104)) : baseRadius;
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 1.0;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
@@ -65,12 +66,10 @@ export function updatePhysics() {
 
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
-            boxerRed.isComboExecuting = true; 
             shouldPunch = true;
         } 
         else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-            boxerRed.isComboExecuting = false; 
             shouldPunch = true;
 
             const comboRoll = Math.random();
