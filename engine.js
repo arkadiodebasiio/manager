@@ -28,11 +28,32 @@ export const boxerRed = {
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
-    isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
+    isBlockingNow: false, 
+    
+    // SYSTEM KONTUZJI (POZIOMY 0-3)
+    eyeLevel: 0, 
+    lipLevel: 0, 
+    liverLevel: 0, 
+    hp: 100,
     
     consecutiveSixes: 0,  
     isKnockedDown: false  
 };
+
+// Funkcja pomocnicza do losowania kontuzji przy czystym trafieniu
+function rollInjury() {
+    if (Math.random() < 0.15) { // 15% szansy na kontuzję przy każdym hicie
+        const injuryType = Math.floor(Math.random() * 3);
+        if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+        if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+        if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+        
+        // Jeśli wejdzie mocna kontuzja (poziom 3), niebieski zostaje na chwilę ogłuszony (stun)
+        if (boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3) {
+            boxerBlue.stunTimer = 90; // Kręcenie gwiazdek w głowie
+        }
+    }
+}
 
 export function updatePhysics() {
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
@@ -42,6 +63,7 @@ export function updatePhysics() {
 
     if (boxerBlue.isKnockedDown) return; 
 
+    // SPRAWDZENIE KONTUZJI: Jeśli którakolwiek ma poziom 3, niebieski zwalnia!
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -63,7 +85,6 @@ export function updatePhysics() {
         if (!boxerRed.isSuperPunchStriking) {
             boxerRed.superPunchTimer++;
 
-            // Blokowanie decyduje się na ułamek sekundy przed końcem ładowania
             if (boxerRed.superPunchTimer === 175) {
                 boxerBlue.isBlockingNow = Math.random() < 0.50;
             }
@@ -80,6 +101,9 @@ export function updatePhysics() {
                 if (boxerBlue.isBlockingNow) {
                     boxerBlue.consecutiveSixes = 0;
                 } else {
+                    // Trafienie super ciosem też może wywołać kontuzję!
+                    rollInjury();
+
                     if (Math.random() < 0.70) {
                         boxerBlue.isKnockedDown = true;
                         boxerRed.punchQueue = [];
@@ -90,14 +114,13 @@ export function updatePhysics() {
                 boxerRed.hasHit = true;
             }
 
-            // Blok wyłącza się DOPIERO gdy cios całkowicie wróci!
             if (boxerRed.superPunchProgress >= Math.PI) {
                 boxerRed.isSuperPunching = false;
                 boxerRed.isSuperPunchStriking = false;
                 boxerRed.superPunchTimer = 0;
                 boxerRed.superPunchProgress = 0;
                 boxerRed.hasHit = false;
-                boxerBlue.isBlockingNow = false; // Tu zdejmujemy blok
+                boxerBlue.isBlockingNow = false;
             }
         }
         return; 
@@ -167,6 +190,9 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
+                // TRAFIENIE CZYSTE: Losujemy naliczenie kontuzji!
+                rollInjury();
+
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveSixes += 1; 
                     if (boxerBlue.consecutiveSixes >= 2) {
