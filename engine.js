@@ -1,7 +1,6 @@
 export const canvas = document.getElementById('ringCanvas');
-export const ctx = canvas.getContext('2d');
+export const ctx = canvas ? canvas.getContext('2d') : null;
 
-canvas.width = canvas.height = 500;
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
@@ -13,7 +12,8 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    totalSixes: 0 
+    totalSixes: 0,
+    comboLeft: 0 // Licznik serii: 1 = podwójny cios, 2 = potrójny cios
 };
 
 export const boxerBlue = { 
@@ -54,12 +54,22 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+    // ROZPOCZĘCIE CIOSU: Standardowe lub natychmiastowe, jeśli trwa seria combo
+    const canPunchStandard = !boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03;
+    const canPunchCombo = !boxerRed.isPunching && boxerRed.comboLeft > 0;
+
+    if (canPunchStandard || canPunchCombo) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
         boxerRed.punchTimer = 0;
-        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+        
+        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
         boxerRed.hasHit = false; 
+
+        // Jeśli to był cios z serii combo, zmniejszamy licznik pozostałych uderzeń
+        if (canPunchCombo) {
+            boxerRed.comboLeft--;
+        }
 
         boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
 
@@ -139,6 +149,16 @@ export function updatePhysics() {
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
+
+            // Losowanie nowej serii combo tylko na samym końcu całej akcji (gdy licznik serii jest pusty)
+            if (boxerRed.comboLeft === 0) {
+                const rand = Math.random();
+                if (rand < 0.01) {
+                    boxerRed.comboLeft = 2; // Szansa 1% na potrójny cios (dorzuca 2 dodatkowe ataki)
+                } else if (rand < 0.11) { // 0.01 + 0.10 = 0.11
+                    boxerRed.comboLeft = 1; // Szansa 10% na podwójny cios (dorzuca 1 dodatkowy atak)
+                }
+            }
         }
     }
 
