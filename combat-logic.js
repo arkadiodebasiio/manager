@@ -72,7 +72,11 @@ export function processPunchExecution() {
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas'); if (!canvas || !boxerBlue || !boxerRed) return;
     const ctx = canvas.getContext('2d'), down = isBlueKnockedDown(); if (down) blackPulseTimer += 0.05;
-    const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3, angle = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x) + Math.PI;
+    const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3;
+    
+    // Zsynchronizowany, poprawny kąt patrzenia niebieskiego na czerwonego
+    const angleToRed = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x);
+    
     if (boxerBlue.isBlockingNow && !down && blockVisualTimer <= 0 && boxerRed.isPunching) blockVisualTimer = 20; 
     if (blockVisualTimer > 0) blockVisualTimer--;
     const isBlk = boxerBlue.isBlockingNow && blockVisualTimer > 0 && !down, isStun = boxerBlue.stunTimer > 0 && !down;
@@ -81,7 +85,10 @@ export function drawBlueBoxer() {
     if (isStun && col === boxerBlue.color) col = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
     if (down) col = '#abc4d6';
     ctx.beginPath(); ctx.ellipse(boxerBlue.x, boxerBlue.y + (down ? boxerBlue.radius * 1.5 : boxerBlue.radius), boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
-    ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); ctx.rotate(angle - Math.PI / 2); 
+    ctx.save(); 
+    ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); 
+    ctx.rotate(angleToRed + Math.PI / 2); // Korekta obrotu przodem do celu
+    
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); 
     ctx.lineWidth = down ? 4 : 2; ctx.strokeStyle = down ? `rgba(0,0,0,${0.3 + Math.abs(Math.sin(blackPulseTimer)) * 0.7})` : '#fff'; ctx.stroke();
     if (boxerBlue.eyeLevel > 0) { ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.eyeLevel >= 2 ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.eyeLevel >= 2 ? 'rgba(100,30,130,0.95)' : 'rgba(125,60,152,0.85)'; ctx.fill(); }
@@ -93,7 +100,7 @@ export function drawBlueBoxer() {
     ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
     ctx.beginPath(); ctx.arc(lX, gY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.arc(rX, gY + (isBlk || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
-    ctx.save(); ctx.rotate(-(angle - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore(); 
+    ctx.save(); ctx.rotate(-(angleToRed + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore(); 
     if (isStun) {
         starAngle += 0.15; ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y - 38);
         for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(Math.cos(starAngle + i * (Math.PI * 2 / 3)) * 16, Math.sin(starAngle + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2); ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); }
