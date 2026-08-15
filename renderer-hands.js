@@ -127,8 +127,8 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // --- POPRAWIONY WARUNEK: Świeci tylko gdy flaga combo w silniku jest aktywna! ---
-    if (boxerRed.isExecutingCombo) {
+    // --- CZYSZCZENIE LOGIKI: Świeci wyłącznie gdy w kolejce fizycznie tkwią ciosy combo! ---
+    if (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) {
         comboGlowTimer = 35; 
     }
 
