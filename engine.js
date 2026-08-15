@@ -24,12 +24,11 @@ export const boxerBlue = {
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
     
-    consecutiveSixes: 0,  
-    isKnockedDown: false  // Po prostu flaga leżenia
+    consecutiveSixes: 0,  // Wciąż używamy tej zmiennej jako licznika mocnych ciosów (5 i 6)
+    isKnockedDown: false  
 };
 
 export function updatePhysics() {
-    // Jeśli niebieski leży, zamrażamy całą fizykę i ruch ringu
     if (boxerBlue.isKnockedDown) return; 
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
@@ -99,23 +98,27 @@ export function updatePhysics() {
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
+            // RESET SERII: Jeśli niebieski zablokuje cios, pasie mocnych uderzeń mówimy "żegnamy"
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                if (boxerRed.punchRoll === 6) {
+                // WARUNEK NOKDAUNU: Cios o sile 5 LUB 6 wchodzi czysto
+                if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveSixes += 1; 
+                    
+                    // Drugie z rzędu potężne trafienie bez bloku kończy się nokdaunem!
                     if (boxerBlue.consecutiveSixes >= 2) {
-                        boxerBlue.isKnockedDown = true; // REAKCJA: Bach na deski!
+                        boxerBlue.isKnockedDown = true; 
                         boxerRed.isPunching = false;
                         boxerRed.punchQueue = [];
                     }
-                } else {
-                    boxerBlue.consecutiveSixes = 0;
                 }
+                // Słabsze ciosy czyste (1-4) NIE kasują licznika (niebieski zbiera kumulację ciosów na szczękę)
 
                 if (!boxerBlue.isKnockedDown) {
                     let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
                     if (boxerRed.punchRoll === 6) dmg *= 2.0;       
+                    else if (boxerRed.punchRoll === 5) dmg *= 1.3;
                     boxerBlue.hp = Math.max(0, boxerBlue.hp - dmg);
                 }
             }
@@ -124,13 +127,16 @@ export function updatePhysics() {
 
         if (pVal > 0.75 && !boxerBlue.isKnockedDown) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
-            if (boxerRed.punchRoll === 6) calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
+            if (boxerRed.punchRoll === 6 || boxerRed.punchRoll === 5) calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
             else calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
         }
 
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
+            if (boxerRed.punchQueue.length > 0 && !boxerBlue.isKnockedDown) {
+                boxerRed.punchCooldown = 10;
+            }
         }
     }
 
