@@ -16,39 +16,33 @@ export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
-    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    
-    // Stany Super Puncha
-    isSuperPunching: false,
-    superPunchTimer: 0
+    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100 
 };
 
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
-    consecutiveSixes: 0, isKnockedDown: false  
+    
+    consecutiveSixes: 0,  
+    isKnockedDown: false  
 };
 
 export function updatePhysics() {
-    // 1. GWARANTOWANE AKTUALIZOWANIE WSPÓŁRZĘDNYCH (Zapobiega czarnemu ekranowi)
-    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
-    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
+    // Jeśli niebieski leży, zamrażamy całą fizykę ruchu ringu
+    if (boxerBlue.isKnockedDown) {
+        boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
+        boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
+        return; 
+    }
 
-    boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
-    boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
-
-    // Jeśli niebieski leży, tylko aktualizujemy jego pozycję i przerywamy walkę
-    if (boxerBlue.isKnockedDown) return; 
-
-    // Timery i modyfikatory prędkości niebieskiego
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
     boxerRed.animTimer += 0.133;
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
 
-    if (!boxerRed.isPunching && !boxerRed.isSuperPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
+    if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
         boxerRed.punchTimer += 0.66; 
     }
     
@@ -58,58 +52,26 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // 2. LOGIKA AKTYWNEGO ŁADOWANIA SUPER PUNCH
-    if (boxerRed.isSuperPunching) {
-        boxerRed.superPunchTimer++;
-        
-        if (boxerRed.superPunchTimer === 90) {
-            boxerBlue.isBlockingNow = Math.random() < 0.50; 
-        }
+    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
-        if (boxerRed.superPunchTimer >= 180) {
-            if (boxerBlue.isBlockingNow) {
-                boxerBlue.consecutiveSixes = 0;
-            } else {
-                if (Math.random() < 0.70) {
-                    boxerBlue.isKnockedDown = true;
-                    boxerRed.punchQueue = [];
-                } else {
-                    boxerBlue.hp = Math.max(0, boxerBlue.hp - 40); 
-                }
-            }
-            boxerRed.isSuperPunching = false;
-            boxerRed.superPunchTimer = 0;
-            boxerBlue.isBlockingNow = false;
-        }
-    }
+    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
-    // 3. SKAKANIE I ORBITA CZERWONEGO (Działa tylko gdy nie ładuje Super Puncha)
-    if (!boxerRed.isSuperPunching) {
-        const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
-        let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
-        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
+    const currentSin = Math.sin(boxerRed.animTimer);
+    if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
+    boxerRed.wasAboveZero = (currentSin > 0);
 
-        const currentSin = Math.sin(boxerRed.animTimer);
-        if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
-        boxerRed.wasAboveZero = (currentSin > 0);
+    if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
 
-        if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
-    }
-
-    // 4. INICJACJA I LOSOWANIE CIOSÓW
-    if (!boxerRed.isPunching && !boxerRed.isSuperPunching) {
+    if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // Raz na ok. 2 minuty walki szansa na Super Punch
-        if (boxerRed.punchQueue.length === 0 && Math.random() < (1 / 4500)) { 
-            boxerRed.isSuperPunching = true;
-            boxerRed.superPunchTimer = 0;
-        } 
-        else if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
+        if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
-        } 
-        else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
@@ -124,6 +86,7 @@ export function updatePhysics() {
         }
 
         if (shouldPunch) {
+            // Nokdaun z przemęczenia, jeśli wróg jest ogłuszony, a wchodzi seria 3 lub 4 ciosów
             if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
                 boxerBlue.isKnockedDown = true; 
                 boxerRed.punchQueue = [];
@@ -140,8 +103,8 @@ export function updatePhysics() {
         }
     }
 
-    // 5. OBSŁUGA STANDARDOWEGO UDERZENIA
     let calculatedImpact = 0;
+
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.155 : 0.132);
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -185,4 +148,7 @@ export function updatePhysics() {
             }
         }
     }
+
+    boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
+    boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
 }
