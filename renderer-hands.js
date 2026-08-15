@@ -4,7 +4,7 @@ import { drawBlueBoxer as externalDrawBlue } from './renderer-blue.js';
 let activePunchHand = 'left', wasPunchingLastFrame = false;
 let comboGlowTimer = 0; 
 
-// Łącznik: pobiera rysowanie niebieskiego z nowego pliku, żeby gra widziała to w jednym miejscu
+// Proste przekierowanie, aby główna pętla gry nie zauważyła zmiany pliku
 export function drawBlueBoxer() {
     externalDrawBlue();
 }
