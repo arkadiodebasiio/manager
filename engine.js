@@ -45,10 +45,13 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
+    // ORYGINALNA FIZYKA DOSKOKU I ODSKOKU DLA RINGU 150
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
     
-    // Prawidłowe proporcje promienia ringu ustawione pod baseRadius (150)
+    // Obliczanie dystansu na podstawie bazy (150) minus oryginalne głębokości doskoku (38, 46, 30)
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? (baseRadius - 38) : (boxerRed.punchType === 'super' ? (baseRadius - 46) : (baseRadius - 30))) : baseRadius;
+    
+    // Mnożnik 1.0 eliminuje mulenie – odskok na pozycję startową dzieje się natychmiast
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 1.0;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
