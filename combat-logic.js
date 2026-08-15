@@ -13,7 +13,7 @@ export function handleSuperPunchTiming(boxerRed, boxerBlue) {
         boxerRed.superPunchTimer--;
         if (boxerRed.superPunchTimer <= 0) {
             boxerRed.isChargingSuper = true;
-            boxerRed.superChargeFrames = 180; // 3 sekundy ładowania przy 60 FPS
+            boxerRed.superChargeFrames = 180; 
             boxerRed.punchQueue = []; 
         }
     }
