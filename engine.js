@@ -12,7 +12,7 @@ export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
-    punchRoll: 1 // Wynik rzutu kością (1-6) określający siłę aktualnego ciosu
+    punchRoll: 1 
 };
 
 export const boxerBlue = { 
@@ -46,7 +46,6 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // Decyzja AI o wyprowadzeniu uderzenia
     if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
@@ -62,13 +61,13 @@ export function updatePhysics() {
 
         const pVal = Math.sin(boxerRed.punchProgress);
         
-        // MOMENT TRAFIENIA (Rękawica dociera do celu)
+        // MOMENT TRAFIENIA
         if (pVal > 0.75 && !boxerRed.hasHit) {
-            // Losowanie kością K6 (1-6) w ułamku sekundy zetknięcia z celem
+            // Losowanie kością dla określenia siły odrzucenia
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            // Szansa na ogłuszenie (STUN) działa wyłącznie przy najmocniejszym ciosie (rzut = 6)
-            if (boxerRed.punchRoll === 6 && boxerRed.punchType === 'hook') {
+            // OGŁUSZENIE: Przywrócone do starej zasady (tylko sierp, brak gardy, 20% szansy, niezależnie od kostki)
+            if (boxerRed.punchType === 'hook') {
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
                     boxerBlue.stunTimer = 300; 
                 }
@@ -76,21 +75,20 @@ export function updatePhysics() {
             boxerRed.hasHit = true;
         }
 
-        // Kalkulacja wyważonej siły odrzucenia na bazie zapisanego rzutu kością
+        // Kalkulacja odrzucenia na bazie rzutu kością
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             const currentHand = window.currentActivePunchHand || 'left';
             if (currentHand === strongHand) {
-                basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
+                boxerRed.punchType === 'hook' ? 60 : 50; 
             }
 
-            // Podział na 3 progi siły (1-2 słaby, 3-5 średni, 6 najmocniejszy)
             if (boxerRed.punchRoll === 6) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  // Silny cios (Zauważalnie najmocniejszy, ale stabilny)
+                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
             } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  // Średni cios
+                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
             } else {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.15; // Słaby cios (Lekkie muśnięcie)
+                calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
         }
 
