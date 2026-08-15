@@ -1,18 +1,12 @@
 // renderer-blue.js
-import { boxerRed, boxerBlue } from './boxer-stats.js';
-import { isBlueKnockedDown } from './engine.js';
+var blackPulseTimer = 0;
+var starAngle = 0;
 
-let blackPulseTimer = 0;
-let starAngle = 0;
-
-export function drawBlueBoxer(ctx) {
+function drawBlueBoxer(ctx) {
     if (!ctx || !boxerBlue || !boxerRed) return;
 
     const down = isBlueKnockedDown();
-
-    if (down) {
-        blackPulseTimer += 0.05;
-    }
+    if (down) blackPulseTimer += 0.05;
 
     const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
@@ -28,10 +22,7 @@ export function drawBlueBoxer(ctx) {
     if (isStunned && currentColor === boxerBlue.color) {
         currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
     }
-
-    if (down) {
-        currentColor = '#abc4d6';
-    }
+    if (down) currentColor = '#abc4d6';
 
     ctx.beginPath(); 
     const shadowYOffset = down ? boxerBlue.radius * 1.5 : boxerBlue.radius;
@@ -47,54 +38,35 @@ export function drawBlueBoxer(ctx) {
 
     if (down) {
         const pulseAlpha = 0.3 + Math.abs(Math.sin(blackPulseTimer)) * 0.7; 
-        ctx.lineWidth = 4; 
-        ctx.strokeStyle = `rgba(0, 0, 0, ${pulseAlpha})`;
+        ctx.lineWidth = 4; ctx.strokeStyle = `rgba(0, 0, 0, ${pulseAlpha})`;
     } else {
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#fff'; 
+        ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; 
     }
     ctx.stroke();
 
     if (boxerBlue.eyeLevel > 0) {
-        const isMax = boxerBlue.eyeLevel >= 2;
-        ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); 
-        ctx.fillStyle = isMax ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; 
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.eyeLevel >= 2 ? 6.5 : 5, 0, Math.PI * 2); 
+        ctx.fillStyle = boxerBlue.eyeLevel >= 2 ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
     }
-    
     if (boxerBlue.liverLevel > 0) {
-        const isMax = boxerBlue.liverLevel >= 2;
-        ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); 
-        ctx.fillStyle = isMax ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; 
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(10, 4, boxerBlue.liverLevel >= 2 ? 7.5 : 6, 0, Math.PI * 2); 
+        ctx.fillStyle = boxerBlue.liverLevel >= 2 ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; ctx.fill();
     }
-    
     if (boxerBlue.lipLevel > 0) {
-        const isMax = boxerBlue.lipLevel >= 2;
-        ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); 
-        ctx.fillStyle = isMax ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; 
-        ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, -14, boxerBlue.lipLevel >= 2 ? 7.5 : 6, boxerBlue.lipLevel >= 2 ? 4 : 3, 0, 0, Math.PI * 2); 
+        ctx.fillStyle = boxerBlue.lipLevel >= 2 ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; ctx.fill();
     }
 
-    let leftGloveX, rightGloveX, gloveY;
-
-    if (down) {
-        leftGloveX = -boxerBlue.radius - 14;  
-        rightGloveX = boxerBlue.radius + 14; 
-        gloveY = 0;                          
-    } else {
-        leftGloveX = isBlocking ? -3 : -12;
-        rightGloveX = isBlocking ? 3 : 12;
-        gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
-        if (isBlocking) gloveY = -boxerBlue.radius + 1;
-    }
+    let leftGloveX = isBlocking ? -3 : -12;
+    let rightGloveX = isBlocking ? 3 : 12;
+    let gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
+    if (isBlocking) gloveY = -boxerBlue.radius + 1;
+    if (down) { leftGloveX = -boxerBlue.radius - 14; rightGloveX = boxerBlue.radius + 14; gloveY = 0; }
 
     ctx.beginPath(); ctx.moveTo(isBlocking ? -3 : -12, 0); ctx.lineTo(leftGloveX, gloveY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(isBlocking ? 3 : 12, 0); ctx.lineTo(rightGloveX, gloveY + (isBlocking || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
 
-    ctx.lineWidth = down ? 3 : 2;
-    ctx.strokeStyle = down ? '#000' : '#fff';
-
+    ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
     ctx.beginPath(); ctx.arc(leftGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     
