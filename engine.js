@@ -37,9 +37,14 @@ export const boxerBlue = {
     consecutiveBigHits: 0 
 };
 
+export function isBlueKnockedDown() {
+    return boxerBlue.isKnockedDown || boxerBlue.pendingKnockdown;
+}
+
 export function updatePhysics() {
     // Trwała przerwa w meczu po zaliczeniu nokdaunu
-    if (boxerBlue.isKnockedDown) {
+    if (boxerBlue.isKnockedDown || boxerBlue.pendingKnockdown) {
+        boxerBlue.isKnockedDown = true;
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
         return; 
