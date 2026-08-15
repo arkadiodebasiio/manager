@@ -96,7 +96,9 @@ export function drawBlueBoxer() {
     ctx.beginPath(); ctx.arc(rightGloveX, gloveY + (isBlocking || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
+    ctx.fillText(boxerBlue.number, 0, 0); 
+    ctx.restore(); 
+    ctx.restore(); // Przywrócenie matrycy dla Blue gracza
 
     if (isStunned) {
         starAngle += 0.15; ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry - 38);
@@ -168,9 +170,11 @@ export function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore();
+    ctx.fillText(boxerRed.number, 0, 0); 
+    ctx.restore(); 
+    ctx.restore(); // Przywrócenie matrycy dla Red gracza
 }
 
 export function drawBlockShield() {
-    // Pusta funkcja zabezpieczająca przed błędem wywołania w renderer.js
+    // Pusta funkcja zapobiegająca błędowi braku definicji
 }
