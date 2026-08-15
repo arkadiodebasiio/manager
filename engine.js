@@ -5,12 +5,14 @@ if (canvas) { canvas.width = 500; canvas.height = 500; }
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
+// --- IDENTYCZNE LOSOWANIE CECH (50/50) ---
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
 const redDir = strongHand === 'left' ? 1 : -1;
 
 export const blueStrongHand = Math.random() < 0.5 ? 'left' : 'right';
 const blueDir = Math.random() < 0.5 ? 1 : -1;
 
+// Stała prędkość bazowa ringu dla OBU zawodników
 const BASE_SPEED = 0.023;
 
 export const boxerRed = {
@@ -23,8 +25,10 @@ export const boxerRed = {
 
 export const boxerBlue = { 
     angle: Math.PI, orbitSpeed: BASE_SPEED * blueDir, radius: 24, color: '#2980b9', number: '2', 
-    animTimer: 0, x: 250, y: 150, stunTimer: 0, blockCount: 0,
-    isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
+    animTimer: 0, 
+    // IDEALNA PŁYNNOŚĆ: Start dokładnie na lewej krawędzi okręgu, koniec z szarpaniem na starcie!
+    x: 150, y: 250, 
+    stunTimer: 0, blockCount: 0, isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
     isKnockedDown: false, pendingKnockdown: false, consecutiveBigHits: 0,
     isMovingThisJump: false, wasAboveZero: true
 };
@@ -38,6 +42,7 @@ export function updatePhysics() {
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
     
+    // Aktualizacja liczników animacji
     if (!boxerRed.isChargingSuper) boxerRed.animTimer += 0.133;
     boxerBlue.animTimer += 0.133 * blueSpeedModifier;
 
@@ -48,6 +53,7 @@ export function updatePhysics() {
     }
     if (boxerBlue.stunTimer > 0) { boxerBlue.stunTimer -= (1 * blueSpeedModifier); if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0; }
     
+    // Obsługa superciosu bota
     if (boxerRed.isChargingSuper) {
         boxerRed.superChargeTimer--; currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
         if (boxerRed.superChargeTimer <= 0) {
@@ -60,7 +66,7 @@ export function updatePhysics() {
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
     }
     
-    // Obliczanie skoku i ruchu dla OBU stron bez żadnych opóźnień graficznych
+    // --- IDEALNIE SYMETRYCZNA LOGIKA SKOKU I RUCHU ---
     const redSin = Math.sin(boxerRed.animTimer);
     if (redSin > 0 && !boxerRed.wasAboveZero && !boxerRed.isChargingSuper) boxerRed.isMovingThisJump = Math.random() < 0.30;
     boxerRed.wasAboveZero = (redSin > 0);
@@ -71,6 +77,7 @@ export function updatePhysics() {
     boxerBlue.wasAboveZero = (blueSin > 0);
     if (boxerBlue.isMovingThisJump && blueSin > 0 && boxerBlue.stunTimer <= 0) boxerBlue.angle -= boxerBlue.orbitSpeed * blueSin;
 
+    // Przypisanie współrzędnych ekranu
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
     
