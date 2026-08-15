@@ -19,6 +19,7 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
+    // RYSOWANIE KONTUZJI OKA
     if (boxerBlue.eyeLevel > 0) {
         const isMax = boxerBlue.eyeLevel >= 2;
         ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); 
@@ -26,6 +27,7 @@ export function drawBlueBoxer() {
         ctx.fill();
     }
     
+    // RYSOWANIE KONTUZJI WĄTROBY
     if (boxerBlue.liverLevel > 0) {
         const isMax = boxerBlue.liverLevel >= 2;
         ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); 
@@ -33,6 +35,7 @@ export function drawBlueBoxer() {
         ctx.fill();
     }
     
+    // RYSOWANIE KONTUZJI WARGI (NAPRAWIONE: Dodany brakujący parametr rotacji '0')
     if (boxerBlue.lipLevel > 0) {
         const isMax = boxerBlue.lipLevel >= 2;
         ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); 
