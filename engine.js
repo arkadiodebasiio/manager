@@ -33,13 +33,14 @@ export const boxerBlue = {
     liverLevel: 0,
     hp: 100,
     
-    // STAN NOKDAUNU
+    // ZSYNCHRONIZOWANY SYSTEM NOKDAUNU
     isKnockedDown: false,
+    pendingKnockdown: false, // Flaga oczekiwania na zakończenie ciosu
     consecutiveBigHits: 0 
 };
 
 export function updatePhysics() {
-    // Trwała przerwa w meczu po zakończeniu pełnej animacji nokdaunu
+    // Trwała przerwa w meczu po zaliczeniu nokdaunu
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
@@ -151,15 +152,21 @@ export function updatePhysics() {
                 boxerBlue.hp -= dmg;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
 
-                // Zliczanie potężnych ciosów (5 lub 6) do nokdaunu
+                // NATYCHMIASTOWE NALICZANIE TRAFIEŃ 5 LUB 6
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveBigHits += 1;
+                    
+                    // Jeśli to drugi taki cios z rzędu – zakleszczamy rundę i czyścimy plany czerwonego
+                    if (boxerBlue.consecutiveBigHits >= 2) {
+                        boxerBlue.pendingKnockdown = true;
+                        boxerRed.punchQueue = [];
+                    }
                 } else {
                     boxerBlue.consecutiveBigHits = 0; 
                 }
 
                 // System kontuzji co trzecią szóstkę
-                if (boxerRed.punchRoll === 6) {
+                if (boxerRed.punchRoll === 6 && !boxerBlue.pendingKnockdown) {
                     boxerRed.totalSixes += 1; 
 
                     if (boxerRed.totalSixes % 3 === 0) {
@@ -172,7 +179,7 @@ export function updatePhysics() {
                     }
                 }
 
-                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
+                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0 && !boxerBlue.pendingKnockdown) {
                     boxerBlue.stunTimer = 300; 
                 }
             }
@@ -209,15 +216,14 @@ export function updatePhysics() {
             }
         }
 
-        // Kończenie ciosu na pełnej granicy PI
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
             
-            // BEZPIECZNA REJESTRACJA NOKDAUNU: Sprawdzenie warunku następuje dopiero po powrocie rękawicy
-            if (boxerBlue.consecutiveBigHits >= 2) {
+            // JEŚLI TRWAŁO OCZEKIWANIE NA NOKDAUN – TERAZ OFICJALNIE ZATRZYMUJEMY MECZ
+            if (boxerBlue.pendingKnockdown) {
                 boxerBlue.isKnockedDown = true;
-                boxerRed.punchQueue = [];
+                boxerBlue.pendingKnockdown = false;
             } else if (boxerRed.punchQueue.length > 0) {
                 boxerRed.punchCooldown = 10;
             }
