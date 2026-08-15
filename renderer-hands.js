@@ -79,21 +79,20 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // Sprawdzamy czy czerwony wykonuje lub zaraz wykona serię combo
-    const isCurrentlyInCombo = boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+    // DETEKCJA COMBO: Jeśli w kolejce czekają ciosy LUB właśnie trwa powrót ręki między uderzeniami w serii
+    const isCurrentlyInCombo = (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
 
-    // RYSOWANIE CIENIA (Zielony neon jeśli trwa combo, szary standardowo)
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
-    // RYSOWANIE CIAŁA Z KOLOROWĄ OBWÓDKĄ COMBO
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    ctx.lineWidth = isCurrentlyInCombo ? 3.5 : 2; 
-    ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; // Zmiana obwódki na zieloną
+    // ZIELONY NEON: Pogrubiona, jaskrawa obwódka przy combo bezpośrednio z tablicy
+    ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
+    ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
     ctx.stroke();
 
     let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
