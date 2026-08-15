@@ -29,11 +29,7 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    if (boxerBlue.isKnockedDown) {
-        boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
-        boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
-        return; 
-    }
+    if (boxerBlue.isKnockedDown) return; 
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
@@ -76,21 +72,26 @@ export function updatePhysics() {
 
             const comboRoll = Math.random();
             if (comboRoll < 0.01) {
+                // Seria 4 ciosów (inicjujący + 3 w kolejce)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.06) {
+                // Seria 3 ciosów (inicjujący + 2 w kolejce)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.21) {
+                // Seria 2 ciosów
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
 
         if (shouldPunch) {
+            // NOWY WARUNEK: Jeśli niebieski jest ogłuszony, a czerwony odpala serię 3 lub 4 ciosów...
+            // (Sprawdzamy punchQueue.length przed rozpoczęciem ciosu: 2 oznacza serię 3 ciosów, 3 oznacza serię 4 ciosów)
             if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
-                boxerBlue.isKnockedDown = true; 
+                boxerBlue.isKnockedDown = true; // Natychmiastowy nokdaun ze zmęczenia/ogłuszenia!
                 boxerRed.punchQueue = [];
                 boxerRed.isPunching = false;
                 boxerBlue.stunTimer = 0;
-                return; 
+                return; // Przerywamy wyprowadzanie ciosu, wróg już leży
             }
 
             boxerRed.isPunching = true;
