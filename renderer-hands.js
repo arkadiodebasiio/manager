@@ -27,6 +27,7 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
+    // Bezpieczne sprawdzenie ran (injury podawane jako ciąg znaków)
     if (boxerBlue.injury === "eye" || boxerBlue.injury === "double_eye") {
         ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.injury === "double_eye" ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.injury === "double_eye" ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
     } else if (boxerBlue.injury === "liver" || boxerBlue.injury === "double_liver") {
@@ -107,5 +108,5 @@ export function drawBlockShield() {
         ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
         ctx.restore();
-    } // <--- Naprawione zamknięcie klamry
+    }
 }
