@@ -1,5 +1,5 @@
 // renderer-red.js
-import { boxerRed, boxerBlue, strongHand } from './engine.js';
+import { boxerRed, boxerBlue, strongHand } from './boxer-stats.js'; // ZMIANA TUTAJ
 
 let activePunchHand = 'left', wasPunchingLastFrame = false;
 let comboGlowTimer = 0; 
