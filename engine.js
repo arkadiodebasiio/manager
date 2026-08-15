@@ -2,6 +2,7 @@
 import { ringCenter, baseRadius, strongHand, boxerRed, boxerBlue } from './boxer-stats.js';
 import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './combat-logic.js';
 
+// Przywracamy oryginalny promień startowy dla idealnych proporcji
 let currentOrbitRadius = baseRadius; 
 
 // Funkcje pomocnicze dla plików graficznych (renderers)
@@ -46,10 +47,14 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // NAPRAWIONA MATEMATYKA ODSKOKU - Zmieniono mnożnik z 0.16 na 0.45 dla natychmiastowego zrywu w tył!
+    // NAPRAWIONE DYSTANSE I SZYBKOŚĆ ODSKOKU (Przywrócone oryginalne większe odległości walki)
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
-    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
-    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.45;
+    
+    // Zwiększone dystanse, żeby bił z większej odległości i dynamicznie odskakiwał na bazowy dystans
+    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 95 : (boxerRed.punchType === 'super' ? 110 : 85)) : baseRadius;
+    
+    // Większy mnożnik przejścia (0.35) zapewnia agresywny skok w przód i natychmiastowy odskok w tył
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.35;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
