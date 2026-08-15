@@ -150,39 +150,36 @@ export function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-// NAPRAWIONY WARUNEK: Tarcza pojawia się zawsze, gdy niebieski trzyma aktywny blok!
+// 🛡️ PANCERNA, GWARANTOWANA REAKCJA TARCZY
 export function drawBlockShield() {
     const canvas = document.getElementById('ringCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerRed || !boxerBlue) return;
 
+    // Tarcza rysuje się ZAWSZE, gdy niebieski ma aktywną flagę bloku
     if (boxerBlue.isBlockingNow) {
         ctx.save();
         
-        const shieldX = boxerBlue.rx;
-        const shieldY = boxerBlue.ry - 38;
+        // Dynamiczne wyliczanie kierunku – tarcza obraca się zawsze przodem do czerwonego boksera
+        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx);
         
-        // Płynna mikro-animacja falowania tarczy w czasie
-        const pulse = Math.sin(Date.now() * 0.01) * 2;
-        const shieldRadius = 16 + pulse;
+        ctx.translate(boxerBlue.rx, boxerBlue.ry);
+        ctx.rotate(angleToRed);
 
+        // Parametry neonowego wyglądu
         ctx.globalAlpha = 0.9;
         ctx.lineWidth = 4; 
         ctx.strokeStyle = '#fff'; 
         ctx.fillStyle = 'rgba(241, 196, 15, 0.35)'; 
-
         ctx.shadowBlur = 15;
         ctx.shadowColor = '#f1c40f'; 
 
+        // Łuk tarczy idealnie dopasowany przed niebieskim bokserem
         ctx.beginPath();
-        ctx.arc(shieldX, shieldY, shieldRadius, Math.PI, 0, false);
-        ctx.lineTo(shieldX + shieldRadius - 4, shieldY + 12);
-        ctx.lineTo(shieldX - shieldRadius + 4, shieldY + 12);
-        ctx.closePath();
-        
-        ctx.fill();
+        ctx.arc(0, 0, 36, -Math.PI / 3, Math.PI / 3, false);
         ctx.stroke();
+        
         ctx.restore();
     }
 }
