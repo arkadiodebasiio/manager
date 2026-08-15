@@ -12,7 +12,6 @@ export function getSuperChargeState() {
     return { isCharging: boxerRed.isChargingSuper, frames: boxerRed.superChargeFrames }; 
 }
 
-// TUTAJ BYŁ BŁĄD - DODANE SŁOWO "export" przed funkcją:
 export function updatePhysics() {
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
@@ -47,10 +46,10 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // ORYGINALNY DYNAMICZNY ODSKOK - Bezpieczna matematyka
+    // NAPRAWIONA MATEMATYKA ODSKOKU - Zmieniono mnożnik z 0.16 na 0.45 dla natychmiastowego zrywu w tył!
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
-    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.45;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
