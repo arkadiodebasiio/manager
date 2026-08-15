@@ -39,9 +39,9 @@ export function updatePhysics() {
     if (b.punchCooldown > 0) b.punchCooldown--; if (b.superCooldown > 0) b.superCooldown--; 
     if (b.stunTimer > 0) { b.stunTimer -= (1 * blueSpeedModifier); if (b.stunTimer < 0) b.stunTimer = 0; }
     
-    // NAPRAWIONY LICZNIK: Ładowanie gotowości do ciosu dla OBU stron co klatkę!
-    if (!r.isPunching && r.punchQueue.length === 0 && r.punchCooldown === 0 && !r.isChargingSuper) r.punchTimer += 0.66;
-    if (!b.isPunching && b.punchQueue.length === 0 && b.punchCooldown === 0 && !b.isChargingSuper) b.punchTimer += 0.66;
+    // PANCERNY I PROSTY LICZNIK: Ładowanie energii ciosu bez zbędnych i blokujących warunków!
+    if (!r.isPunching && !r.isChargingSuper) r.punchTimer += 0.66;
+    if (!b.isPunching && !b.isChargingSuper && b.stunTimer <= 0) b.punchTimer += 0.66;
 
     if (r.isChargingSuper) {
         r.superChargeTimer--; currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
