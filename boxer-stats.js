@@ -34,14 +34,14 @@ export const boxerRed = {
 };
 
 export const boxerBlue = { 
-    x: ringCenter, 
-    y: ringCenter, 
+    x: 250, 
+    y: 250, 
     radius: 24, 
     color: '#2980b9', 
     number: '2', 
     animTimer: 0, 
-    rx: ringCenter, 
-    ry: ringCenter, 
+    rx: 250, 
+    ry: 250, 
     stunTimer: 0,
     blockCount: 0,
     isBlockingNow: false, 
