@@ -10,7 +10,6 @@ export function drawBlueBoxer() {
     
     if (boxerRed.isPunching && !blockDecisionMade) {
         isBlocking = isStunned ? false : Math.random() < 0.50; 
-        // Ból wątroby jako lekka kontuzja wpływa na zmęczenie gardy
         if (isBlocking && (boxerBlue.lightInjury === "liver" || boxerBlue.lightInjury === "double_liver")) {
             boxerBlue.blockCount += 1;
             if (boxerBlue.blockCount >= (boxerBlue.lightInjury === "double_liver" ? 5 : 10)) { isBlocking = false; boxerBlue.blockCount = 0; }
@@ -28,7 +27,7 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Wizualizacja lekkich kontuzji
+    // Rysowanie lekkich kontuzji
     if (boxerBlue.lightInjury === "eye" || boxerBlue.lightInjury === "double_eye") {
         ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.lightInjury === "double_eye" ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.lightInjury === "double_eye" ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
     } else if (boxerBlue.lightInjury === "liver" || boxerBlue.lightInjury === "double_liver") {
