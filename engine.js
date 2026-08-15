@@ -17,8 +17,7 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    totalSixes: 0,
-    comboLeft: 0 // Licznik serii: ile dodatkowych ciosów ma natychmiast paść po obecnym
+    totalSixes: 0 
 };
 
 export const boxerBlue = { 
@@ -36,10 +35,7 @@ export function updatePhysics() {
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
     boxerRed.animTimer += 0.133;
-    
-    if (!boxerRed.isPunching) {
-        boxerRed.punchTimer += 0.66; 
-    }
+    boxerRed.punchTimer += 0.66; 
     
     boxerBlue.animTimer += 0.133 * blueSpeedModifier;
 
@@ -62,14 +58,12 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // Standardowa aktywacja ciosu (tylko gdy czerwony odpoczywa i minął czas)
     if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
         boxerRed.punchTimer = 0;
         boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
         boxerRed.hasHit = false; 
-        boxerRed.comboLeft = 0; // Reset serii na starcie
 
         boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
 
@@ -148,38 +142,9 @@ export function updatePhysics() {
             }
         }
 
-        // KONIEC ANIMAJI CIOSU
         if (boxerRed.punchProgress >= Math.PI) {
-            // Jeśli czerwony ma jeszcze ciosy do wykonania w serii combo
-            if (boxerRed.comboLeft > 0) {
-                boxerRed.comboLeft--;
-                boxerRed.punchProgress = 0; // Natychmiastowy twardy reset pozycji ręki
-                boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; // Losujemy typ kolejnego ciosu
-                boxerRed.hasHit = false;
-
-                // Wyliczenie bloku dla nowego ciosu w serii
-                boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-            } else {
-                // Jeśli seria się skończyła, sprawdzamy szansę na uruchomienie NOWEGO combo
-                const rand = Math.random();
-                if (rand < 0.05) {
-                    boxerRed.comboLeft = 2; // 5% na serię potrójną (2 dodatkowe ciosy)
-                    boxerRed.punchProgress = 0; // Odpalany od razu kolejny cios
-                    boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-                    boxerRed.hasHit = false;
-                    boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-                } else if (rand < 0.35) { // 0.05 + 0.30 = 0.35 -> 30% na serię podwójną
-                    boxerRed.comboLeft = 1; // 1 dodatkowy cios
-                    boxerRed.punchProgress = 0; // Odpalany od razu kolejny cios
-                    boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-                    boxerRed.hasHit = false;
-                    boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-                } else {
-                    // Zwykły pojedynczy cios, brak combo – wyłączamy walkę i czekamy na odpoczynek
-                    boxerRed.isPunching = false;
-                    boxerBlue.isBlockingNow = false; 
-                }
-            }
+            boxerRed.isPunching = false;
+            boxerBlue.isBlockingNow = false; 
         }
     }
 
