@@ -11,16 +11,15 @@ export function handleBotAttackDecisions(baseRadius) {
     } 
     else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         
-        // POPRAWKA: Jeśli minęło 1.5 minuty, dajemy aż 40% szans, żeby bot NA PEWNO zaczął ładować supercios
-        if (boxerRed.superCooldown === 0 && Math.random() < 0.40) {
+        // Gwarancja uruchomienia TYLKO gdy licznik cooldownu jest całkowicie wyzerowany
+        if (boxerRed.superCooldown <= 0 && Math.random() < 0.40) {
             boxerRed.isChargingSuper = true;
             boxerRed.superChargeTimer = 180; // 3 sekundy ładowania
-            boxerRed.superCooldown = 5400;   // Blokada ponownego użycia na kolejne 1,5 minuty
+            boxerRed.superCooldown = 5400;   // Twarda blokada na 1.5 minuty (5400 klatek)
             boxerRed.punchTimer = 0;
-            return; // Przerywamy, żeby nie wylosować zwykłego ciosu w tej samej klatce
+            return; 
         } 
-        
-        // Zwykły cios (wykona się tylko, gdy supercios ma cooldown)
+
         boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
         shouldPunch = true;
 
@@ -64,7 +63,7 @@ export function processPunchExecution() {
     if (!boxerRed.isPunching) return;
 
     if (boxerRed.punchType === 'straight') boxerRed.punchProgress += 0.155; 
-    else if (boxerRed.punchType === 'super') boxerRed.punchProgress += 0.080; // Cios leci ciut wolniej i potężniej
+    else if (boxerRed.punchType === 'super') boxerRed.punchProgress += 0.080; 
     else boxerRed.punchProgress += 0.132; 
 
     const pVal = Math.sin(boxerRed.punchProgress);
