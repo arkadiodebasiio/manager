@@ -12,6 +12,9 @@ let currentOrbitRadius = baseRadius;
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
 const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
 
+// Globalna zmienna timera poświaty, którą wyeksportujemy do renderera
+export let comboGlowTimer = 0;
+
 export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
@@ -43,6 +46,11 @@ export function updatePhysics() {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
         return; 
+    }
+
+    // Odliczanie timera poświaty w silniku gry (zmniejsza się naturalnie o 1 co klatkę)
+    if (comboGlowTimer > 0) {
+        comboGlowTimer--;
     }
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
@@ -100,6 +108,9 @@ export function updatePhysics() {
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 
+                // AKTYWACJA BŁYSKU: Świeci tylko raz na starcie serii!
+                comboGlowTimer = 35;
+
                 // NOWY WARUNEK: Zamroczenie + Seria Poczwórna = Automatyczny Nokdaun
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
@@ -110,6 +121,9 @@ export function updatePhysics() {
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 
+                // AKTYWACJA BŁYSKU
+                comboGlowTimer = 35;
+
                 // NOWY WARUNEK: Zamroczenie + Seria Potrójna = Automatyczny Nokdaun
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
@@ -118,6 +132,9 @@ export function updatePhysics() {
             } else if (comboRoll < 0.21) {
                 // 15% na serię PODWÓJNĄ (1 dodatkowy cios)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                
+                // AKTYWACJA BŁYSKU
+                comboGlowTimer = 35;
             }
         }
 
@@ -205,4 +222,27 @@ export function updatePhysics() {
             }
 
             if (boxerRed.punchRoll === 6) {
-                calculatedImpact =
+                calculatedImpact = basePower * 2.0;
+            } else {
+                calculatedImpact = basePower;
+            }
+        }
+
+        // DOMKNIĘCIE CIOSU: Kończymy uderzenie po osiągnięciu końca animacji
+        if (boxerRed.punchProgress >= Math.PI) {
+            boxerRed.isPunching = false;
+            boxerRed.punchProgress = 0;
+            boxerRed.punchCooldown = boxerRed.punchType === 'hook' ? 22 : 14;
+        }
+    }
+
+    if (boxerBlue.pendingKnockdown || boxerBlue.hp <= 0) {
+        boxerBlue.isKnockedDown = true;
+        boxerBlue.pendingKnockdown = false;
+        boxerBlue.hp = 0;
+    }
+}
+
+export function isBlueKnockedDown() {
+    return boxerBlue.isKnockedDown;
+}
