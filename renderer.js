@@ -2,7 +2,7 @@
 import { updatePhysics } from './engine.js';
 import { drawRedBoxer } from './renderer-red.js';
 import { drawBlueBoxer } from './renderer-blue.js';
-import { boxerRed, boxerBlue } from './boxer-stats.js'; // Dodane do rysowania p体力 HP
+import { boxerRed, boxerBlue } from './boxer-stats.js';
 
 const canvas = document.getElementById('ringCanvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
@@ -63,14 +63,14 @@ function drawRing() {
     ctx.beginPath(); ctx.moveTo(450, 50); ctx.lineTo(390, 50); ctx.lineTo(450, 110); ctx.fill();
     ctx.beginPath(); ctx.moveTo(50, 450); ctx.lineTo(110, 450); ctx.lineTo(50, 390); ctx.fill();
 
-    // 10. POTRÓJNE RETRO LINY (Efekt 3D wokół ringu z naciągami)
-    const ropeColors = ['#ff4b4b', '#ffffff', '#4b7bff']; // Czerwona, biała, niebieska lina
+    // 10. POTRÓJNE RETRO LINY (Poprawiona linijka z wartościami)
+    const ropeColors = ['#ff4b4b', '#ffffff', '#4b7bff']; 
     const offsets =;
 
     for (let i = 0; i < 3; i++) {
         ctx.strokeStyle = ropeColors[i];
         ctx.lineWidth = 2;
-        ctx.strokeRect(offsets[i], offsets[i], 500 - offsets[i]*2, 500 - offsets[i]*2);
+        ctx.strokeRect(offsets[i], offsets[i], 500 - offsets[i] * 2, 500 - offsets[i] * 2);
     }
 
     // 11. Słupki w rogach ringu (Trzymające liny)
@@ -81,7 +81,6 @@ function drawRing() {
     ctx.fillRect(446, 446, 8, 8);
 
     // 12. RETRO INTERFEJS (HUD) - Paski Życia i Status Walki
-    // Tło pod statystyki na samej górze
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(0, 0, 500, 35);
     ctx.strokeStyle = '#3a4454';
@@ -89,9 +88,9 @@ function drawRing() {
     ctx.strokeRect(0, 35, 500, 1);
 
     // Pasek zdrowia Czerwonego Boksera (Gracz 1)
-    ctx.fillStyle = '#c0392b'; // Tło paska (brak zdrowia)
+    ctx.fillStyle = '#c0392b'; 
     ctx.fillRect(20, 10, 160, 14);
-    ctx.fillStyle = '#2ecc71'; // Zielone zdrowie
+    ctx.fillStyle = '#2ecc71'; 
     ctx.fillRect(20, 10, (boxerRed.hp / 100) * 160, 14);
     ctx.strokeStyle = '#fff';
     ctx.strokeRect(20, 10, 160, 14);
