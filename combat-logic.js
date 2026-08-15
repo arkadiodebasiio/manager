@@ -1,31 +1,26 @@
-import { boxerRed, boxerBlue, strongHand, comboGlowTimer } from './engine.js';
-
-// Globalna zmienna poświaty dla rysowania ringu
-export let visualGlow = 0;
+import { boxerRed, boxerBlue, strongHand } from './engine.js';
 
 export function handleBotAttackDecisions(baseRadius) {
     if (boxerRed.isPunching || boxerRed.isChargingSuper) return;
 
     let shouldPunch = false;
 
-    // 1. Wyciąganie ciosów z zakolejkowanego combo
     if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
         boxerRed.punchType = boxerRed.punchQueue.shift(); 
         shouldPunch = true;
     } 
-    // 2. Losowanie nowego ataku, gdy bot odpoczął
     else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         
-        // NOWOŚĆ: 3% szans na rozpoczęcie 3-sekundowego ładowania Superciosu
-        if (Math.random() < 0.03) {
+        // Supercios odpala się losowo, ale maksymalnie RAZ na 1.5 minuty (5400 klatek)
+        if (boxerRed.superCooldown === 0 && Math.random() < 0.03) {
             boxerRed.isChargingSuper = true;
-            boxerRed.superChargeTimer = 180; // 3 sekundy ringu w tle (60 fps)
+            boxerRed.superChargeTimer = 180; // 3 sekundy ładowania
+            boxerRed.superCooldown = 5400;   // Blokada ponownego użycia na 90 sekund
             boxerRed.punchTimer = 0;
         } else {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
-            // Losowanie serii combo
             const comboRoll = Math.random();
             const isStunnedNow = boxerBlue.stunTimer > 0;
 
@@ -44,7 +39,6 @@ export function handleBotAttackDecisions(baseRadius) {
         }
     }
 
-    // Odpalenie fizycznej animacji ciosu i decyzja o bloku niebieskiego
     if (shouldPunch) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
@@ -67,32 +61,27 @@ export function handleBotAttackDecisions(baseRadius) {
 export function processPunchExecution() {
     if (!boxerRed.isPunching) return;
 
-    // Szybkość wysuwania rękawicy
     if (boxerRed.punchType === 'straight') boxerRed.punchProgress += 0.155; 
-    else if (boxerRed.punchType === 'super') boxerRed.punchProgress += 0.100; // Supercios leci majestatycznie
+    else if (boxerRed.punchType === 'super') boxerRed.punchProgress += 0.100; // Wolniejszy, potężny cios
     else boxerRed.punchProgress += 0.132; 
 
     const pVal = Math.sin(boxerRed.punchProgress);
     
-    // Moment uderzenia (szczyt animacji wysunięcia ręki)
     if (pVal > 0.75 && !boxerRed.hasHit) {
         boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
         if (boxerBlue.isBlockingNow) {
             boxerBlue.consecutiveBigHits = 0; 
-            // Jeśli niebieski zablokował Supercios: traci dużo HP, ale unika knockdownu
             if (boxerRed.punchType === 'super') {
-                boxerBlue.hp -= 15;
+                boxerBlue.hp -= 15; // Zablokowany supercios zabiera spore HP, ale nie wywraca
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0;
             }
         } else {
-            // --- TRAFIENIE CZYSZCZĄCE SUPERCIOSU = UDANY KNOCKDOWN ---
             if (boxerRed.punchType === 'super') {
                 boxerBlue.hp -= 30;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0;
-                boxerBlue.pendingKnockdown = true;
+                boxerBlue.pendingKnockdown = true; // Czyste trafienie = natychmiastowe K.O.!
             } else {
-                // Kalkulacja obrażeń standardowych ciosów
                 let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
                 if (boxerRed.punchRoll === 6) dmg *= 2.0;       
                 else if (boxerRed.punchRoll >= 3) dmg *= 1.3;   
@@ -103,7 +92,6 @@ export function processPunchExecution() {
                 boxerBlue.hp -= dmg;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
 
-                // Sprawdzanie serii potężnych uderzeń (5 lub 6 na kostce)
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveBigHits += 1;
                     if (boxerBlue.consecutiveBigHits >= 2) {
@@ -114,7 +102,6 @@ export function processPunchExecution() {
                     boxerBlue.consecutiveBigHits = 0; 
                 }
 
-                // Generowanie ran (Rozbita warga, oko, wątroba)
                 if (boxerRed.punchRoll === 6 && !boxerBlue.pendingKnockdown) {
                     boxerRed.totalSixes += 1; 
                     if (boxerRed.totalSixes % 3 === 0) {
@@ -134,7 +121,6 @@ export function processPunchExecution() {
         boxerRed.hasHit = true;
     }
 
-    // Koniec animacji uderzenia i powrót ręki do tułowia
     if (boxerRed.punchProgress >= Math.PI) {
         boxerRed.isPunching = false;
         boxerRed.punchProgress = 0;
@@ -142,14 +128,13 @@ export function processPunchExecution() {
     }
 }
 
-// Funkcja pomocnicza: pozwala graczowi przerwać ładowanie bota, jeśli go uderzy
+// Funkcja eksportowa do wywołania przez niebieskiego gracza, by przerwać atak bota
 export function interruptRedSuper() {
     if (boxerRed.isChargingSuper) {
         boxerRed.isChargingSuper = false;
         boxerRed.superChargeTimer = 0;
-        boxerRed.punchCooldown = 60; // Kara sekundowego zamrożenia dla bota
+        boxerRed.punchCooldown = 60; // Bot zastyga ukarany na sekundę
         return true;
     }
     return false;
 }
-
