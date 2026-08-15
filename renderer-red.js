@@ -19,8 +19,8 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // Pobieramy informację, czy bokser bije teraz serię ciosów (2-gi uderzenie lub dalsze)
-    const isRealComboActive = boxerRed.isComboExecuting === true;
+    // SAMODZIELNE WYKRYWANIE COMBO W GRAFICE: Świeci na zielono TYLKO podczas uderzenia, gdy w kolejce czekają kolejne ciosy
+    const isRealComboActive = boxerRed.isPunching && boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
 
     // Rysowanie cienia lub zielonej poświaty pod nogami
     ctx.beginPath(); 
@@ -35,7 +35,7 @@ export function drawRedBoxer(ctx) {
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    // Obwódka ciała: ładowanie super ciosu (żółta), combo (zielona) lub normalna walka (biała)
+    // Dobór koloru obwódki (Żółty przy super ciosie, Zielony przy trwającym combo, Biały przy normalnym ruchu/ciosie)
     if (superState.isCharging) {
         const pulseSuper = 0.4 + Math.abs(Math.sin(superState.frames * 0.15)) * 0.6;
         ctx.lineWidth = 5;
@@ -66,13 +66,11 @@ export function drawRedBoxer(ctx) {
 
     const superGloveColor = superState.isCharging ? '#f1c40f' : '#d35400';
 
-    // Rysowanie lewej rękawicy
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; 
     ctx.strokeStyle = isRealComboActive ? '#2ecc71' : '#fff';
     ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = superGloveColor; ctx.fill(); ctx.stroke();
 
-    // Rysowanie prawej rękawicy
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; 
