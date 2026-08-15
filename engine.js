@@ -30,10 +30,11 @@ export const boxerBlue = {
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, 
     
-    // SYSTEM KONTUZJI
+    // SYSTEM KONTUZJI I LICZNIK TRZECH "SZÓSTEK"
     eyeLevel: 0, 
     lipLevel: 0, 
     liverLevel: 0, 
+    sixHitCount: 0, // Licznik trafień o sile 6 (co 3 ciosy = kontuzja)
     hp: 100,
     
     consecutiveSixes: 0,  
@@ -132,7 +133,7 @@ export function updatePhysics() {
             return;
         }
 
-        if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
+        if (boxerRed.punchQueue.length > 0 && boxerRed.strongHand === 'left' ? boxerRed.punchCooldown === 0 : boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
         } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
@@ -176,12 +177,19 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                // WARUNEK: Dokładnie 20% na kontuzję tylko przy sierpach (hook)
-                if (boxerRed.punchType === 'hook' && Math.random() < 0.20) {
-                    const injuryType = Math.floor(Math.random() * 3);
-                    if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
-                    if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
-                    if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+                // MECHANIKA OPARTA O SIKX: Jeśli trafi cios o sile 6, zwiększamy licznik
+                if (boxerRed.punchRoll === 6) {
+                    boxerBlue.sixHitCount += 1;
+                    
+                    // Każde 3 trafienia za 6 punktów = gwarantowana kontuzja!
+                    if (boxerBlue.sixHitCount >= 3) {
+                        const injuryType = Math.floor(Math.random() * 3);
+                        if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+                        if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+                        if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+                        
+                        boxerBlue.sixHitCount = 0; // Reset licznika potężnych trafień
+                    }
                 }
 
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
