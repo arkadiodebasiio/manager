@@ -18,7 +18,7 @@ export const boxerRed = {
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
-    lightInjury: "none", blockCount: 0 // Wprowadzona zmienna lightInjury zgodnie z wytycznymi
+    lightInjury: "none", blockCount: 0 
 };
 
 export function updatePhysics() {
@@ -57,7 +57,6 @@ export function updatePhysics() {
     let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
-        // Zróżnicowanie prędkości: sierp jest o ok. 15% wolniejszy od prostego
         if (boxerRed.punchType === 'straight') {
             boxerRed.punchProgress += 0.155; 
         } else {
@@ -68,10 +67,8 @@ export function updatePhysics() {
         
         // MOMENT TRAFIENIA
         if (pVal > 0.75 && !boxerRed.hasHit) {
-            // Losowanie kością K6 dla siły odrzucenia dokładnie w punkcie styku z celem
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            // OGŁUSZENIE (Stun): Przywrócone do czystej 20% szansy przy sierpie, niezależnie od wyniku kostki
             if (boxerRed.punchType === 'hook') {
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
                     boxerBlue.stunTimer = 300; 
@@ -80,7 +77,7 @@ export function updatePhysics() {
             boxerRed.hasHit = true;
         }
 
-        // Wyważona kalkulacja siły odrzucenia oparta na rzucie kością
+        // Kalkulacja odrzucenia na bazie rzutu kością
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             const currentHand = window.currentActivePunchHand || 'left';
@@ -88,12 +85,26 @@ export function updatePhysics() {
                 basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
             }
 
+            // Podział bazowy na 3 progi siły
             if (boxerRed.punchRoll === 6) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  // Silny cios - najmocniejszy
+                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
             } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  // Średni cios
+                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
             } else {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.15; // Słaby cios
+                calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
+            }
+
+            // WPŁYW KONTUZJI OKA (Szansa na cios o sile 0)
+            if (boxerBlue.lightInjury === "eye") {
+                // 10% szans, że cios zostanie zredukowany do zera
+                if (Math.random() < 0.10) {
+                    calculatedImpact = 0;
+                }
+            } else if (boxerBlue.lightInjury === "double_eye") {
+                // 20% szans przy podwójnej kontuzji oka
+                if (Math.random() < 0.20) {
+                    calculatedImpact = 0;
+                }
             }
         }
 
