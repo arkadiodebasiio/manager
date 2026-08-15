@@ -92,14 +92,31 @@ export function updatePhysics() {
             shouldPunch = true;
 
             const comboRoll = Math.random();
+            const isStunnedNow = boxerBlue.stunTimer > 0;
+
             if (comboRoll < 0.01) {
+                // 1% na serię POCZWÓRNĄ (3 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                
+                // NOWY WARUNEK: Zamroczenie + Seria Poczwórna = Automatyczny Nokdaun
+                if (isStunnedNow) {
+                    boxerBlue.pendingKnockdown = true;
+                    boxerRed.punchQueue = []; 
+                }
             } else if (comboRoll < 0.06) {
+                // 5% na serię POTRÓJNĄ (2 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                
+                // NOWY WARUNEK: Zamroczenie + Seria Potrójna = Automatyczny Nokdaun
+                if (isStunnedNow) {
+                    boxerBlue.pendingKnockdown = true;
+                    boxerRed.punchQueue = []; 
+                }
             } else if (comboRoll < 0.21) {
+                // 15% na serię PODWÓJNĄ (1 dodatkowy cios)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
