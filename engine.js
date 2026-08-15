@@ -5,17 +5,18 @@ if (canvas) { canvas.width = 500; canvas.height = 500; }
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
-// --- PARAMETRY CZERWONEGO (Losowane niezależnie) ---
+// --- IDENTYCZNE LOSOWANIE CECH (50/50) ---
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
-const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
+const redDir = strongHand === 'left' ? 1 : -1;
 
-// --- PARAMETRY NIEBIESKIEGO (Losowane na identycznych prawach) ---
 export const blueStrongHand = Math.random() < 0.5 ? 'left' : 'right';
-// Niebieski losuje swój kierunek krążenia w 100% niezależnie od czerwonego (50% szans na lewo lub prawo)
-const blueChosenOrbitSpeed = Math.random() < 0.5 ? 0.023 : -0.023;
+const blueDir = Math.random() < 0.5 ? 1 : -1;
+
+// Stała prędkość bazowa ringu dla OBU zawodników
+const BASE_SPEED = 0.023;
 
 export const boxerRed = {
-    angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
+    angle: Math.PI / 2, orbitSpeed: BASE_SPEED * redDir, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
@@ -23,10 +24,11 @@ export const boxerRed = {
 };
 
 export const boxerBlue = { 
-    angle: Math.PI, orbitSpeed: blueChosenOrbitSpeed, radius: 24, color: '#2980b9', number: '2', 
+    angle: Math.PI, orbitSpeed: BASE_SPEED * blueDir, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
-    isKnockedDown: false, pendingKnockdown: false, consecutiveBigHits: 0 
+    isKnockedDown: false, pendingKnockdown: false, consecutiveBigHits: 0,
+    isMovingThisJump: false, wasAboveZero: true
 };
 
 export function updatePhysics() {
@@ -34,19 +36,22 @@ export function updatePhysics() {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2; boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2; return; 
     }
     if (!boxerRed.isPunching) boxerBlue.isBlockingNow = false;
+    
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
     
+    // Aktualizacja liczników animacji
     if (!boxerRed.isChargingSuper) boxerRed.animTimer += 0.133;
+    boxerBlue.animTimer += 0.133 * blueSpeedModifier;
+
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
     if (boxerRed.superCooldown > 0) boxerRed.superCooldown--; 
     if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0 && !boxerRed.isChargingSuper) {
         boxerRed.punchTimer += 0.66; 
     }
-    
-    boxerBlue.animTimer += 0.133 * blueSpeedModifier;
     if (boxerBlue.stunTimer > 0) { boxerBlue.stunTimer -= (1 * blueSpeedModifier); if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0; }
     
+    // Obsługa superciosu bota
     if (boxerRed.isChargingSuper) {
         boxerRed.superChargeTimer--; currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
         if (boxerRed.superChargeTimer <= 0) {
@@ -59,26 +64,24 @@ export function updatePhysics() {
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
     }
     
-    // --- LUSTRZANY RUCH OBU STRON ---
-    // Niebieski skacze i krąży na identycznych zasadach algorytmicznych co czerwony
-    if (!boxerBlue.isKnockedDown && boxerBlue.stunTimer <= 0) {
-        const blueSin = Math.sin(boxerBlue.animTimer);
-        if (blueSin > 0 && Math.random() < 0.30) {
-            boxerBlue.angle += boxerBlue.orbitSpeed * blueSin;
-        }
-    }
-    
+    // --- IDEALNIE SYMETRYCZNA LOGIKA SKOKU I RUCHU (BRAK KRZACZENIA) ---
+    const redSin = Math.sin(boxerRed.animTimer);
+    if (redSin > 0 && !boxerRed.wasAboveZero && !boxerRed.isChargingSuper) boxerRed.isMovingThisJump = Math.random() < 0.30;
+    boxerRed.wasAboveZero = (redSin > 0);
+    if (boxerRed.isMovingThisJump && redSin > 0 && !boxerRed.isChargingSuper) boxerRed.angle -= boxerRed.orbitSpeed * redSin;
+
+    const blueSin = Math.sin(boxerBlue.animTimer);
+    if (blueSin > 0 && !boxerBlue.wasAboveZero && boxerBlue.stunTimer <= 0) boxerBlue.isMovingThisJump = Math.random() < 0.30;
+    boxerBlue.wasAboveZero = (blueSin > 0);
+    if (boxerBlue.isMovingThisJump && blueSin > 0 && boxerBlue.stunTimer <= 0) boxerBlue.angle -= boxerBlue.orbitSpeed * blueSin;
+
+    // Przypisanie współrzędnych ekranu
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
     
     boxerBlue.rx = ringCenter + Math.cos(boxerBlue.angle) * baseRadius;
     boxerBlue.ry = ringCenter + Math.sin(boxerBlue.angle) * baseRadius;
 
-    const currentSin = Math.sin(boxerRed.animTimer);
-    if (currentSin > 0 && !boxerRed.wasAboveZero && !boxerRed.isChargingSuper) boxerRed.isMovingThisJump = Math.random() < 0.30;
-    boxerRed.wasAboveZero = (currentSin > 0);
-    if (boxerRed.isMovingThisJump && currentSin > 0 && !boxerRed.isChargingSuper) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
-    
     handleBotAttackDecisions(baseRadius); processPunchExecution();
     if (boxerBlue.pendingKnockdown) { boxerBlue.isKnockedDown = true; boxerBlue.pendingKnockdown = false; }
 }
