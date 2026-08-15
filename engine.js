@@ -94,17 +94,18 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW KONTUZJI OKA (Szansa na cios o sile 0)
+            // WPŁYW LEKKIEJ KONTUZJI WARGI (Stałe osłabienie siły ciosów o 10% lub 20%)
+            if (boxerBlue.lightInjury === "lip") {
+                calculatedImpact *= 0.90; // Spadek mocy o 10%
+            } else if (boxerBlue.lightInjury === "double_lip") {
+                calculatedImpact *= 0.80; // Spadek mocy o 20%
+            }
+
+            // WPŁYW LEKKIEJ KONTUZJI OKA (Szansa na cios o sile 0)
             if (boxerBlue.lightInjury === "eye") {
-                // 10% szans, że cios zostanie zredukowany do zera
-                if (Math.random() < 0.10) {
-                    calculatedImpact = 0;
-                }
+                if (Math.random() < 0.10) calculatedImpact = 0;
             } else if (boxerBlue.lightInjury === "double_eye") {
-                // 20% szans przy podwójnej kontuzji oka
-                if (Math.random() < 0.20) {
-                    calculatedImpact = 0;
-                }
+                if (Math.random() < 0.20) calculatedImpact = 0;
             }
         }
 
