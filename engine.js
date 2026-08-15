@@ -18,9 +18,11 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
     
-    // BEZPIECZNE NOWE ZMIENNE
+    // ZMIENNE SUPER PUNCH
     isSuperPunching: false,
-    superPunchTimer: 0
+    superPunchTimer: 0,
+    superPunchProgress: 0,    // Odpowiada za wysunięcie żółtej rękawicy do przodu
+    isSuperPunchStriking: false // Informuje rysownik, że żółta ręka właśnie leci w cel
 };
 
 export const boxerBlue = { 
@@ -33,7 +35,6 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // Te dwie linijki MUSZĄ się wykonywać ZAWSZE, żeby Canvas nie zgubił pozycji zawodników
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
     boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
@@ -57,35 +58,52 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // OBSŁUGA ŁADOWANIA SUPER CIOSU (3 SEKUNDY = 180 KLATEK)
+    // OBSŁUGA ŁADOWANIA I WYPROWADZENIA SUPER CIOSU
     if (boxerRed.isSuperPunching) {
-        boxerRed.superPunchTimer++;
+        if (!boxerRed.isSuperPunchStriking) {
+            boxerRed.superPunchTimer++;
 
-        // W połowie ładowania (po 1.5 sekundy) niebieski decyduje, czy podnosi gardę
-        if (boxerRed.superPunchTimer === 90) {
-            boxerBlue.isBlockingNow = Math.random() < 0.50;
-        }
-
-        // KONIEC ŁADOWANIA -> POTĘŻNE UDERZENIE
-        if (boxerRed.superPunchTimer >= 180) {
-            if (boxerBlue.isBlockingNow) {
-                // Cios zablokowany! Brak knockdownu, brak obrażeń
-                boxerBlue.consecutiveSixes = 0;
-            } else {
-                // Cios wszedł czysto! 70% knockdown, 30% wielkie obrażenia
-                if (Math.random() < 0.70) {
-                    boxerBlue.isKnockedDown = true;
-                    boxerRed.punchQueue = [];
-                } else {
-                    boxerBlue.hp = Math.max(0, boxerBlue.hp - 40); // Potężne bęcki
-                }
+            // POPRAWKA: Blok odpala się dopiero w ostatniej chwili przed uderzeniem (179 klatka)!
+            if (boxerRed.superPunchTimer === 179) {
+                boxerBlue.isBlockingNow = Math.random() < 0.50;
             }
-            // Pełny reset stanu super ciosu
-            boxerRed.isSuperPunching = false;
-            boxerRed.superPunchTimer = 0;
-            boxerBlue.isBlockingNow = false;
+
+            // Koniec 3 sekund odliczania -> ruszamy z fizycznym uderzeniem ręki
+            if (boxerRed.superPunchTimer >= 180) {
+                boxerRed.isSuperPunchStriking = true;
+                boxerRed.superPunchProgress = 0;
+            }
+        } else {
+            // Ruch wyciągniętej żółtej ręki (sinusoidalny skok w przód i powrót)
+            boxerRed.superPunchProgress += 0.20; // Szybkie uderzenie
+            const spVal = Math.sin(boxerRed.superPunchProgress);
+
+            // Moment maksymalnego wyciągnięcia ręki (szczyt ciosu)
+            if (spVal > 0.95 && !boxerRed.hasHit) {
+                if (boxerBlue.isBlockingNow) {
+                    boxerBlue.consecutiveSixes = 0;
+                } else {
+                    if (Math.random() < 0.70) {
+                        boxerBlue.isKnockedDown = true;
+                        boxerRed.punchQueue = [];
+                    } else {
+                        boxerBlue.hp = Math.max(0, boxerBlue.hp - 40);
+                    }
+                }
+                boxerRed.hasHit = true;
+            }
+
+            // Koniec animacji uderzenia -> pełne czyszczenie stanów
+            if (boxerRed.superPunchProgress >= Math.PI) {
+                boxerRed.isSuperPunching = false;
+                boxerRed.isSuperPunchStriking = false;
+                boxerRed.superPunchTimer = 0;
+                boxerRed.superPunchProgress = 0;
+                boxerRed.hasHit = false;
+                boxerBlue.isBlockingNow = false;
+            }
         }
-        return; // Zatrzymujemy standardowe akcje czerwonego na czas ładowania zamachu
+        return; 
     }
 
     const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
@@ -101,10 +119,10 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // SZANSA NA SUPER PUNCH: Losowo raz na ok. 2 minuty walki (szansa 1 do 5000 na klatkę)
         if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 5000)) {
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
+            boxerRed.isSuperPunchStriking = false;
             return;
         }
 
@@ -142,8 +160,6 @@ export function updatePhysics() {
         }
     }
 
-    let calculatedImpact = 0;
-
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.155 : 0.132);
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -171,12 +187,6 @@ export function updatePhysics() {
                 }
             }
             boxerRed.hasHit = true;
-        }
-
-        if (pVal > 0.75 && !boxerBlue.isKnockedDown) {
-            let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
-            if (boxerRed.punchRoll === 6 || boxerRed.punchRoll === 5) calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
-            else calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
         }
 
         if (boxerRed.punchProgress >= Math.PI) {
