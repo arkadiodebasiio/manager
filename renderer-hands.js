@@ -3,8 +3,6 @@ import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js'
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 let comboGlowTimer = 0; 
 let blackPulseTimer = 0; 
-
-// NOWA ZMIENNA: Licznik bezpieczeństwa dla grafiki bloku
 let blockVisualTimer = 0;
 
 export function drawBlueBoxer() {
@@ -24,20 +22,16 @@ export function drawBlueBoxer() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     const isStunned = boxerBlue.stunTimer > 0 && !down;
 
-    // --- POPRAWIONA LOGIKA BLOKU ---
-    // Jeśli silnik zgłasza blok, a licznik wizualny jest wyzerowany - aktywujemy go na max 20 klatek
     if (boxerBlue.isBlockingNow && !down) {
         if (blockVisualTimer <= 0 && boxerRed.isPunching) {
             blockVisualTimer = 20; 
         }
     }
 
-    // Odliczamy czas bloku w dół co klatkę animacji
     if (blockVisualTimer > 0) {
         blockVisualTimer--;
     }
 
-    // Niebieski realnie blokuje TYLKO wtedy, gdy silnik tego chce ORAZ nie minął czas bezpieczeństwa
     const isBlocking = boxerBlue.isBlockingNow && blockVisualTimer > 0 && !down;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
@@ -134,7 +128,8 @@ export function drawRedBoxer() {
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerRed || !boxerBlue) return;
 
-    const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
+    const bounceOffset = boxerRed.isChargingSuper ? 0 : Math.sin(boxerRed.animTimer) * 4;
+    const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
@@ -152,23 +147,39 @@ export function drawRedBoxer() {
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; 
 
+    let strokeColor = '#fff';
+    let lineWidth = 2;
+    let shadowColor = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)';
+
+    // Gwałtowne pulsowanie energii podczas 3 sekund ładowania ataku
+    if (boxerRed.isChargingSuper) {
+        lineWidth = 4 + Math.sin(Date.now() * 0.02) * 2; 
+        strokeColor = '#e67e22'; 
+        shadowColor = `rgba(230, 126, 34, ${0.4 + Math.abs(Math.sin(Date.now() * 0.01)) * 0.4})`;
+    } else if (isCurrentlyInCombo) {
+        lineWidth = 4;
+        strokeColor = '#2ecc71';
+    }
+
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
+    ctx.fillStyle = shadowColor; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
-    ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
+    ctx.lineWidth = lineWidth; 
+    ctx.strokeStyle = strokeColor; 
     ctx.stroke();
 
-    let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
+    let leftGloveX = -12, rightGloveX = 12;
+    let gloveY = -boxerRed.radius + (boxerRed.isChargingSuper ? -2 : 4);
     const leftReach = strongHand === 'left' ? 32 : 24, rightReach = strongHand === 'right' ? 32 : 24;
 
     if (boxerRed.isPunching) {
-        gloveY -= pVal * (activePunchHand === 'left' ? (boxerRed.punchType === 'straight' ? leftReach : leftReach - 4) : (boxerRed.punchType === 'straight' ? rightReach : rightReach - 4));
+        let reachModifier = boxerRed.punchType === 'super' ? 38 : (boxerRed.punchType === 'straight' ? leftReach : leftReach - 4);
+        gloveY -= pVal * reachModifier;
         if (boxerRed.punchType !== 'straight') {
             if (activePunchHand === 'left') leftGloveX = -12 + Math.sin(boxerRed.punchProgress) * 22;
             else rightGloveX = 12 - Math.sin(boxerRed.punchProgress) * 22;
@@ -178,14 +189,14 @@ export function drawRedBoxer() {
         }
     }
 
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
-    ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, gloveY);
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
+    ctx.beginPath(); ctx.arc(leftGloveX, gloveY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
-    ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    const rightPulse = (boxerRed.isPunching && activePunchHand === 'right') || boxerRed.isChargingSuper ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, gloveY + rightPulse);
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
+    ctx.beginPath(); ctx.arc(rightGloveX, gloveY + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); 
