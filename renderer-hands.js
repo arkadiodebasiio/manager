@@ -10,9 +10,10 @@ export function drawBlueBoxer() {
     
     if (boxerRed.isPunching && !blockDecisionMade) {
         isBlocking = isStunned ? false : Math.random() < 0.50; 
-        if (isBlocking && (boxerBlue.injury === "liver" || boxerBlue.injury === "double_liver" || boxerBlue.injury === "mixed")) {
+        // Ból wątroby jako lekka kontuzja wpływa na zmęczenie gardy
+        if (isBlocking && (boxerBlue.lightInjury === "liver" || boxerBlue.lightInjury === "double_liver")) {
             boxerBlue.blockCount += 1;
-            if (boxerBlue.blockCount >= (boxerBlue.injury === "double_liver" ? 5 : 10)) { isBlocking = false; boxerBlue.blockCount = 0; }
+            if (boxerBlue.blockCount >= (boxerBlue.lightInjury === "double_liver" ? 5 : 10)) { isBlocking = false; boxerBlue.blockCount = 0; }
         }
         blockDecisionMade = true; window.isCurrentlyBlockingGarda = isBlocking;
     }
@@ -27,16 +28,13 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Bezpieczne sprawdzenie ran (injury podawane jako ciąg znaków)
-    if (boxerBlue.injury === "eye" || boxerBlue.injury === "double_eye") {
-        ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.injury === "double_eye" ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.injury === "double_eye" ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
-    } else if (boxerBlue.injury === "liver" || boxerBlue.injury === "double_liver") {
-        ctx.beginPath(); ctx.arc(10, 4, boxerBlue.injury === "double_liver" ? 7.5 : 6, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.injury === "double_liver" ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; ctx.fill();
-    } else if (boxerBlue.injury === "lip" || boxerBlue.injury === "double_lip") {
-        ctx.beginPath(); ctx.ellipse(0, -14, boxerBlue.injury === "double_lip" ? 7.5 : 6, boxerBlue.injury === "double_lip" ? 4 : 3, 0, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.injury === "double_lip" ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; ctx.fill();
-    } else if (boxerBlue.injury === "mixed") {
-        ctx.beginPath(); ctx.arc(-7, -8, 5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(125, 60, 152, 0.85)'; ctx.fill();
-        ctx.beginPath(); ctx.arc(10, 4, 6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(39, 174, 96, 0.85)'; ctx.fill();
+    // Wizualizacja lekkich kontuzji
+    if (boxerBlue.lightInjury === "eye" || boxerBlue.lightInjury === "double_eye") {
+        ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.lightInjury === "double_eye" ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.lightInjury === "double_eye" ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
+    } else if (boxerBlue.lightInjury === "liver" || boxerBlue.lightInjury === "double_liver") {
+        ctx.beginPath(); ctx.arc(10, 4, boxerBlue.lightInjury === "double_liver" ? 7.5 : 6, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.lightInjury === "double_liver" ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; ctx.fill();
+    } else if (boxerBlue.lightInjury === "lip" || boxerBlue.lightInjury === "double_lip") {
+        ctx.beginPath(); ctx.ellipse(0, -14, boxerBlue.lightInjury === "double_lip" ? 7.5 : 6, boxerBlue.lightInjury === "double_lip" ? 4 : 3, 0, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.lightInjury === "double_lip" ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; ctx.fill();
     }
 
     let leftGloveX = isBlocking ? -3 : -12, rightGloveX = isBlocking ? 3 : 12, gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
