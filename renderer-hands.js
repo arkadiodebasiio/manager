@@ -127,7 +127,6 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // --- CZYSZCZENIE: Świeci tylko gdy w tablicy combo czekają kolejne uderzenia ---
     if (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) {
         comboGlowTimer = 35; 
     }
