@@ -4,6 +4,9 @@ let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 let comboGlowTimer = 0; 
 let blackPulseTimer = 0; 
 
+// NOWA ZMIENNA: Licznik bezpieczeństwa dla grafiki bloku
+let blockVisualTimer = 0;
+
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
     if (!canvas) return;
@@ -20,7 +23,22 @@ export function drawBlueBoxer() {
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     const isStunned = boxerBlue.stunTimer > 0 && !down;
-    const isBlocking = boxerBlue.isBlockingNow && !down;
+
+    // --- POPRAWIONA LOGIKA BLOKU ---
+    // Jeśli silnik zgłasza blok, a licznik wizualny jest wyzerowany - aktywujemy go na max 20 klatek
+    if (boxerBlue.isBlockingNow && !down) {
+        if (blockVisualTimer <= 0 && boxerRed.isPunching) {
+            blockVisualTimer = 20; 
+        }
+    }
+
+    // Odliczamy czas bloku w dół co klatkę animacji
+    if (blockVisualTimer > 0) {
+        blockVisualTimer--;
+    }
+
+    // Niebieski realnie blokuje TYLKO wtedy, gdy silnik tego chce ORAZ nie minął czas bezpieczeństwa
+    const isBlocking = boxerBlue.isBlockingNow && blockVisualTimer > 0 && !down;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
     if (boxerRed.isPunching && pVal > 0.85) { if (isBlocking) gloveColor = '#f1c40f'; else currentColor = '#ffbebe'; }
