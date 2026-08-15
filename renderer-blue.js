@@ -1,15 +1,13 @@
-import { boxerRed, boxerBlue, isBlueKnockedDown } from './engine.js';
+// renderer-blue.js
+import { boxerRed, boxerBlue } from './engine.js';
 
 let blackPulseTimer = 0;
 let starAngle = 0;
 
-export function drawBlueBoxer() {
-    const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+export function drawBlueBoxer(ctx) {
     if (!ctx || !boxerBlue || !boxerRed) return;
 
-    const down = isBlueKnockedDown();
+    const down = boxerBlue.isKnockedDown;
 
     if (down) {
         blackPulseTimer += 0.05;
@@ -22,8 +20,13 @@ export function drawBlueBoxer() {
     const isBlocking = boxerBlue.isBlockingNow && !down;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
-    if (boxerRed.isPunching && pVal > 0.85) { if (isBlocking) gloveColor = '#f1c40f'; else currentColor = '#ffbebe'; }
-    if (isStunned && currentColor === boxerBlue.color) currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
+    if (boxerRed.isPunching && pVal > 0.85) { 
+        if (isBlocking) gloveColor = '#f1c40f'; 
+        else currentColor = '#ffbebe'; 
+    }
+    if (isStunned && currentColor === boxerBlue.color) {
+        currentColor = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
+    }
 
     if (down) {
         currentColor = '#abc4d6';
