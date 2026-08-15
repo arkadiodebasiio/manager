@@ -20,7 +20,7 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
     isChargingSuper: false, superChargeTimer: 0,
-    superCooldown: 0 // Licznik blokady superciosu na 1,5 minuty
+    superCooldown: 0 // Zaczyna od 0, więc odpali się od razu na początku rundy do testów!
 };
 
 export const boxerBlue = { 
@@ -37,7 +37,6 @@ export function updatePhysics() {
         return; 
     }
 
-    // Twardy reset gardy niebieskiego, gdy bot nie bije
     if (!boxerRed.isPunching) {
         boxerBlue.isBlockingNow = false;
     }
@@ -50,7 +49,7 @@ export function updatePhysics() {
     }
     
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
-    if (boxerRed.superCooldown > 0) boxerRed.superCooldown--; // Odliczanie blokady superataku
+    if (boxerRed.superCooldown > 0) boxerRed.superCooldown--; 
 
     if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0 && !boxerRed.isChargingSuper) {
         boxerRed.punchTimer += 0.66; 
@@ -63,10 +62,9 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // ASYNCHRONICZNE ŁADOWANIE SUPERCIOSU (Ring działa płynnie w tle!)
     if (boxerRed.isChargingSuper) {
         boxerRed.superChargeTimer--;
-        currentOrbitRadius += (50 - currentOrbitRadius) * 0.05; // Przyciąganie bota do środka
+        currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; // Płynne, powolne podejście do walki w zwarciu
 
         if (boxerRed.superChargeTimer <= 0) {
             boxerRed.isChargingSuper = false;
@@ -93,7 +91,6 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // Wywołania zewnętrznych modułów walki
     handleBotAttackDecisions(baseRadius);
     processPunchExecution();
 
