@@ -44,6 +44,11 @@ export function updatePhysics() {
         return; 
     }
 
+    // --- NAJWAŻNIEJSZA POPRAWKA: Jeśli czerwony nie bije w tej klatce, niebieski OPUSZCZA GARDĘ ---
+    if (!boxerRed.isPunching) {
+        boxerBlue.isBlockingNow = false;
+    }
+
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -209,17 +214,7 @@ export function updatePhysics() {
             boxerRed.isPunching = false;
             boxerRed.punchProgress = 0;
             boxerRed.punchCooldown = boxerRed.punchType === 'hook' ? 22 : 14;
-
-            // --- NOWA POPRAWKA: Jeśli w kolejce bota nie ma ciosów, niebieski natychmiast OPUSZCZA GARDĘ ---
-            if (boxerRed.punchQueue.length === 0) {
-                boxerBlue.isBlockingNow = false;
-                boxerBlue.blockCount = 0; // Resetujemy licznik uderzeń w tarczę
-            }
         }
-    }
-    // Zabezpieczenie: Jeśli czerwony w ogóle nie atakuje i nie ma ciosów, niebieski nie ma prawa stać w bloku
-    else if (boxerRed.punchQueue.length === 0) {
-        boxerBlue.isBlockingNow = false;
     }
 
     if (boxerBlue.pendingKnockdown) {
