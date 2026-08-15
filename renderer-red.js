@@ -19,30 +19,33 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // ABSOLUTNA PEWNOŚĆ: Świeci na zielono TYLKO wtedy, gdy w kolejce autentycznie czekają ciosy do zadania
-    const isRealComboActive = boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
+    // Pobieramy informację, czy bokser bije teraz serię ciosów (2-gi uderzenie lub dalsze)
+    const isRealComboActive = boxerRed.isComboExecuting === true;
 
-    // Rysowanie cienia / poświaty pod bokserem
-    ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = isRealComboActive ? 'rgba(46, 204, 113, 0.5)' : 'rgba(0, 0, 0, 0.35)'; 
+    // Rysowanie cienia lub zielonej poświaty pod nogami
+    ctx.beginPath(); 
+    ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = isRealComboActive ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; 
     ctx.fill();
     
-    ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
+    ctx.save(); 
+    ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); 
+    ctx.rotate(angleToBlue - Math.PI / 2); 
 
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    // Dobór koloru obwódki (Super, Combo lub zwykły biały)
+    // Obwódka ciała: ładowanie super ciosu (żółta), combo (zielona) lub normalna walka (biała)
     if (superState.isCharging) {
         const pulseSuper = 0.4 + Math.abs(Math.sin(superState.frames * 0.15)) * 0.6;
         ctx.lineWidth = 5;
         ctx.strokeStyle = `rgba(241, 196, 15, ${pulseSuper})`;
     } else if (isRealComboActive) {
         ctx.lineWidth = 4; 
-        ctx.strokeStyle = '#2ecc71'; // Zielona obwódka TYLKO przy aktywnym combo
+        ctx.strokeStyle = '#2ecc71'; 
     } else {
         ctx.lineWidth = 2; 
-        ctx.strokeStyle = '#fff'; // Klasyczna biała obwódka dla pojedynczych ciosów
+        ctx.strokeStyle = '#fff'; 
     }
     ctx.stroke();
 
@@ -63,11 +66,13 @@ export function drawRedBoxer(ctx) {
 
     const superGloveColor = superState.isCharging ? '#f1c40f' : '#d35400';
 
+    // Rysowanie lewej rękawicy
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; 
     ctx.strokeStyle = isRealComboActive ? '#2ecc71' : '#fff';
     ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = superGloveColor; ctx.fill(); ctx.stroke();
 
+    // Rysowanie prawej rękawicy
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; 
