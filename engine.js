@@ -27,7 +27,6 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // NAPRAWA: Zmienny przyrost animacji niebieskiego boksera zależny od jego potrójnych kontuzji
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -77,7 +76,6 @@ export function updatePhysics() {
     let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
-        // Czerwone AI zawsze bije ze swoją pełną, zróżnicowaną prędkością bazową
         if (boxerRed.punchType === 'straight') {
             boxerRed.punchProgress += 0.155; 
         } else {
@@ -97,7 +95,6 @@ export function updatePhysics() {
                         const options = ["eye", "lip", "liver"];
                         const chosen = options[Math.floor(Math.random() * options.length)];
 
-                        // NAPRAWA: Prawidłowe drabinki losowania bez powtórzonych warunków
                         if (chosen === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
                         if (chosen === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
                         if (chosen === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
@@ -149,3 +146,4 @@ export function updatePhysics() {
     boxerBlue.rx = ringCenter + (dx / dist) * calculatedImpact;
     boxerBlue.ry = ringCenter + (dy / dist) * calculatedImpact;
 }
+
