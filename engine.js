@@ -17,7 +17,8 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    totalSixes: 0 
+    totalSixes: 0,
+    punchQueue: [] // Bezpieczna kolejka combo obsługująca serie ciosów
 };
 
 export const boxerBlue = { 
@@ -58,21 +59,53 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
-        boxerRed.isPunching = true;
-        boxerRed.punchProgress = 0;
-        boxerRed.punchTimer = 0;
-        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-        boxerRed.hasHit = false; 
+    // SYSTEM ODPALANIA CIOSU (Z uwzględnieniem serii poczwórnych, potrójnych i podwójnych)
+    if (!boxerRed.isPunching) {
+        let shouldPunch = false;
 
-        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+        // Jeśli w kolejce czeka cios z combo, pobieramy go (typ ciosu jest już wylosowany)
+        if (boxerRed.punchQueue.length > 0) {
+            boxerRed.punchType = boxerRed.punchQueue.shift(); 
+            shouldPunch = true;
+        } 
+        // Jeśli czerwony odpoczywa, losujemy rozpoczęcie nowej akcji
+        else if (boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+            shouldPunch = true;
 
-        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
-            boxerBlue.blockCount += 1;
-            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
-            if (boxerBlue.blockCount >= breakLimit) {
-                boxerBlue.isBlockingNow = false; 
-                boxerBlue.blockCount = 0;
+            // NOWE SZANSE NA COMBO: Losowanie liczby dodatkowych ciosów wrzucanych do kolejki
+            const comboRoll = Math.random();
+            if (comboRoll < 0.01) {
+                // 1% szans na serię POCZWÓRNĄ (dorzucamy 3 losowe ciosy)
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            } else if (comboRoll < 0.06) {
+                // 5% szans na serię POTRÓJNĄ (1% + 5% = 6% progu, dorzucamy 2 losowe ciosy)
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            } else if (comboRoll < 0.21) {
+                // 15% szans na serię PODWÓJNĄ (6% + 15% = 21% progu, dorzucamy 1 losowy cios)
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            }
+        }
+
+        if (shouldPunch) {
+            boxerRed.isPunching = true;
+            boxerRed.punchProgress = 0;
+            boxerRed.punchTimer = 0;
+            boxerRed.hasHit = false; 
+
+            // Losowy blok niebieskiego (wyliczany całkowicie na nowo dla KAŻDEGO ciosu w serii)
+            boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
+            if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+                boxerBlue.blockCount += 1;
+                const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+                if (boxerBlue.blockCount >= breakLimit) {
+                    boxerBlue.isBlockingNow = false; 
+                    boxerBlue.blockCount = 0;
+                }
             }
         }
     }
@@ -89,6 +122,7 @@ export function updatePhysics() {
         const pVal = Math.sin(boxerRed.punchProgress);
         
         if (pVal > 0.75 && !boxerRed.hasHit) {
+            // LOSOWANIE SIŁY CIOSU (1-6) – odpala się indywidualnie przy każdym uderzeniu w serii
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
             if (!boxerBlue.isBlockingNow) {
