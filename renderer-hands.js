@@ -8,7 +8,6 @@ export function drawBlueBoxer() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     const isStunned = boxerBlue.stunTimer > 0;
     
-    // Pobieramy stan gardy bezpośrednio z silnika
     const isBlocking = boxerBlue.isBlockingNow;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
@@ -20,18 +19,26 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // RYSOWANIE WIELU KONTUZJI JEDNOCZEŚNIE
+    // POPRAWKA: Niezależne rysowanie (każda kontuzja rysuje się osobno, nie blokują się nawzajem)
     if (boxerBlue.eyeLevel > 0) {
         const isMax = boxerBlue.eyeLevel >= 2;
-        ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = isMax ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); 
+        ctx.fillStyle = isMax ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; 
+        ctx.fill();
     }
+    
     if (boxerBlue.liverLevel > 0) {
         const isMax = boxerBlue.liverLevel >= 2;
-        ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); ctx.fillStyle = isMax ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); 
+        ctx.fillStyle = isMax ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; 
+        ctx.fill();
     }
+    
     if (boxerBlue.lipLevel > 0) {
         const isMax = boxerBlue.lipLevel >= 2;
-        ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); ctx.fillStyle = isMax ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); 
+        ctx.fillStyle = isMax ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; 
+        ctx.fill();
     }
 
     let leftGloveX = isBlocking ? -3 : -12, rightGloveX = isBlocking ? 3 : 12, gloveY = -boxerBlue.radius + (isStunned ? 12 : 4);
