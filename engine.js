@@ -13,8 +13,8 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
     totalSixes: 0,
-    comboLeft: 0,      // Ile ciosów zostało w serii combo
-    comboDelay: 0      // Odliczanie krótkiej przerwy między ciosami w serii, aby pięść wróciła!
+    comboLeft: 0,      
+    comboDelay: 0      
 };
 
 export const boxerBlue = { 
@@ -33,7 +33,6 @@ export function updatePhysics() {
 
     boxerRed.animTimer += 0.133;
     
-    // Zwiększamy licznik standardowego czasu między niezależnymi atakami
     if (!boxerRed.isPunching && boxerRed.comboLeft === 0) {
         boxerRed.punchTimer += 0.66; 
     }
@@ -59,18 +58,37 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // Obsługa krótkiej przerwy w serii combo (pięść musi na chwilę wrócić do tułowia)
-    if (boxerRed.comboLeft > 0 && !boxerRed.isPunching) {
-        boxerRed.comboDelay--;
-        if (boxerRed.comboDelay <= 0) {
-            // Odpalamy kolejny cios z serii combo!
+    // NAPRAWA BLOKADY SILNIKA: Rozdzielenie logiki i twardy reset timerów dla uniknięcia uciętego ringu
+    if (!boxerRed.isPunching) {
+        if (boxerRed.comboLeft > 0) {
+            boxerRed.comboDelay--;
+            if (boxerRed.comboDelay <= 0) {
+                boxerRed.isPunching = true;
+                boxerRed.punchProgress = 0;
+                boxerRed.punchTimer = 0; // Dodatkowy twardy reset timera
+                boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
+                boxerRed.hasHit = false; 
+                boxerRed.comboLeft--; 
+
+                boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+                if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+                    boxerBlue.blockCount += 1;
+                    const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+                    if (boxerBlue.blockCount >= breakLimit) {
+                        boxerBlue.isBlockingNow = false; 
+                        boxerBlue.blockCount = 0;
+                    }
+                }
+            }
+        } else if (boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
-            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
+            boxerRed.punchTimer = 0;
+            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             boxerRed.hasHit = false; 
-            boxerRed.comboLeft--; // Zmniejszamy kolejkę combo
 
             boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
             if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
                 boxerBlue.blockCount += 1;
                 const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
@@ -78,26 +96,6 @@ export function updatePhysics() {
                     boxerBlue.isBlockingNow = false; 
                     boxerBlue.blockCount = 0;
                 }
-            }
-        }
-    }
-
-    // Standardowe rozpoczęcie ataku (gdy nie ma aktywnej serii combo)
-    if (!boxerRed.isPunching && boxerRed.comboLeft === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
-        boxerRed.isPunching = true;
-        boxerRed.punchProgress = 0;
-        boxerRed.punchTimer = 0;
-        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-        boxerRed.hasHit = false; 
-
-        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-
-        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
-            boxerBlue.blockCount += 1;
-            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
-            if (boxerBlue.blockCount >= breakLimit) {
-                boxerBlue.isBlockingNow = false; 
-                boxerBlue.blockCount = 0;
             }
         }
     }
@@ -165,18 +163,16 @@ export function updatePhysics() {
             }
         }
 
-        // KONIEC ANIMACJI CIOSU
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
 
-            // Losowanie nowej serii combo aktywuje się tylko przy standardowym, pojedynczym ciosie bazowym
             if (boxerRed.comboLeft === 0) {
                 const rand = Math.random();
                 if (rand < 0.05) {
-                    boxerRed.comboLeft = 2;   // Szansa 5% na SERIĘ POTRÓJNĄ (2 dodatkowe ciosy)
-                    boxerRed.comboDelay = 8;  // 8 klatek przerwy na powrót gardy
-                } else if (rand < 0.35) {     // 0.05 + 0.30 = 0.35 -> Szansa 30% na SERIĘ PODWÓJNĄ (1 dodatkowy cios)
+                    boxerRed.comboLeft = 2;   
+                    boxerRed.comboDelay = 8;  
+                } else if (rand < 0.35) {     
                     boxerRed.comboLeft = 1;   
                     boxerRed.comboDelay = 8;  
                 }
