@@ -2,15 +2,7 @@
 import { ringCenter, baseRadius, strongHand, boxerRed, boxerBlue } from './boxer-stats.js';
 import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './combat-logic.js';
 
-export { strongHand, boxerRed, boxerBlue };
-
 let currentOrbitRadius = baseRadius; 
-
-// Funkcje pomocnicze dla rendererów, by zapobiec błędom "undefined"
-export function isBlueKnockedDown() { return boxerBlue.isKnockedDown; }
-export function getSuperChargeState() { 
-    return { isCharging: boxerRed.isChargingSuper, frames: boxerRed.superChargeFrames }; 
-}
 
 export function updatePhysics() {
     if (boxerBlue.isKnockedDown) {
