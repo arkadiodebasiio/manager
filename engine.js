@@ -42,6 +42,11 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
+    // 1. ZAWSZE, BEZWARUNKOWO ZMNIEJSZAMY COOLDOWN (Naprawa szalonych serii!)
+    if (boxerRed.punchCooldown > 0) {
+        boxerRed.punchCooldown--;
+    }
+
     const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'hook' ? 54 : 62) : baseRadius;
     
@@ -62,7 +67,6 @@ export function updatePhysics() {
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
     boxerRed.animTimer += 0.133;
-    if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
 
     if (!boxerRed.isPunching && !boxerRed.isSuperPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
         boxerRed.punchTimer += 0.66; 
@@ -126,18 +130,18 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 4000)) {
+        // Szansa na Super Punch – bez przerywania pętli odnowień ciosów!
+        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && boxerRed.punchCooldown === 0 && Math.random() < (1 / 4000)) {
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
             boxerRed.isSuperPunchStriking = false;
             return;
         }
 
-        // NAPRAWIONY WARUNEK: Czyste sprawdzenie czasu odnowienia ciosu
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
-        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && boxerRed.punchCooldown === 0 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
@@ -178,7 +182,7 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                // SIKX MECHANIKA: Liczenie szóstek do kontuzji (co 3 udane trafienia za "6")
+                // KONTUZJA PO KAŻDYM 3 CIOSIE O SILE 6
                 if (boxerRed.punchRoll === 6) {
                     boxerBlue.sixHitCount += 1;
                     
@@ -214,8 +218,8 @@ export function updatePhysics() {
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
-            if (boxerRed.punchQueue.length > 0 && !boxerBlue.isKnockedDown) {
-                boxerRed.punchCooldown = 10;
+            if (!boxerBlue.isKnockedDown) {
+                boxerRed.punchCooldown = 15; // Sztywny, wyraźny odpoczynek po każdym ciosie
             }
         }
     }
