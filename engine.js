@@ -4,6 +4,7 @@ import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './
 
 let currentOrbitRadius = baseRadius; 
 
+// Funkcje pomocnicze dla plików graficznych (renderers)
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
 }
@@ -11,6 +12,7 @@ export function getSuperChargeState() {
     return { isCharging: boxerRed.isChargingSuper, frames: boxerRed.superChargeFrames }; 
 }
 
+// TUTAJ BYŁ BŁĄD - DODANE SŁOWO "export" przed funkcją:
 export function updatePhysics() {
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
