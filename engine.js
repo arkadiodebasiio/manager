@@ -44,7 +44,6 @@ export function updatePhysics() {
         return; 
     }
 
-    // --- NAJWAŻNIEJSZA POPRAWKA: Jeśli czerwony nie bije w tej klatce, niebieski OPUSZCZA GARDĘ ---
     if (!boxerRed.isPunching) {
         boxerBlue.isBlockingNow = false;
     }
