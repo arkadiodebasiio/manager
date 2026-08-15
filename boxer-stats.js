@@ -1,7 +1,7 @@
 // boxer-stats.js
 
 export const ringCenter = 250;
-export const baseRadius = 100;
+export const baseRadius = 150; // PRZYWRÓCONE: Oryginalny, większy rozmiar ringu
 
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
 export const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
@@ -21,7 +21,7 @@ export const boxerRed = {
     wasAboveZero: true, 
     hasHit: false, 
     x: 250, 
-    y: 350,
+    y: 400, // DOSTOSOWANE: Startowa pozycja na linii ringu o promieniu 150
     punchRoll: 1,
     totalSixes: 0,
     punchQueue: [],    
