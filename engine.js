@@ -30,7 +30,7 @@ export const boxerBlue = {
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, 
     
-    // SYSTEM KONTUZJI (POZIOMY 0-3)
+    // SYSTEM KONTUZJI
     eyeLevel: 0, 
     lipLevel: 0, 
     liverLevel: 0, 
@@ -40,22 +40,30 @@ export const boxerBlue = {
     isKnockedDown: false  
 };
 
-// Funkcja pomocnicza do losowania kontuzji przy czystym trafieniu
 function rollInjury() {
-    if (Math.random() < 0.15) { // 15% szansy na kontuzję przy każdym hicie
+    if (Math.random() < 0.15) { 
         const injuryType = Math.floor(Math.random() * 3);
         if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
         if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
         if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
         
-        // Jeśli wejdzie mocna kontuzja (poziom 3), niebieski zostaje na chwilę ogłuszony (stun)
         if (boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3) {
-            boxerBlue.stunTimer = 90; // Kręcenie gwiazdek w głowie
+            boxerBlue.stunTimer = 90; 
         }
     }
 }
 
 export function updatePhysics() {
+    // Dynamiczne ustalanie dystansu do celu
+    let targetRadius = baseRadius;
+    if (boxerRed.isSuperPunching) {
+        targetRadius = 50; // Bardzo bliski doskok przy superciosie!
+    } else {
+        const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+        targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
+    }
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
+
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
     boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
     boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
@@ -63,7 +71,6 @@ export function updatePhysics() {
 
     if (boxerBlue.isKnockedDown) return; 
 
-    // SPRAWDZENIE KONTUZJI: Jeśli którakolwiek ma poziom 3, niebieski zwalnia!
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -80,12 +87,13 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // FIZYKA SUPER CIOSU
+    // LOGIKA SUPER CIOSU
     if (boxerRed.isSuperPunching) {
         if (!boxerRed.isSuperPunchStriking) {
             boxerRed.superPunchTimer++;
 
-            if (boxerRed.superPunchTimer === 175) {
+            // Decyzja o bloku zapada tuż przed uderzeniem
+            if (boxerRed.superPunchTimer === 170) {
                 boxerBlue.isBlockingNow = Math.random() < 0.50;
             }
 
@@ -97,13 +105,12 @@ export function updatePhysics() {
             boxerRed.superPunchProgress += 0.18; 
             const spVal = Math.sin(boxerRed.superPunchProgress);
 
+            // ZAKOŃCZENIE CIOSU (DETEKCJA TRAFIENIA)
             if (spVal > 0.75 && !boxerRed.hasHit) {
                 if (boxerBlue.isBlockingNow) {
                     boxerBlue.consecutiveSixes = 0;
                 } else {
-                    // Trafienie super ciosem też może wywołać kontuzję!
                     rollInjury();
-
                     if (Math.random() < 0.70) {
                         boxerBlue.isKnockedDown = true;
                         boxerRed.punchQueue = [];
@@ -125,10 +132,6 @@ export function updatePhysics() {
         }
         return; 
     }
-
-    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
-    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
-    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
     const currentSin = Math.sin(boxerRed.animTimer);
     if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
@@ -190,7 +193,6 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                // TRAFIENIE CZYSTE: Losujemy naliczenie kontuzji!
                 rollInjury();
 
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
