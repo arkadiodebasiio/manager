@@ -26,17 +26,23 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
+    // WYMUSZENIE ROZMIARU: Zapobiega ucinaniu i zmniejszaniu ringu w Second Life
+    if (canvas && (canvas.width !== 500 || canvas.height !== 500)) {
+        canvas.width = 500;
+        canvas.height = 500;
+    }
+
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     
+    boxerBlue.animTimer += 0.133 * blueSpeedModifier;
+
     if (boxerBlue.stunTimer > 0) {
-        boxerBlue.animTimer += 0.35 * blueSpeedModifier; 
-        boxerBlue.stunTimer--; 
-    } else {
-        boxerBlue.animTimer += 0.133 * blueSpeedModifier;
+        boxerBlue.stunTimer -= (1 * blueSpeedModifier); 
+        if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
     let targetRadius = boxerRed.isPunching ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
@@ -141,7 +147,6 @@ export function updatePhysics() {
         }
     }
 
-    // NAPRAWIONA FIZYKA: Płynne odpychanie i amortyzacja uderzeń zamiast teleportacji
     const dx = ringCenter - boxerRed.x;
     const dy = ringCenter - boxerRed.y;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
