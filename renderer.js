@@ -63,15 +63,20 @@ function drawRing() {
     ctx.beginPath(); ctx.moveTo(450, 50); ctx.lineTo(390, 50); ctx.lineTo(450, 110); ctx.fill();
     ctx.beginPath(); ctx.moveTo(50, 450); ctx.lineTo(110, 450); ctx.lineTo(50, 390); ctx.fill();
 
-    // 10. POTRÓJNE RETRO LINY (Naprawione liczby w tablicy)
-    const ropeColors = ['#ff4b4b', '#ffffff', '#4b7bff']; 
-    const offsets =;
-
-    for (let i = 0; i < 3; i++) {
-        ctx.strokeStyle = ropeColors[i];
-        ctx.lineWidth = 2;
-        ctx.strokeRect(offsets[i], offsets[i], 500 - offsets[i] * 2, 500 - offsets[i] * 2);
-    }
+    // 10. POTRÓJNE RETRO LINY (Zapisane ręcznie bez użycia awaryjnej pętli i tablic)
+    ctx.lineWidth = 2;
+    
+    // Lina zewnętrzna czerwona
+    ctx.strokeStyle = '#ff4b4b';
+    ctx.strokeRect(50, 50, 400, 400);
+    
+    // Lina środkowa biała
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeRect(56, 56, 388, 388);
+    
+    // Lina wewnętrzna niebieska
+    ctx.strokeStyle = '#4b7bff';
+    ctx.strokeRect(62, 62, 376, 376);
 
     // 11. Słupki w rogach ringu (Trzymające liny)
     ctx.fillStyle = '#d1d8e0';
