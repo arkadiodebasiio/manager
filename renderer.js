@@ -16,7 +16,7 @@ function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(0, -pVal * 3, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill();
     ctx.lineWidth = boxerRed.isChargingSuper ? 5 : 2; ctx.strokeStyle = boxerRed.isChargingSuper ? `rgba(241, 196, 15, ${0.4 + Math.abs(Math.sin(boxerRed.superChargeFrames * 0.15)) * 0.6})` : '#fff'; ctx.stroke();
 
-    // RĘCE CZERWONEGO
+    // RĘCE CZERWONEGO (Ramiona mają mieć kolor CZERWONY)
     let reach = strongHand === (redActivePunchHand === 'left' ? 'left' : 'right') ? 32 : 24; if (boxerRed.punchType === 'super') reach = 45;
     let lG = -12, rG = 12, gY = -boxerRed.radius + 4;
     if (boxerRed.isPunching) {
@@ -26,12 +26,12 @@ function drawRedBoxer() {
     }
 
     const gloveColor = boxerRed.isChargingSuper ? '#f1c40f' : '#d35400';
-    // Lewa ręka
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lG, redActivePunchHand === 'left' ? gY : -boxerRed.radius + 4); ctx.strokeStyle = boxerRed.color; ctx.lineWidth = 5; ctx.stroke();
+    // Lewe ramię czerwonego
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lG, redActivePunchHand === 'left' ? gY : -boxerRed.radius + 4); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(lG, redActivePunchHand === 'left' ? gY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-    // Prawa ręka
+    // Prawe ramię czerwonego
     const rPulse = redActivePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rG, redActivePunchHand === 'right' ? gY : -boxerRed.radius + 4 + rPulse); ctx.strokeStyle = boxerRed.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rG, redActivePunchHand === 'right' ? gY : -boxerRed.radius + 4 + rPulse); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); ctx.arc(rG, redActivePunchHand === 'right' ? gY : -boxerRed.radius + 4 + rPulse, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(Math.PI); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerRed.number, 0, pVal * 3); ctx.restore(); ctx.restore();
@@ -52,15 +52,17 @@ function drawBlueBoxer() {
     if (boxerBlue.liverLevel > 0) { ctx.beginPath(); ctx.arc(10, 4, boxerBlue.liverLevel >= 2 ? 7.5 : 6, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.liverLevel >= 2 ? '#14783c' : '#27ae60'; ctx.fill(); }
     if (boxerBlue.lipLevel > 0) { ctx.beginPath(); ctx.ellipse(0, -14, boxerBlue.lipLevel >= 2 ? 7.5 : 6, boxerBlue.lipLevel >= 2 ? 4 : 3, 0, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.lipLevel >= 2 ? '#961e1e' : '#c0392b'; ctx.fill(); }
 
-    // RĘCE NIEBIESKIEGO
+    // RĘCE NIEBIESKIEGO (Ramiona mają mieć kolor NIEBIESKI)
     let gY = isBlock ? -boxerBlue.radius + 1 : -boxerBlue.radius + (isStun ? 12 : 4); if (down) gY = 0;
     let bLG = isBlock ? -3 : (down ? -boxerBlue.radius - 14 : -12);
     let bRG = isBlock ? 3 : (down ? boxerBlue.radius + 14 : 12);
     
-    ctx.beginPath(); ctx.moveTo(isBlock ? -3 : -12, 0); ctx.lineTo(bLG, gY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    // Lewe ramię niebieskiego
+    ctx.beginPath(); ctx.moveTo(isBlock ? -3 : -12, 0); ctx.lineTo(bLG, gY); ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = down ? '#000' : '#fff'; ctx.beginPath(); ctx.arc(bLG, gY, 7, 0, Math.PI * 2); ctx.fillStyle = (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.85 && isBlock) ? '#f1c40f' : '#d35400'; ctx.fill(); ctx.stroke();
     
-    ctx.beginPath(); ctx.moveTo(isBlock ? 3 : 12, 0); ctx.lineTo(bRG, gY + (isBlock || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    // Prawe ramię niebieskiego
+    ctx.beginPath(); ctx.moveTo(isBlock ? 3 : 12, 0); ctx.lineTo(bRG, gY + (isBlock || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); ctx.arc(bRG, gY + (isBlock || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.85 && isBlock) ? '#f1c40f' : '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(Math.PI); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
