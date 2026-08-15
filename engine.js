@@ -16,16 +16,18 @@ export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
-    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100 
+    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
+    
+    // NOWE ZMIENNE DLA SUPER PUNCH
+    isSuperPunching: false,
+    superPunchTimer: 0
 };
 
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
     isBlockingNow: false, eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
-    
-    consecutiveSixes: 0,  
-    isKnockedDown: false  
+    consecutiveSixes: 0, isKnockedDown: false  
 };
 
 export function updatePhysics() {
@@ -37,7 +39,7 @@ export function updatePhysics() {
     boxerRed.animTimer += 0.133;
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
 
-    if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
+    if (!boxerRed.isPunching && !boxerRed.isSuperPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
         boxerRed.punchTimer += 0.66; 
     }
     
@@ -45,6 +47,37 @@ export function updatePhysics() {
     if (boxerBlue.stunTimer > 0) {
         boxerBlue.stunTimer -= blueSpeedModifier; 
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
+    }
+
+    // LOGIKA ŁADOWANIA SUPER PUNCH (OK. 3 SEKUNDY = 180 KLATEK)
+    if (boxerRed.isSuperPunching) {
+        boxerRed.superPunchTimer++;
+        
+        // W trakcie ładowania (np. w połowie), niebieski decyduje czy blokuje
+        if (boxerRed.superPunchTimer === 90) {
+            boxerBlue.isBlockingNow = Math.random() < 0.50; 
+        }
+
+        // Koniec ładowania - uderzenie!
+        if (boxerRed.superPunchTimer >= 180) {
+            if (boxerBlue.isBlockingNow) {
+                // Zablokowane! Brak nokdaunu, brak obrażeń, reset serii
+                boxerBlue.consecutiveSixes = 0;
+            } else {
+                // TRAFIENIE! 70% szans na knockdown, 30% na potężne obrażenia
+                if (Math.random() < 0.70) {
+                    boxerBlue.isKnockedDown = true;
+                    boxerRed.punchQueue = [];
+                } else {
+                    boxerBlue.hp = Math.max(0, boxerBlue.hp - 40); // Bardzo wysokie obrażenia (40 HP!)
+                }
+            }
+            // Reset stanu super ciosu
+            boxerRed.isSuperPunching = false;
+            boxerRed.superPunchTimer = 0;
+            boxerBlue.isBlockingNow = false;
+        }
+        return; // Blokujemy standardowe poruszanie się podczas ładowania super ciosu
     }
 
     const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
@@ -63,6 +96,13 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
+        // SZANSA NA SUPER PUNCH: Raz na ok. 2 minuty walki (szansa 1 do 7200 na klatkę)
+        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 4500)) { 
+            boxerRed.isSuperPunching = true;
+            boxerRed.superPunchTimer = 0;
+            return;
+        }
+
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
@@ -72,26 +112,21 @@ export function updatePhysics() {
 
             const comboRoll = Math.random();
             if (comboRoll < 0.01) {
-                // Seria 4 ciosów (inicjujący + 3 w kolejce)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.06) {
-                // Seria 3 ciosów (inicjujący + 2 w kolejce)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.21) {
-                // Seria 2 ciosów
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
 
         if (shouldPunch) {
-            // NOWY WARUNEK: Jeśli niebieski jest ogłuszony, a czerwony odpala serię 3 lub 4 ciosów...
-            // (Sprawdzamy punchQueue.length przed rozpoczęciem ciosu: 2 oznacza serię 3 ciosów, 3 oznacza serię 4 ciosów)
             if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
-                boxerBlue.isKnockedDown = true; // Natychmiastowy nokdaun ze zmęczenia/ogłuszenia!
+                boxerBlue.isKnockedDown = true; 
                 boxerRed.punchQueue = [];
                 boxerRed.isPunching = false;
                 boxerBlue.stunTimer = 0;
-                return; // Przerywamy wyprowadzanie ciosu, wróg już leży
+                return; 
             }
 
             boxerRed.isPunching = true;
