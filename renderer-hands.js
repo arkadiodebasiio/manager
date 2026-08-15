@@ -7,7 +7,9 @@ export function drawRedBoxer() {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const bounceOffset = boxerRed.isChargingSuper ? 0 : Math.sin(boxerRed.animTimer) * 4;
-    const angleToBlue = Math.atan2(boxerBlue.y - boxerRed.y, boxerBlue.x - boxerRed.x);
+    
+    // NAPRAWIONY KĄT: Odwrócenie wektora o 180 stopni, aby ręce leciały w stronę niebieskiego
+    const angleToBlue = Math.atan2(boxerBlue.y - boxerRed.y, boxerBlue.x - boxerRed.x) + Math.PI;
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
@@ -33,7 +35,7 @@ export function drawRedBoxer() {
     } 
     else if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
     else if (boxerRed.isPunching) {
-        let reach = boxerRed.punchType === 'super' ? 36 : 24; // Skrócony zasięg ręki do walki w klinczu
+        let reach = boxerRed.punchType === 'super' ? 36 : 24; 
         let currentReach = pVal * reach;
 
         if (activePunchHand === 'left') {
