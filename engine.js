@@ -13,7 +13,7 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    streakSixes: 0 
+    totalSixes: 0 // ZMIANA: Globalny licznik zsumowanych czystych ciosów o sile 6 podczas walki
 };
 
 export const boxerBlue = { 
@@ -58,18 +58,10 @@ export function updatePhysics() {
     let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
-        // Sprawdzenie czy bokser ma JAKĄKOLWIEK kontuzję potrójną
-        const hasTripleInjury = boxerBlue.lightInjury === "triple_eye" || 
-                                boxerBlue.lightInjury === "triple_lip" || 
-                                boxerBlue.lightInjury === "triple_liver";
-
-        // Mnożnik prędkości: 1.0 (normalnie) lub 0.8 (zwolnienie o 20% przy potrójnej kontuzji)
-        const speedModifier = hasTripleInjury ? 0.80 : 1.0;
-
         if (boxerRed.punchType === 'straight') {
-            boxerRed.punchProgress += 0.155 * speedModifier; 
+            boxerRed.punchProgress += 0.155; 
         } else {
-            boxerRed.punchProgress += 0.132 * speedModifier; 
+            boxerRed.punchProgress += 0.132; 
         }
 
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -79,33 +71,32 @@ export function updatePhysics() {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
             const isCurrentlyBlockingGarda = window.isCurrentlyBlockingGarda || false;
 
-            if (isCurrentlyBlockingGarda) {
-                boxerRed.streakSixes = 0;
-            } else {
+            // ZMIANA: Blok ani inne ciosy NIE zerują już licznika totalSixes
+            if (!isCurrentlyBlockingGarda) {
+                // Czyste trafienie
                 if (boxerRed.punchRoll === 6) {
-                    boxerRed.streakSixes += 1; 
+                    boxerRed.totalSixes += 1; // Dodajemy do ogólnej sumy trafionych szóstek
 
-                    if (boxerRed.streakSixes >= 2) {
+                    // ZMIANA: Warunek odpala się przy każdym 3 zsumowanym ciosie o sile 6 (3, 6, 9 itd.)
+                    if (boxerRed.totalSixes % 3 === 0) {
                         if (boxerBlue.lightInjury === "none") {
+                            // Losowanie typu lekkiej kontuzji z 3 istniejących
                             const options = ["eye", "lip", "liver"];
                             boxerBlue.lightInjury = options[Math.floor(Math.random() * options.length)];
                         } else if (boxerBlue.lightInjury === "eye") {
                             boxerBlue.lightInjury = "double_eye";
                         } else if (boxerBlue.lightInjury === "double_eye") {
-                            boxerBlue.lightInjury = "triple_eye"; // Przeskok na poziom potrójny
+                            boxerBlue.lightInjury = "triple_eye";
                         } else if (boxerBlue.lightInjury === "lip") {
                             boxerBlue.lightInjury = "double_lip";
                         } else if (boxerBlue.lightInjury === "double_lip") {
-                            boxerBlue.lightInjury = "triple_lip"; // Przeskok na poziom potrójny
+                            boxerBlue.lightInjury = "triple_lip";
                         } else if (boxerBlue.lightInjury === "liver") {
                             boxerBlue.lightInjury = "double_liver";
                         } else if (boxerBlue.lightInjury === "double_liver") {
-                            boxerBlue.lightInjury = "triple_liver"; // Przeskok na poziom potrójny
+                            boxerBlue.lightInjury = "triple_liver";
                         }
-                        boxerRed.streakSixes = 0; 
                     }
-                } else {
-                    boxerRed.streakSixes = 0;
                 }
 
                 if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
@@ -130,14 +121,14 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI WARGI (Zachowanie progresji)
+            // WPŁYW LEKKIEJ KONTUZJI WARGI
             if (boxerBlue.lightInjury === "lip") {
                 calculatedImpact *= 0.90; 
             } else if (boxerBlue.lightInjury === "double_lip" || boxerBlue.lightInjury === "triple_lip") {
                 calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI OKA (Zachowanie progresji)
+            // WPŁYW LEKKIEJ KONTUZJI OKA
             if (boxerBlue.lightInjury === "eye") {
                 if (Math.random() < 0.10) calculatedImpact = 0;
             } else if (boxerBlue.lightInjury === "double_eye" || boxerBlue.lightInjury === "triple_eye") {
