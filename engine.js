@@ -176,7 +176,7 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveSixes = 0; 
             } else {
-                // WARUNEK: Dokładnie i tylko 20% szansy na kontuzję przy uderzeniu sierpowym (hook)
+                // WARUNEK: Dokładnie 20% na kontuzję tylko przy sierpach (hook)
                 if (boxerRed.punchType === 'hook' && Math.random() < 0.20) {
                     const injuryType = Math.floor(Math.random() * 3);
                     if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
