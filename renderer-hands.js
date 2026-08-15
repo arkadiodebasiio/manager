@@ -19,7 +19,6 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // POPRAWKA: Niezależne rysowanie (każda kontuzja rysuje się osobno, nie blokują się nawzajem)
     if (boxerBlue.eyeLevel > 0) {
         const isMax = boxerBlue.eyeLevel >= 2;
         ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); 
@@ -61,9 +60,7 @@ export function drawBlueBoxer() {
 export function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     
-    const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
-    const punchSpeedMultiplier = hasTriple ? 0.80 : 1.0;
-    
+    // NAPRAWA: Usunięto punchSpeedMultiplier. Czerwony bije zawsze ze swoją pełną prędkością!
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
@@ -111,7 +108,7 @@ export function drawBlockShield() {
     if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
         ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
         ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); stroke();
         ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
         ctx.restore();
     }
