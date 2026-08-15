@@ -20,21 +20,25 @@ export const boxerBlue = {
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
     blockCount: 0,
-    isBlockingNow: false, // Nowa bezpieczna flaga wewnątrz obiektu
+    isBlockingNow: false, 
     eyeLevel: 0,
     lipLevel: 0,
     liverLevel: 0
 };
 
 export function updatePhysics() {
+    // NAPRAWA: Zmienny przyrost animacji niebieskiego boksera zależny od jego potrójnych kontuzji
+    const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
+    const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
+
     boxerRed.animTimer += 0.133;
     boxerRed.punchTimer += 0.66; 
     
     if (boxerBlue.stunTimer > 0) {
-        boxerBlue.animTimer += 0.35; 
+        boxerBlue.animTimer += 0.35 * blueSpeedModifier; 
         boxerBlue.stunTimer--; 
     } else {
-        boxerBlue.animTimer += 0.133;
+        boxerBlue.animTimer += 0.133 * blueSpeedModifier;
     }
 
     let targetRadius = boxerRed.isPunching ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
@@ -51,7 +55,6 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // ROZPOCZĘCIE CIOSU - Losujemy decyzję o gardzie bezpiecznie w silniku
     if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
@@ -59,10 +62,8 @@ export function updatePhysics() {
         boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
         boxerRed.hasHit = false; 
 
-        // Czy niebieski spróbuje blokować? (Garda niemożliwa jeśli jest ogłuszony)
         boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
 
-        // Jeśli ma kontuzję wątroby, sprawdzamy zmęczenie gardy dokładnie tutaj
         if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
             boxerBlue.blockCount += 1;
             const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
@@ -76,6 +77,7 @@ export function updatePhysics() {
     let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
+        // Czerwone AI zawsze bije ze swoją pełną, zróżnicowaną prędkością bazową
         if (boxerRed.punchType === 'straight') {
             boxerRed.punchProgress += 0.155; 
         } else {
@@ -84,20 +86,18 @@ export function updatePhysics() {
 
         const pVal = Math.sin(boxerRed.punchProgress);
         
-        // MOMENT TRAFIENIA LUB BLOKU
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            // Czyste trafienie (brak bloku)
             if (!boxerBlue.isBlockingNow) {
                 if (boxerRed.punchRoll === 6) {
                     boxerRed.totalSixes += 1; 
 
-                    // Wywołanie co 3 trafione szóstki (3, 6, 9, 12...)
                     if (boxerRed.totalSixes % 3 === 0) {
                         const options = ["eye", "lip", "liver"];
                         const chosen = options[Math.floor(Math.random() * options.length)];
 
+                        // NAPRAWA: Prawidłowe drabinki losowania bez powtórzonych warunków
                         if (chosen === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
                         if (chosen === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
                         if (chosen === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
@@ -126,14 +126,12 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW KONTUZJI WARGI
             if (boxerBlue.lipLevel === 1) {
                 calculatedImpact *= 0.90; 
             } else if (boxerBlue.lipLevel >= 2) {
                 calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW KONTUZJI OKA
             if (boxerBlue.eyeLevel === 1) {
                 if (Math.random() < 0.10) calculatedImpact = 0;
             } else if (boxerBlue.eyeLevel >= 2) {
@@ -143,7 +141,7 @@ export function updatePhysics() {
 
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
-            boxerBlue.isBlockingNow = false; // Reset gardy na koniec ciosu
+            boxerBlue.isBlockingNow = false; 
         }
     }
 
