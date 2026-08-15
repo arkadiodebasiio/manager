@@ -16,212 +16,199 @@ export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
-    punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    
-    // STAN SUPER CIOSU
-    isSuperPunching: false,
-    superPunchTimer: 0,
-    superPunchProgress: 0,
-    isSuperPunchStriking: false
+    punchRoll: 1,
+    totalSixes: 0,
+    punchQueue: [],    
+    punchCooldown: 0,
+    hp: 100 
 };
 
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
-    animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0, blockCount: 0,
+    animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
+    blockCount: 0,
     isBlockingNow: false, 
-    
-    // SYSTEM KONTUZJI I LICZNIK TRZECH "SZÓSTEK"
-    eyeLevel: 0, 
-    lipLevel: 0, 
-    liverLevel: 0, 
-    sixHitCount: 0, 
-    hp: 100,
-    
-    consecutiveSixes: 0,  
-    isKnockedDown: false  
+    eyeLevel: 0,
+    lipLevel: 0,
+    liverLevel: 0,
+    hp: 100 
 };
 
 export function updatePhysics() {
-    if (boxerBlue.isKnockedDown) return; 
-
-    // Zmniejszanie cooldownu w każdej klatce
-    if (boxerRed.punchCooldown > 0) {
-        boxerRed.punchCooldown--;
-    }
-
-    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
-    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'hook' ? 54 : 62) : baseRadius;
-    
-    if (boxerRed.isSuperPunching) {
-        targetRadius = 55; 
-    }
-    
-    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
-
-    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
-    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
-    boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
-    boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
-
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
     boxerRed.animTimer += 0.133;
+    
+    if (boxerRed.punchCooldown > 0) {
+        boxerRed.punchCooldown--;
+    }
 
-    if (!boxerRed.isPunching && !boxerRed.isSuperPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
+    if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
         boxerRed.punchTimer += 0.66; 
     }
     
     boxerBlue.animTimer += 0.133 * blueSpeedModifier;
+
     if (boxerBlue.stunTimer > 0) {
-        boxerBlue.stunTimer -= blueSpeedModifier; 
+        boxerBlue.stunTimer -= (1 * blueSpeedModifier); 
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // OBSŁUGA SUPER CIOSU
-    if (boxerRed.isSuperPunching) {
-        if (!boxerRed.isSuperPunchStriking) {
-            boxerRed.superPunchTimer++;
+    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
+    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
-            if (boxerRed.superPunchTimer === 170) {
-                boxerBlue.isBlockingNow = Math.random() < 0.50;
-            }
-
-            if (boxerRed.superPunchTimer >= 180) {
-                boxerRed.isSuperPunchStriking = true;
-                boxerRed.superPunchProgress = 0;
-            }
-        } else {
-            boxerRed.superPunchProgress += 0.18; 
-            const spVal = Math.sin(boxerRed.superPunchProgress);
-
-            if (spVal > 0.75 && !boxerRed.hasHit) {
-                if (boxerBlue.isBlockingNow) {
-                    boxerBlue.consecutiveSixes = 0;
-                } else {
-                    if (Math.random() < 0.70) {
-                        boxerBlue.isKnockedDown = true;
-                        boxerRed.punchQueue = [];
-                    } else {
-                        boxerBlue.hp = Math.max(0, boxerBlue.hp - 40);
-                    }
-                }
-                boxerRed.hasHit = true;
-            }
-
-            if (boxerRed.superPunchProgress >= Math.PI) {
-                boxerRed.isSuperPunching = false;
-                boxerRed.isSuperPunchStriking = false;
-                boxerRed.superPunchTimer = 0;
-                boxerRed.superPunchProgress = 0;
-                boxerRed.hasHit = false;
-                boxerBlue.isBlockingNow = false;
-                boxerRed.punchCooldown = 40; // Odpoczynek po potężnym superciosie
-            }
-        }
-        return; 
-    }
+    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
     const currentSin = Math.sin(boxerRed.animTimer);
     if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
     boxerRed.wasAboveZero = (currentSin > 0);
 
-    if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
+    if (boxerRed.isMovingThisJump && currentSin > 0) {
+        boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
+    }
 
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // Szansa na Super Punch
-        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && boxerRed.punchCooldown === 0 && Math.random() < (1 / 4000)) {
-            boxerRed.isSuperPunching = true;
-            boxerRed.superPunchTimer = 0;
-            boxerRed.isSuperPunchStriking = false;
-            return;
-        }
-
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
-        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && boxerRed.punchCooldown === 0 && Math.random() < 0.03) {
+        } 
+        else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
+            // POWRÓT DO TWOICH PROPORCJI
             const comboRoll = Math.random();
             if (comboRoll < 0.01) {
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
+                // 1% na serię POCZWÓRNĄ (3 dodatkowe ciosy)
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.06) {
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook', Math.random() < 0.70 ? 'straight' : 'hook');
+                // 5% na serię POTRÓJNĄ (2 dodatkowe ciosy)
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.21) {
+                // 15% na serię PODWÓJNĄ (1 dodatkowy cios)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
 
         if (shouldPunch) {
-            if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
-                boxerBlue.isKnockedDown = true; 
-                boxerRed.punchQueue = [];
-                boxerRed.isPunching = false;
-                boxerBlue.stunTimer = 0;
-                return; 
-            }
-
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
             boxerRed.punchTimer = 0;
             boxerRed.hasHit = false; 
+
             boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
+            if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+                boxerBlue.blockCount += 1;
+                const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+                if (boxerBlue.blockCount >= breakLimit) {
+                    boxerBlue.isBlockingNow = false; 
+                    boxerBlue.blockCount = 0;
+                }
+            }
         }
     }
 
+    let calculatedImpact = 0;
+
     if (boxerRed.isPunching) {
-        boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.155 : 0.132);
+        if (boxerRed.punchType === 'straight') {
+            boxerRed.punchProgress += 0.155; 
+        } else {
+            boxerRed.punchProgress += 0.132; 
+        }
+
         const pVal = Math.sin(boxerRed.punchProgress);
         
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            if (boxerBlue.isBlockingNow) {
-                boxerBlue.consecutiveSixes = 0; 
-            } else {
-                // KONTUZJA PO KAŻDYM 3 CIOSIE O SILE 6
+            if (!boxerBlue.isBlockingNow) {
+                let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
+                if (boxerRed.punchRoll === 6) dmg *= 2.0;       
+                else if (boxerRed.punchRoll >= 3) dmg *= 1.3;   
+
+                if (boxerBlue.lipLevel === 1) dmg *= 1.10;
+                else if (boxerBlue.lipLevel >= 2) dmg *= 1.20;
+
+                boxerBlue.hp -= dmg;
+                if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
+
                 if (boxerRed.punchRoll === 6) {
-                    boxerBlue.sixHitCount += 1;
-                    
-                    if (boxerBlue.sixHitCount >= 3) {
-                        const injuryType = Math.floor(Math.random() * 3);
-                        if (injuryType === 0 && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
-                        if (injuryType === 1 && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
-                        if (injuryType === 2 && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
-                        
-                        boxerBlue.sixHitCount = 0; 
+                    boxerRed.totalSixes += 1; 
+
+                    if (boxerRed.totalSixes % 3 === 0) {
+                        const options = ["eye", "lip", "liver"];
+                        const chosen = options[Math.floor(Math.random() * options.length)];
+
+                        if (chosen === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+                        if (chosen === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+                        if (chosen === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
                     }
                 }
 
-                if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
-                    boxerBlue.consecutiveSixes += 1; 
-                    if (boxerBlue.consecutiveSixes >= 2) {
-                        boxerBlue.isKnockedDown = true; 
-                        boxerRed.isPunching = false;
-                        boxerRed.punchQueue = [];
-                    }
-                }
-
-                if (!boxerBlue.isKnockedDown) {
-                    let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
-                    if (boxerRed.punchRoll === 6) dmg *= 2.0;       
-                    else if (boxerRed.punchRoll === 5) dmg *= 1.3;
-                    boxerBlue.hp = Math.max(0, boxerBlue.hp - dmg);
+                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
+                    boxerBlue.stunTimer = 300; 
                 }
             }
             boxerRed.hasHit = true;
+        }
+
+        if (pVal > 0.75) {
+            let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
+            
+            const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
+            
+            if (currentHand === strongHand) {
+                basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
+            }
+
+            if (boxerRed.punchRoll === 6) {
+                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
+            } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
+                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
+            } else {
+                calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
+            }
+
+            if (boxerBlue.lipLevel === 1) {
+                calculatedImpact *= 0.90; 
+            } else if (boxerBlue.lipLevel >= 2) {
+                calculatedImpact *= 0.80; 
+            }
+
+            if (boxerBlue.eyeLevel === 1) {
+                if (Math.random() < 0.10) calculatedImpact = 0;
+            } else if (boxerBlue.eyeLevel >= 2) {
+                if (Math.random() < 0.20) calculatedImpact = 0;
+            }
         }
 
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
             
-            // PANCERNA POPRAWKA: Sztywny odpoczynek po każdym uderzeniu (zarówno single jak i combo)
-            boxerRed.punchCooldown = boxerRed.punchQueue.length > 0 ? 12 : 35;
+            if (boxerRed.punchQueue.length > 0) {
+                boxerRed.punchCooldown = 10;
+            }
         }
     }
+
+    const dx = ringCenter - boxerRed.x;
+    const dy = ringCenter - boxerRed.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const targetRx = ringCenter + (dx / dist) * calculatedImpact;
+    const targetRy = ringCenter + (dy / dist) * calculatedImpact;
+
+    boxerBlue.rx += (targetRx - boxerBlue.rx) * 0.2;
+    boxerBlue.ry += (targetRy - boxerBlue.ry) * 0.2;
 }
