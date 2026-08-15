@@ -1,7 +1,6 @@
 import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
-let comboGlowTimer = 0; 
 let blackPulseTimer = 0; 
 
 export function drawBlueBoxer() {
@@ -125,13 +124,8 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // NAPRAWIONO: Świecenie aktywuje się tylko wtedy, gdy w kolejce autentycznie czekają ciosy z serii (combo)
-    if (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) {
-        comboGlowTimer = 35; 
-    }
-
-    const isCurrentlyInCombo = comboGlowTimer > 0;
-    if (comboGlowTimer > 0) comboGlowTimer--; 
+    // NAPRAWIONO: Sprawdzamy stan bez opóźnień czasowych. Zielony kolor aktywuje się tylko wtedy, gdy trwa uderzenie, a w kolejce realnie czekają kolejne ciosy z serii.
+    const isCurrentlyInCombo = boxerRed.isPunching && boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
 
     let finalColor = boxerRed.color;
     if (boxerRed.isSuperCharging) {
