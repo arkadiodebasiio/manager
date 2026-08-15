@@ -23,14 +23,21 @@ export function drawRedBoxer() {
     ctx.beginPath(); ctx.arc(0, -bodyLean * 0.2, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); ctx.lineWidth = lineWidth; ctx.strokeStyle = strokeColor; ctx.stroke();
 
     let leftX = -12, leftY = -boxerRed.radius + 4, rightX = 12, rightY = -boxerRed.radius + 4;
-    if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
+    let gloveColor = '#d35400';
+
+    if (boxerRed.isBlockingNow && !boxerRed.isPunching) {
+        leftX = -6; leftY = -boxerRed.radius - 2;
+        rightX = 6; rightY = -boxerRed.radius - 2;
+        gloveColor = '#f1c40f';
+    } 
+    else if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
     else if (boxerRed.isPunching && activePunchHand === 'left') { let reach = boxerRed.punchType === 'super' ? 44 : 30; leftY = (-boxerRed.radius + 4) - (pVal * reach); leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : (-12 + pVal * 10); rightY = -boxerRed.radius + 6; } 
     else if (boxerRed.isPunching && activePunchHand === 'right') { let reach = boxerRed.punchType === 'super' ? 44 : 30; rightY = (-boxerRed.radius + 4) - (pVal * reach); rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : (12 - pVal * 10); leftY = -boxerRed.radius + 6; }
 
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftX, leftY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
-    ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightX, rightY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
-    ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     ctx.save(); ctx.rotate(-(angleToBlue + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 export function drawBlockShield() {}
