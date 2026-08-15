@@ -2,10 +2,19 @@
 import { updatePhysics } from './engine.js';
 import { drawRedBoxer } from './renderer-red.js';
 import { drawBlueBoxer } from './renderer-blue.js';
-import { ctx } from './boxer-stats.js';
+
+// Pobieramy Canvas i kontekst bezpośrednio tutaj, po pełnym załadowaniu strony
+const canvas = document.getElementById('ringCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+
+// Gwarancja wymiarów ringu przy starcie
+if (canvas) {
+    canvas.width = 500;
+    canvas.height = 500;
+}
 
 function drawRing() {
-    if (!ctx) return;
+    if (!ctx) return; // Jeśli nadal nie ma kontekstu, przerywamy (zabezpieczenie)
     
     // 1. Szara mata ringu (wnętrze)
     ctx.fillStyle = '#2c3e50'; 
