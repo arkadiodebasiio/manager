@@ -13,7 +13,7 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    streakSixes: 0 // Twój oryginalny, dobry licznik serii ciosów
+    streakSixes: 0 // Twój oryginalny licznik serii ciosów
 };
 
 export const boxerBlue = { 
@@ -78,10 +78,10 @@ export function updatePhysics() {
                 if (boxerRed.punchRoll === 6) {
                     boxerRed.streakSixes += 1; 
 
-                    // Warunek serii trafień nienaruszony – zmienione tylko losowanie kontuzji w środku
-                    if (boxerRed.streakSixes >= 6) {
+                    // USTAWIONE NA 2: Dwa czyste trafienia z siłą 6 wywołują lekką kontuzję
+                    if (boxerRed.streakSixes >= 2) {
                         if (boxerBlue.lightInjury === "none") {
-                            // LOSOWANIE TYPU KONTUZJI
+                            // LOSOWANIE KONTUZJI Z 3 ISTNIEJĄCYCH
                             const options = ["eye", "lip", "liver"];
                             boxerBlue.lightInjury = options[Math.floor(Math.random() * options.length)];
                         } else if (boxerBlue.lightInjury === "eye") {
