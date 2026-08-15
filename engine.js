@@ -2,12 +2,9 @@
 import { ringCenter, baseRadius, strongHand, boxerRed, boxerBlue } from './boxer-stats.js';
 import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './combat-logic.js';
 
-// TO ROZWIĄZUJE BŁĄD: Przekazujemy bokserów dalej do plików graficznych (renderer-red i renderer-blue)
-export { boxerRed, boxerBlue };
-
 let currentOrbitRadius = baseRadius; 
 
-// Funkcje pomocnicze dla grafiki
+// Funkcje pomocnicze, które są bezpiecznie wywoływane przez pliki graficzne bokserów
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
 }
