@@ -9,21 +9,36 @@ const ctx = canvas ? canvas.getContext('2d') : null;
 function drawRing() {
     if (!ctx) return;
     
-    // 1. Klasyczna, retro-szara mata ringu (wypełnienie całego pola)
+    // 1. Główny retro-szary podkład pod ring
     ctx.fillStyle = '#3a4454'; 
     ctx.fillRect(0, 0, 500, 500);
 
-    // 2. Wewnętrzny, ciemniejszy cień maty bokserskiej
-    ctx.fillStyle = '#2e3643';
-    ctx.fillRect(50, 50, 400, 400);
+    // 2. RYSOWANIE OREGINALNYCH DESECZEK (Drewniany parkiet wewnątrz ringu)
+    ctx.save();
+    // Ograniczamy rysowanie desek tylko do wnętrza lin (od 50 do 450)
+    ctx.beginPath();
+    ctx.rect(50, 50, 400, 400);
+    ctx.clip();
 
-    // 3. Wypełniony niebieski narożnik (lewy górny)
+    // Rysowanie pionowych deseczek co 16 pikseli
+    for (let x = 50; x < 450; x += 16) {
+        // Co druga deseczka jest minimalnie ciemniejsza dla kontrastu retro
+        ctx.fillStyle = ((x / 16) % 2 === 0) ? '#2e3643' : '#333c4a';
+        ctx.fillRect(x, 50, 14, 400);
+
+        // Subtelna linia łączenia deseczek (fuga)
+        ctx.fillStyle = '#242a35';
+        ctx.fillRect(x + 14, 50, 2, 400);
+    }
+    ctx.restore();
+
+    // 3. Profesjonalny niebieski narożnik (lewy górny)
     ctx.fillStyle = '#2980b9';
     ctx.beginPath();
     ctx.moveTo(50, 50); ctx.lineTo(110, 50); ctx.lineTo(50, 110);
     ctx.fill();
 
-    // 4. Wypełniony czerwony narożnik (prawy dolny)
+    // 4. Profesjonalny czerwony narożnik (prawy dolny)
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
     ctx.moveTo(450, 450); ctx.lineTo(390, 450); ctx.lineTo(450, 390);
@@ -39,7 +54,7 @@ function drawRing() {
     ctx.lineWidth = 4;
     ctx.strokeRect(50, 50, 400, 400);
     
-    // 7. Wewnętrzne, potrójne liny dla efektu retro 3D
+    // 7. Wewnętrzne, potrójne liny dla pełnego efektu 3D
     ctx.strokeStyle = '#95a5a6';
     ctx.lineWidth = 2;
     ctx.strokeRect(56, 56, 388, 388);
@@ -47,19 +62,11 @@ function drawRing() {
 }
 
 function gameLoop() {
-    // Oblicz fizykę i ruch zawodników
     updatePhysics();
-
-    // Wymaluj ring na nowo w każdej klatce (pod zawodnikami)
     drawRing();
-
-    // Wyświetl bokserów
     drawBlueBoxer();
     drawRedBoxer();
-
-    // Pętla animacji 60 FPS
     requestAnimationFrame(gameLoop);
 }
 
-// Uruchomienie gry
 requestAnimationFrame(gameLoop);
