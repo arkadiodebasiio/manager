@@ -1,7 +1,6 @@
 export const canvas = document.getElementById('ringCanvas');
-export const ctx = canvas.getContext('2d');
+export const ctx = canvas ? canvas.getContext('2d') : null;
 
-canvas.width = canvas.height = 500;
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
@@ -142,7 +141,14 @@ export function updatePhysics() {
         }
     }
 
-    const dx = ringCenter - boxerRed.x, dy = ringCenter - boxerRed.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    boxerBlue.rx = ringCenter + (dx / dist) * calculatedImpact;
-    boxerBlue.ry = ringCenter + (dy / dist) * calculatedImpact;
+    // NAPRAWIONA FIZYKA: Płynne odpychanie i amortyzacja uderzeń zamiast teleportacji
+    const dx = ringCenter - boxerRed.x;
+    const dy = ringCenter - boxerRed.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const targetRx = ringCenter + (dx / dist) * calculatedImpact;
+    const targetRy = ringCenter + (dy / dist) * calculatedImpact;
+
+    boxerBlue.rx += (targetRx - boxerBlue.rx) * 0.2;
+    boxerBlue.ry += (targetRy - boxerBlue.ry) * 0.2;
 }
