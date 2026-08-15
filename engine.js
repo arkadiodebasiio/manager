@@ -1,33 +1,11 @@
-// Dynamiczne, bezpieczne pobieranie canvasu i kontekstu w locie ringu
-let internalCanvas = null;
-let internalCtx = null;
+export const canvas = document.getElementById('ringCanvas');
+export const ctx = canvas ? canvas.getContext('2d') : null;
 
-function initCanvas() {
-    if (!internalCanvas) {
-        internalCanvas = document.getElementById('ringCanvas');
-        if (internalCanvas) {
-            internalCanvas.width = 500;
-            internalCanvas.height = 500;
-            internalCtx = internalCanvas.getContext('2d');
-        }
-    }
+// Gwarancja wymiaru 500x500
+if (canvas) {
+    canvas.width = 500;
+    canvas.height = 500;
 }
-
-// Eksportujemy sprytne gettery, które obronią plik renderer-hands.js przed wartością null
-export const canvas = {
-    get width() { return 500; },
-    get height() { return 500; }
-};
-
-export const ctx = new Proxy({}, {
-    get(target, prop) {
-        initCanvas();
-        if (internalCtx && typeof internalCtx[prop] === 'function') {
-            return internalCtx[prop].bind(internalCtx);
-        }
-        return internalCtx ? internalCtx[prop] : null;
-    }
-});
 
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
@@ -56,8 +34,6 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    initCanvas(); // Upewniamy się, że gra ma dostęp do ringu w każdej klatce fizyki
-
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -88,6 +64,7 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
+    // Zarządzanie przerwami w seriach combo i ciosami standardowymi
     if (!boxerRed.isPunching) {
         if (boxerRed.comboLeft > 0) {
             boxerRed.comboDelay--;
