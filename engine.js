@@ -58,17 +58,17 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // NAPRAWA BLOKADY SILNIKA: Rozdzielenie logiki i twardy reset timerów dla uniknięcia uciętego ringu
     if (!boxerRed.isPunching) {
         if (boxerRed.comboLeft > 0) {
             boxerRed.comboDelay--;
             if (boxerRed.comboDelay <= 0) {
                 boxerRed.isPunching = true;
                 boxerRed.punchProgress = 0;
-                boxerRed.punchTimer = 0; // Dodatkowy twardy reset timera
+                boxerRed.punchTimer = 0; 
                 boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
                 boxerRed.hasHit = false; 
                 boxerRed.comboLeft--; 
+                boxerRed.comboDelay = 8; // Twardy reset opóźnienia dla kolejnego ciosu
 
                 boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
                 if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
@@ -137,7 +137,10 @@ export function updatePhysics() {
 
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
-            const currentHand = window.currentActivePunchHand || 'left';
+            
+            // NAPRAWA: Bezpieczne odczytanie aktywnej ręki bez crashowania Node.js / GitHub Actions
+            const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
+            
             if (currentHand === strongHand) {
                 basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
             }
