@@ -23,6 +23,7 @@ export function handleSuperPunch() {
             boxerRed.isSuperPunching = true;
             boxerRed.punchProgress = 0;
             boxerRed.hasHit = false;
+            boxerRed.punchType = 'hook'; // Nadpisujemy na mocny sierp
             boxerBlue.isBlockingNow = Math.random() < 0.50; // Losowanie obrony rywala
         }
     }
@@ -37,6 +38,10 @@ export function handleSuperPunch() {
                 // BRAK BLOKU = NATYCHMIASTOWY NOKDAUN
                 boxerBlue.pendingKnockdown = true;
                 boxerBlue.hp = 0;
+                
+                // POPRAWKA: Czyszczenie kolejek i liczników combo po udanym superciosie, aby zapobiec zielonemu kolorowi w nowej walce
+                boxerRed.punchQueue = [];
+                boxerRed.punchCooldown = 0;
             }
             boxerRed.hasHit = true;
         }
@@ -49,4 +54,3 @@ export function handleSuperPunch() {
         }
     }
 }
-
