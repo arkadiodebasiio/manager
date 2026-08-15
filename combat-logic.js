@@ -1,5 +1,6 @@
 import { boxerRed, boxerBlue, strongHand, blueStrongHand, isBlueKnockedDown } from './engine.js';
 let bPT = 0, bVT = 0, sA = 0;
+
 export function handleBotAttackDecisions(bR) {
     let r = boxerRed, b = boxerBlue;
     if (!r.isPunching && !r.isChargingSuper) {
@@ -11,14 +12,21 @@ export function handleBotAttackDecisions(bR) {
         }
     }
     if (!b.isKnockedDown && b.stunTimer <= 0 && !b.isPunching && !b.isChargingSuper) {
-        if (b.punchQueue && b.punchQueue.length > 0 && b.punchCooldown === 0) { b.punchType = b.punchQueue.shift(); b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false; r.isBlockingNow = Math.random() < 0.5; }
+        if (b.punchQueue && b.punchQueue.length > 0 && b.punchCooldown === 0) { 
+            b.punchType = b.punchQueue.shift(); b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false; 
+            b.punchRoll = Math.floor(Math.random() * 6) + 1; // POPRAWKA: Losowanie ręki od razu przy decyzji o ciosie!
+            r.isBlockingNow = Math.random() < 0.5; 
+        }
         else if ((!b.punchQueue || b.punchQueue.length === 0) && b.punchTimer > 60 && Math.random() < 0.03) {
             if (b.superCooldown <= 0 && Math.random() < 0.4) { b.isChargingSuper = true; b.superChargeTimer = 180; b.superCooldown = 5400; b.punchTimer = 0; return; }
-            b.punchType = Math.random() < 0.7 ? 'straight' : 'hook'; b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false; r.isBlockingNow = Math.random() < 0.5;
+            b.punchType = Math.random() < 0.7 ? 'straight' : 'hook'; b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false;
+            b.punchRoll = Math.floor(Math.random() * 6) + 1; // POPRAWKA: Losowanie ręki od razu przy decyzji o ciosie!
+            r.isBlockingNow = Math.random() < 0.5;
             if (!b.punchQueue) b.punchQueue = []; let roll = Math.random(); if (roll < 0.01) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.06) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.21) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); }
         }
     }
 }
+
 export function processPunchExecution() {
     let r = boxerRed, b = boxerBlue;
     if (r.isPunching) {
@@ -42,7 +50,6 @@ export function processPunchExecution() {
     if (b.isPunching) {
         b.punchProgress += b.punchType === 'straight' ? 0.155 : (b.punchType === 'super' ? 0.080 : 0.132);
         if (Math.sin(b.punchProgress) > 0.75 && !b.hasHit) {
-            b.punchRoll = Math.floor(Math.random() * 6) + 1;
             if (r.isBlockingNow) { r.consecutiveBigHits = 0; if (b.punchType === 'super') r.hp = Math.max(0, r.hp - 15); }
             else {
                 if (b.punchType === 'super') { r.hp = Math.max(0, r.hp - 30); }
@@ -56,6 +63,7 @@ export function processPunchExecution() {
         if (b.punchProgress >= Math.PI) { b.isPunching = false; b.punchProgress = 0; b.punchCooldown = b.punchType === 'super' ? 45 : 14; }
     }
 }
+
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas'); if (!canvas || !boxerBlue || !boxerRed) return;
     const ctx = canvas.getContext('2d'), down = isBlueKnockedDown(); if (down) bPT += 0.05;
@@ -70,12 +78,21 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); ctx.rotate(angle + Math.PI / 2);
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     ctx.lineWidth = down ? 4 : 2; ctx.strokeStyle = down ? `rgba(0,0,0,${0.3 + Math.abs(Math.sin(bPT)) * 0.7})` : '#fff'; ctx.stroke();
-    let lX = -12, lY = -boxerBlue.radius + 4, rX = 12, rY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
-    if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { lY = -boxerBlue.radius - 2; rY = -boxerBlue.radius - 2; }
+    
+    let leftX = -12, leftY = -boxerBlue.radius + 4, rightX = 12, rightY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
+    if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { leftY = -boxerBlue.radius - 2; rightY = -boxerBlue.radius - 2; }
     else if (boxerBlue.isPunching) {
         let rch = boxerBlue.punchType === 'super' ? 44 : 30;
-        if (boxerBlue.punchRoll % 2 === 0) { lY = (-boxerBlue.radius + 4) - (pValB * rch); lX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); rY = -boxerBlue.radius + 6; }
-        else { rY = (-boxerBlue.radius + 4) - (pValB * rch); rX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); lY = -boxerBlue.radius + 6; }
+        // PANCERNY WARUNEK: Jeśli punchRoll nie istnieje lub jest parzysty - bije lewa, jeśli nieparzysty - bije prawa!
+        if (!boxerBlue.punchRoll || boxerBlue.punchRoll % 2 === 0) { 
+            leftY = (-boxerBlue.radius + 4) - (pValB * rch); 
+            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); 
+            rightY = -boxerBlue.radius + 6; 
+        } else { 
+            rightY = (-boxerBlue.radius + 4) - (pValB * rch); 
+            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); 
+            leftY = -boxerBlue.radius + 6; 
+        }
     }
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lX, lY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rX, rY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
