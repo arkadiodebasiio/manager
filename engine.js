@@ -4,6 +4,14 @@ import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './
 
 let currentOrbitRadius = baseRadius; 
 
+// Funkcje pomocnicze, które bezpiecznie przekazują stany do rendererów
+export function isBlueKnockedDown() { 
+    return boxerBlue.isKnockedDown; 
+}
+export function getSuperChargeState() { 
+    return { isCharging: boxerRed.isChargingSuper, frames: boxerRed.superChargeFrames }; 
+}
+
 export function updatePhysics() {
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
