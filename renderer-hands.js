@@ -76,7 +76,7 @@ export function drawRedBoxer() {
     if (!ctx || !boxerRed || !boxerBlue) return;
 
     const bounceOffset = boxerRed.isSuperPunching ? 0 : Math.sin(boxerRed.animTimer) * 4;
-    const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerRed.x - boxerRed.x) + Math.PI;
+    const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
     const spVal = boxerRed.isSuperPunchStriking ? Math.sin(boxerRed.superPunchProgress) : 0;
@@ -112,7 +112,7 @@ export function drawRedBoxer() {
         if (strongHand === 'right') {
             rightGloveColor = '#f1c40f';
             if (boxerRed.isSuperPunchStriking) {
-                gloveY -= spVal * 32;       
+                gloveY -= spVal * 42;       // Głęboki, daleki zasięg uderzenia prosto w cel
                 rightGloveX = 12 - spVal * 12; 
             } else {
                 rightGloveX = 16;            
@@ -121,7 +121,7 @@ export function drawRedBoxer() {
         } else {
             leftGloveColor = '#f1c40f';
             if (boxerRed.isSuperPunchStriking) {
-                gloveY -= spVal * 32;       
+                gloveY -= spVal * 42;       // Głęboki, daleki zasięg uderzenia prosto w cel
                 leftGloveX = -12 + spVal * 12; 
             } else {
                 leftGloveX = -16;            
@@ -150,31 +150,25 @@ export function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-// 🛡️ KLASYCZNA, PANCERNA METODA RYSOWANIA TARCZY (Zgodna ze starą wersją)
 export function drawBlockShield() {
     const canvas = document.getElementById('ringCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerRed || !boxerBlue) return;
 
-    // Rysujemy ZAWSZE, gdy flaga jest aktywna – bez żadnych udziwnień
     if (boxerBlue.isBlockingNow) {
         ctx.save();
-        
-        // Klasyczny punkt tarczy nad głową niebieskiego
         const shieldX = boxerBlue.rx;
         const shieldY = boxerBlue.ry - 36;
 
         ctx.globalAlpha = 0.85;
         ctx.lineWidth = 4;
-        ctx.strokeStyle = '#fff'; // Biała obwódka
-        ctx.fillStyle = '#f1c40f'; // Żółta tarcza
+        ctx.strokeStyle = '#fff'; 
+        ctx.fillStyle = '#f1c40f'; 
 
-        // Dodatkowy neonowy glow (jeśli canvas go obsługuje)
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#f1c40f';
 
-        // Stary, sprawdzony kształt daszku ochronnego
         ctx.beginPath();
         ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true);
         ctx.lineTo(shieldX, shieldY + 16);
@@ -182,7 +176,6 @@ export function drawBlockShield() {
         
         ctx.fill();
         ctx.stroke();
-        
         ctx.restore();
     }
 }
