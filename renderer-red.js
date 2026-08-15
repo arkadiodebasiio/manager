@@ -20,7 +20,8 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    if ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0) {
+    // NAPRAWIONE: Zielony licznik odpala się TYLKO wtedy, gdy w kolejce faktycznie są ciosy (czyli prawdziwe combo)
+    if (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) {
         comboGlowTimer = 35; 
     }
 
@@ -69,7 +70,6 @@ export function drawRedBoxer(ctx) {
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
-    // TUTAJ BYŁ BŁĄD (brakowało ctx. przed stroke) - TERAZ JEST POPRAWIONE:
     ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = superGloveColor; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
