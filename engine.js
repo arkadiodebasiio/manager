@@ -12,7 +12,8 @@ export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
-    punchRoll: 1 
+    punchRoll: 1,
+    streakSixes: 0 // Licznik serii czystych szóstek z rzędu
 };
 
 export const boxerBlue = { 
@@ -65,19 +66,45 @@ export function updatePhysics() {
 
         const pVal = Math.sin(boxerRed.punchProgress);
         
-        // MOMENT TRAFIENIA
+        // MOMENT TRAFIENIA LUB BLOKU
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
+            const isCurrentlyBlockingGarda = window.isCurrentlyBlockingGarda || false;
 
-            if (boxerRed.punchType === 'hook') {
-                if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
+            if (isCurrentlyBlockingGarda) {
+                // Blok niebieskiego bezwzględnie zeruje serię czerwonego
+                boxerRed.streakSixes = 0;
+            } else {
+                // Czyste trafienie
+                if (boxerRed.punchRoll === 6) {
+                    boxerRed.streakSixes += 1; 
+
+                    // Warunek: Dwa czyste trafienia z siłą 6 z rzędu bez bloków i innych ciosów pomiędzy
+                    if (boxerRed.streakSixes >= 2) {
+                        if (boxerBlue.lightInjury === "none") {
+                            const options = ["eye", "lip", "liver"];
+                            boxerBlue.lightInjury = options[Math.floor(Math.random() * options.length)];
+                        } else if (boxerBlue.lightInjury === "eye") {
+                            boxerBlue.lightInjury = "double_eye";
+                        } else if (boxerBlue.lightInjury === "lip") {
+                            boxerBlue.lightInjury = "double_lip";
+                        } else if (boxerBlue.lightInjury === "liver") {
+                            boxerBlue.lightInjury = "double_liver";
+                        }
+                        boxerRed.streakSixes = 0; // Reset po nadaniu kontuzji
+                    }
+                } else {
+                    // Cios wszedł czysto, ale miał siłę 1-5 -> Seria szóstek zostaje przerwana
+                    boxerRed.streakSixes = 0;
+                }
+
+                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
                     boxerBlue.stunTimer = 300; 
                 }
             }
             boxerRed.hasHit = true;
         }
 
-        // Kalkulacja odrzucenia na bazie rzutu kością
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             const currentHand = window.currentActivePunchHand || 'left';
@@ -85,7 +112,6 @@ export function updatePhysics() {
                 basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
             }
 
-            // Podział bazowy na 3 progi siły
             if (boxerRed.punchRoll === 6) {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
             } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
@@ -94,14 +120,14 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI WARGI (Stałe osłabienie siły ciosów o 10% lub 20%)
+            // WPŁYW LEKKIEJ KONTUZJI WARGI (Spadek mocy o 10% lub 20%)
             if (boxerBlue.lightInjury === "lip") {
-                calculatedImpact *= 0.90; // Spadek mocy o 10%
+                calculatedImpact *= 0.90; 
             } else if (boxerBlue.lightInjury === "double_lip") {
-                calculatedImpact *= 0.80; // Spadek mocy o 20%
+                calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI OKA (Szansa na cios o sile 0)
+            // WPŁYW LEKKIEJ KONTUZJI OKA (Szansa na pudło/siłę 0)
             if (boxerBlue.lightInjury === "eye") {
                 if (Math.random() < 0.10) calculatedImpact = 0;
             } else if (boxerBlue.lightInjury === "double_eye") {
