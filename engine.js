@@ -1,3 +1,5 @@
+import { calculateDamage, applyRandomInjury } from './combat-logic.js';
+
 export const canvas = document.getElementById('ringCanvas');
 export const ctx = canvas ? canvas.getContext('2d') : null;
 
@@ -36,6 +38,10 @@ export const boxerBlue = {
     pendingKnockdown: false,
     consecutiveBigHits: 0 
 };
+
+export function isBlueKnockedDown() {
+    return boxerBlue.isKnockedDown;
+}
 
 export function updatePhysics() {
     // Trwała przerwa w meczu po zaliczeniu nokdaunu
@@ -95,28 +101,23 @@ export function updatePhysics() {
             const isStunnedNow = boxerBlue.stunTimer > 0;
 
             if (comboRoll < 0.01) {
-                // 1% na serię POCZWÓRNĄ (3 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 
-                // NOWY WARUNEK: Zamroczenie + Seria Poczwórna = Automatyczny Nokdaun
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
                     boxerRed.punchQueue = []; 
                 }
             } else if (comboRoll < 0.06) {
-                // 5% na serię POTRÓJNĄ (2 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 
-                // NOWY WARUNEK: Zamroczenie + Seria Potrójna = Automatyczny Nokdaun
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
                     boxerRed.punchQueue = []; 
                 }
             } else if (comboRoll < 0.21) {
-                // 15% na serię PODWÓJNĄ (1 dodatkowy cios)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
@@ -140,8 +141,6 @@ export function updatePhysics() {
         }
     }
 
-    let calculatedImpact = 0;
-
     if (boxerRed.isPunching) {
         if (boxerRed.punchType === 'straight') {
             boxerRed.punchProgress += 0.155; 
@@ -157,14 +156,8 @@ export function updatePhysics() {
             if (boxerBlue.isBlockingNow) {
                 boxerBlue.consecutiveBigHits = 0; 
             } else {
-                let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
-                if (boxerRed.punchRoll === 6) dmg *= 2.0;       
-                else if (boxerRed.punchRoll >= 3) dmg *= 1.3;   
-
-                if (boxerBlue.lipLevel === 1) dmg *= 1.10;
-                else if (boxerBlue.lipLevel >= 2) dmg *= 1.20;
-
-                boxerBlue.hp -= dmg;
+                let finalDmg = calculateDamage(boxerRed.punchType, boxerRed.punchRoll, boxerBlue.lipLevel);
+                boxerBlue.hp -= finalDmg;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
 
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
@@ -179,14 +172,8 @@ export function updatePhysics() {
 
                 if (boxerRed.punchRoll === 6 && !boxerBlue.pendingKnockdown) {
                     boxerRed.totalSixes += 1; 
-
                     if (boxerRed.totalSixes % 3 === 0) {
-                        const options = ["eye", "lip", "liver"];
-                        const chosen = options[Math.floor(Math.random() * options.length)];
-
-                        if (chosen === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
-                        if (chosen === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
-                        if (chosen === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
+                        applyRandomInjury(boxerBlue);
                     }
                 }
 
@@ -197,55 +184,17 @@ export function updatePhysics() {
             boxerRed.hasHit = true;
         }
 
-        if (pVal > 0.75) {
-            let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
-            const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
-            if (currentHand === strongHand) {
-                basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
-            }
-
-            if (boxerRed.punchRoll === 6) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
-            } else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
-            } else {
-                calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
-            }
-
-            if (boxerBlue.lipLevel === 1) calculatedImpact *= 0.90; 
-            else if (boxerBlue.lipLevel >= 2) calculatedImpact *= 0.80; 
-
-            if (boxerBlue.eyeLevel === 1) {
-                if (Math.random() < 0.10) calculatedImpact = 0;
-            } else if (boxerBlue.eyeLevel >= 2) {
-                if (Math.random() < 0.20) calculatedImpact = 0;
-            }
-        }
-
+        // Kończenie fazy ciosu po pełnym cyklu sinusa
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
-            boxerBlue.isBlockingNow = false; 
-            
-            if (boxerBlue.pendingKnockdown) {
-                boxerBlue.isKnockedDown = true;
-                boxerBlue.pendingKnockdown = false;
-            } else if (boxerRed.punchQueue.length > 0) {
-                boxerRed.punchCooldown = 10;
-            }
+            boxerRed.punchProgress = 0;
+            boxerRed.punchCooldown = boxerRed.punchType === 'hook' ? 22 : 14;
         }
     }
 
-    const dx = ringCenter - boxerRed.x;
-    const dy = ringCenter - boxerRed.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-
-    const targetRx = ringCenter + (dx / dist) * calculatedImpact;
-    const targetRy = ringCenter + (dy / dist) * calculatedImpact;
-
-    boxerBlue.rx += (targetRx - boxerBlue.rx) * 0.2;
-    boxerBlue.ry += (targetRy - boxerBlue.ry) * 0.2;
-}
-
-export function isBlueKnockedDown() {
-    return boxerBlue.isKnockedDown;
+    if (boxerBlue.pendingKnockdown || boxerBlue.hp <= 0) {
+        boxerBlue.isKnockedDown = true;
+        boxerBlue.pendingKnockdown = false;
+        boxerBlue.hp = 0;
+    }
 }
