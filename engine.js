@@ -205,28 +205,4 @@ export function updatePhysics() {
             }
 
             if (boxerRed.punchRoll === 6) {
-                calculatedImpact = basePower * 2.0;
-            } else {
-                calculatedImpact = basePower;
-            }
-        }
-
-        // Kończenie fazy ciosu (gdy animacja ciosu osiągnie pełny zakres)
-        if (boxerRed.punchProgress >= Math.PI) {
-            boxerRed.isPunching = false;
-            boxerRed.punchProgress = 0;
-            boxerRed.punchCooldown = boxerRed.punchType === 'hook' ? 22 : 14;
-        }
-    }
-
-    if (boxerBlue.pendingKnockdown || boxerBlue.hp <= 0) {
-        boxerBlue.isKnockedDown = true;
-        boxerBlue.pendingKnockdown = false;
-        boxerBlue.hp = 0;
-    }
-}
-
-// Funkcja techniczna niezbędna do poprawnego działania pliku renderer-hands.js
-export function isBlueKnockedDown() {
-    return boxerBlue.isKnockedDown;
-}
+                calculatedImpact =
