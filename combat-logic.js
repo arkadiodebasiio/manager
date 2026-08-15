@@ -29,29 +29,18 @@ export function handleBotAttackDecisions(bR) {
 
 export function processPunchExecution() {
     let r = boxerRed, b = boxerBlue;
-    
-    // OBLICZANIE ODLEGŁOŚCI DLA REALISTYCZNEGO TRAFIENIA
-    const dx = b.x - r.x;
-    const dy = b.y - r.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const hitZone = r.radius + b.radius + 32; // Suma ciał + długość pięści
-
     if (r.isPunching) {
         r.punchProgress += r.punchType === 'straight' ? 0.155 : (r.punchType === 'super' ? 0.080 : 0.132);
         if (Math.sin(r.punchProgress) > 0.75 && !r.hasHit) {
             r.punchRoll = Math.floor(Math.random() * 6) + 1;
-            
-            // JEŚLI CZERWONY JEST BLISKO, TO DOPIERO TRAFIA
-            if (distance <= hitZone) {
-                if (b.isBlockingNow) { b.consecutiveBigHits = 0; if (r.punchType === 'super') b.hp = Math.max(0, b.hp - 15); }
+            if (b.isBlockingNow) { b.consecutiveBigHits = 0; if (r.punchType === 'super') b.hp = Math.max(0, b.hp - 15); }
+            else {
+                if (r.punchType === 'super') { b.hp = Math.max(0, b.hp - 30); b.pendingKnockdown = true; }
                 else {
-                    if (r.punchType === 'super') { b.hp = Math.max(0, b.hp - 30); b.pendingKnockdown = true; }
-                    else {
-                        let d = r.punchType === 'hook' ? 5 : 3; d *= r.punchRoll === 6 ? 2 : (r.punchRoll >= 3 ? 1.3 : 1); b.hp = Math.max(0, b.hp - d);
-                        if (r.punchRoll >= 5) { b.consecutiveBigHits++; if (b.consecutiveBigHits >= 2) { b.pendingKnockdown = true; r.punchQueue = []; } } else b.consecutiveBigHits = 0;
-                        if (r.punchRoll === 6 && !b.pendingKnockdown) { r.totalSixes++; if (r.totalSixes % 3 === 0) { let o = ["eye", "lip", "liver"], c = o[Math.floor(Math.random() * o.length)]; if (c === "eye" && b.eyeLevel < 3) b.eyeLevel++; if (c === "lip" && b.lipLevel < 3) b.lipLevel++; if (c === "liver" && b.liverLevel < 3) b.liverLevel++; } }
-                        if (r.punchType === 'hook' && Math.random() < 0.2 && !b.pendingKnockdown) b.stunTimer = 300;
-                    }
+                    let d = r.punchType === 'hook' ? 5 : 3; d *= r.punchRoll === 6 ? 2 : (r.punchRoll >= 3 ? 1.3 : 1); b.hp = Math.max(0, b.hp - d);
+                    if (r.punchRoll >= 5) { b.consecutiveBigHits++; if (b.consecutiveBigHits >= 2) { b.pendingKnockdown = true; r.punchQueue = []; } } else b.consecutiveBigHits = 0;
+                    if (r.punchRoll === 6 && !b.pendingKnockdown) { r.totalSixes++; if (r.totalSixes % 3 === 0) { let o = ["eye", "lip", "liver"], c = o[Math.floor(Math.random() * o.length)]; if (c === "eye" && b.eyeLevel < 3) b.eyeLevel++; if (c === "lip" && b.lipLevel < 3) b.lipLevel++; if (c === "liver" && b.liverLevel < 3) b.liverLevel++; } }
+                    if (r.punchType === 'hook' && Math.random() < 0.2 && !b.pendingKnockdown) b.stunTimer = 300;
                 }
             }
             r.hasHit = true;
@@ -61,16 +50,12 @@ export function processPunchExecution() {
     if (b.isPunching) {
         b.punchProgress += b.punchType === 'straight' ? 0.155 : (b.punchType === 'super' ? 0.080 : 0.132);
         if (Math.sin(b.punchProgress) > 0.75 && !b.hasHit) {
-            
-            // JEŚLI NIEBIESKI JEST BLISKO, TO DOPIERO TRAFIA
-            if (distance <= hitZone) {
-                if (r.isBlockingNow) { r.consecutiveBigHits = 0; if (b.punchType === 'super') r.hp = Math.max(0, r.hp - 15); }
+            if (r.isBlockingNow) { r.consecutiveBigHits = 0; if (b.punchType === 'super') r.hp = Math.max(0, r.hp - 15); }
+            else {
+                if (b.punchType === 'super') { r.hp = Math.max(0, r.hp - 30); }
                 else {
-                    if (b.punchType === 'super') { r.hp = Math.max(0, r.hp - 30); }
-                    else {
-                        let d = b.punchType === 'hook' ? 5 : 3; d *= (b.punchRoll % 6 === 0 ? 2 : 1); r.hp = Math.max(0, r.hp - d);
-                        if (b.punchRoll % 6 === 0) { b.totalSixes = (b.totalSixes || 0) + 1; }
-                    }
+                    let d = b.punchType === 'hook' ? 5 : 3; d *= (b.punchRoll % 6 === 0 ? 2 : 1); r.hp = Math.max(0, r.hp - d);
+                    if (b.punchRoll % 6 === 0) { b.totalSixes = (b.totalSixes || 0) + 1; }
                 }
             }
             b.hasHit = true;
