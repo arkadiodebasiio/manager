@@ -1,7 +1,7 @@
 // combat-logic.js
 
 export function initSuperPunch(boxerRed) {
-    if (boxerRed.superPunchTimer === undefined) {
+    if (boxerRed.superPunchTimer === undefined || boxerRed.superPunchTimer === 0) {
         boxerRed.superPunchTimer = Math.floor(Math.random() * 5400) + 2700;
         boxerRed.isChargingSuper = false;
         boxerRed.superChargeFrames = 0;
@@ -42,4 +42,3 @@ export function executeSuperPunchHit(boxerRed, boxerBlue) {
         boxerBlue.pendingKnockdown = true;
     }
 }
-
