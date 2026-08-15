@@ -1,6 +1,6 @@
 import { ctx, boxerRed, boxerBlue, strongHand } from './engine.js';
 
-let isBlocking = false, blockDecisionMade = false, activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
+let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 
 export function drawBlueBoxer() {
     const bounce = Math.sin(boxerBlue.animTimer) * 3;
@@ -8,18 +8,8 @@ export function drawBlueBoxer() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     const isStunned = boxerBlue.stunTimer > 0;
     
-    if (boxerRed.isPunching && !blockDecisionMade) {
-        isBlocking = isStunned ? false : Math.random() < 0.50; 
-        
-        // Obsługa pękania gardy na bazie liverLevel
-        if (isBlocking && boxerBlue.liverLevel > 0) {
-            boxerBlue.blockCount += 1;
-            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
-            if (boxerBlue.blockCount >= breakLimit) { isBlocking = false; boxerBlue.blockCount = 0; }
-        }
-        blockDecisionMade = true; window.isCurrentlyBlockingGarda = isBlocking;
-    }
-    if (!boxerRed.isPunching) { isBlocking = false; blockDecisionMade = false; }
+    // Pobieramy stan gardy bezpośrednio z silnika
+    const isBlocking = boxerBlue.isBlockingNow;
 
     let currentColor = boxerBlue.color, gloveColor = '#d35400'; 
     if (boxerRed.isPunching && pVal > 0.85) { if (isBlocking) gloveColor = '#f1c40f'; else currentColor = '#ffbebe'; }
@@ -64,10 +54,7 @@ export function drawBlueBoxer() {
 export function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     
-    // SPRAWDZENIE KONTUZJI POTRÓJNEJ (Czy którykolwiek poziom to 3)
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
-    
-    // Mnożnik postępu animacji ciosu czerwonego: zwolnienie o 20% przy potrójnej kontuzji niebieskiego
     const punchSpeedMultiplier = hasTriple ? 0.80 : 1.0;
     
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
@@ -114,7 +101,7 @@ export function drawRedBoxer() {
 
 export function drawBlockShield() {
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    if (boxerRed.isPunching && pVal > 0.85 && isBlocking) {
+    if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
         ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
         ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
