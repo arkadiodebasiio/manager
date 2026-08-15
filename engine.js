@@ -1,6 +1,7 @@
 export const canvas = document.getElementById('ringCanvas');
-export const ctx = canvas ? canvas.getContext('2d') : null;
+export const ctx = canvas.getContext('2d');
 
+canvas.width = canvas.height = 500;
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
 
@@ -26,12 +27,6 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    // WYMUSZENIE ROZMIARU: Zapobiega ucinaniu i zmniejszaniu ringu w Second Life
-    if (canvas && (canvas.width !== 500 || canvas.height !== 500)) {
-        canvas.width = 500;
-        canvas.height = 500;
-    }
-
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
