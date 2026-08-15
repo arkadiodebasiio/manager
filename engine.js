@@ -1,5 +1,33 @@
-export const canvas = document.getElementById('ringCanvas');
-export const ctx = canvas ? canvas.getContext('2d') : null;
+// Dynamiczne, bezpieczne pobieranie canvasu i kontekstu w locie ringu
+let internalCanvas = null;
+let internalCtx = null;
+
+function initCanvas() {
+    if (!internalCanvas) {
+        internalCanvas = document.getElementById('ringCanvas');
+        if (internalCanvas) {
+            internalCanvas.width = 500;
+            internalCanvas.height = 500;
+            internalCtx = internalCanvas.getContext('2d');
+        }
+    }
+}
+
+// Eksportujemy sprytne gettery, które obronią plik renderer-hands.js przed wartością null
+export const canvas = {
+    get width() { return 500; },
+    get height() { return 500; }
+};
+
+export const ctx = new Proxy({}, {
+    get(target, prop) {
+        initCanvas();
+        if (internalCtx && typeof internalCtx[prop] === 'function') {
+            return internalCtx[prop].bind(internalCtx);
+        }
+        return internalCtx ? internalCtx[prop] : null;
+    }
+});
 
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
@@ -28,6 +56,8 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
+    initCanvas(); // Upewniamy się, że gra ma dostęp do ringu w każdej klatce fizyki
+
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -58,18 +88,36 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // Zarządzanie przerwą między ciosami w serii combo
-    if (!boxerRed.isPunching && boxerRed.comboLeft > 0) {
-        boxerRed.comboDelay--;
-        if (boxerRed.comboDelay <= 0) {
+    if (!boxerRed.isPunching) {
+        if (boxerRed.comboLeft > 0) {
+            boxerRed.comboDelay--;
+            if (boxerRed.comboDelay <= 0) {
+                boxerRed.isPunching = true;
+                boxerRed.punchProgress = 0;
+                boxerRed.punchTimer = 0; 
+                boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
+                boxerRed.hasHit = false; 
+                boxerRed.comboLeft--; 
+
+                boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+                if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+                    boxerBlue.blockCount += 1;
+                    const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+                    if (boxerBlue.blockCount >= breakLimit) {
+                        boxerBlue.isBlockingNow = false; 
+                        boxerBlue.blockCount = 0;
+                    }
+                }
+            }
+        } else if (boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.isPunching = true;
             boxerRed.punchProgress = 0;
-            boxerRed.punchTimer = 0; 
-            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
+            boxerRed.punchTimer = 0;
+            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             boxerRed.hasHit = false; 
-            boxerRed.comboLeft--; 
 
             boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
             if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
                 boxerBlue.blockCount += 1;
                 const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
@@ -77,25 +125,6 @@ export function updatePhysics() {
                     boxerBlue.isBlockingNow = false; 
                     boxerBlue.blockCount = 0;
                 }
-            }
-        }
-    } 
-    // Standardowe wyprowadzanie ciosów bazowych
-    else if (!boxerRed.isPunching && boxerRed.comboLeft === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
-        boxerRed.isPunching = true;
-        boxerRed.punchProgress = 0;
-        boxerRed.punchTimer = 0;
-        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-        boxerRed.hasHit = false; 
-
-        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-
-        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
-            boxerBlue.blockCount += 1;
-            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
-            if (boxerBlue.blockCount >= breakLimit) {
-                boxerBlue.isBlockingNow = false; 
-                boxerBlue.blockCount = 0;
             }
         }
     }
@@ -169,18 +198,16 @@ export function updatePhysics() {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
 
-            // Losowanie kolejnego combo odbywa się TYLKO gdy całkowicie skończyliśmy poprzednią serię
             if (boxerRed.comboLeft === 0) {
                 const rand = Math.random();
                 if (rand < 0.05) {
                     boxerRed.comboLeft = 2;   
-                    boxerRed.comboDelay = 8;  // Odstęp czasowy ustawiamy bezpiecznie tutaj
+                    boxerRed.comboDelay = 8;  
                 } else if (rand < 0.35) {     
                     boxerRed.comboLeft = 1;   
                     boxerRed.comboDelay = 8;  
                 }
             } else {
-                // Jeśli jesteśmy w trakcie serii, po zakończeniu ciosu po prostu odnawiamy delay dla następnego uderzenia
                 boxerRed.comboDelay = 8;
             }
         }
