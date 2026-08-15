@@ -20,7 +20,7 @@ export const boxerBlue = {
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
     blockCount: 0,
-    // Trzy niezależne poziomy kontuzji (0=brak, 1=lekka, 2=double, 3=triple)
+    isBlockingNow: false, // Nowa bezpieczna flaga wewnątrz obiektu
     eyeLevel: 0,
     lipLevel: 0,
     liverLevel: 0
@@ -51,12 +51,26 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
+    // ROZPOCZĘCIE CIOSU - Losujemy decyzję o gardzie bezpiecznie w silniku
     if (!boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
         boxerRed.punchTimer = 0;
         boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
         boxerRed.hasHit = false; 
+
+        // Czy niebieski spróbuje blokować? (Garda niemożliwa jeśli jest ogłuszony)
+        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+
+        // Jeśli ma kontuzję wątroby, sprawdzamy zmęczenie gardy dokładnie tutaj
+        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+            boxerBlue.blockCount += 1;
+            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+            if (boxerBlue.blockCount >= breakLimit) {
+                boxerBlue.isBlockingNow = false; 
+                boxerBlue.blockCount = 0;
+            }
+        }
     }
 
     let calculatedImpact = 0;
@@ -73,15 +87,14 @@ export function updatePhysics() {
         // MOMENT TRAFIENIA LUB BLOKU
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
-            const isCurrentlyBlockingGarda = window.isCurrentlyBlockingGarda || false;
 
-            if (!isCurrentlyBlockingGarda) {
+            // Czyste trafienie (brak bloku)
+            if (!boxerBlue.isBlockingNow) {
                 if (boxerRed.punchRoll === 6) {
                     boxerRed.totalSixes += 1; 
 
-                    // Wywołanie co 3 trafione szóstki (3, 6, 9, 12, 15...)
+                    // Wywołanie co 3 trafione szóstki (3, 6, 9, 12...)
                     if (boxerRed.totalSixes % 3 === 0) {
-                        // CIĄGŁE LOSOWANIE: Losujemy kategorię za każdym razem od nowa
                         const options = ["eye", "lip", "liver"];
                         const chosen = options[Math.floor(Math.random() * options.length)];
 
@@ -113,14 +126,14 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW KONTUZJI WARGI (Zależny od lipLevel)
+            // WPŁYW KONTUZJI WARGI
             if (boxerBlue.lipLevel === 1) {
                 calculatedImpact *= 0.90; 
             } else if (boxerBlue.lipLevel >= 2) {
                 calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW KONTUZJI OKA (Zależny od eyeLevel)
+            // WPŁYW KONTUZJI OKA
             if (boxerBlue.eyeLevel === 1) {
                 if (Math.random() < 0.10) calculatedImpact = 0;
             } else if (boxerBlue.eyeLevel >= 2) {
@@ -128,7 +141,10 @@ export function updatePhysics() {
             }
         }
 
-        if (boxerRed.punchProgress >= Math.PI) boxerRed.isPunching = false;
+        if (boxerRed.punchProgress >= Math.PI) {
+            boxerRed.isPunching = false;
+            boxerBlue.isBlockingNow = false; // Reset gardy na koniec ciosu
+        }
     }
 
     const dx = ringCenter - boxerRed.x, dy = ringCenter - boxerRed.y, dist = Math.sqrt(dx * dx + dy * dy) || 1;
