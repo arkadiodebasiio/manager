@@ -12,6 +12,9 @@ let currentOrbitRadius = baseRadius;
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
 const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
 
+// Globalna zmienna poświaty - silnik decyduje, kiedy ma błysnąć
+export let comboGlowTimer = 0;
+
 export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
@@ -42,6 +45,11 @@ export function updatePhysics() {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
         return; 
+    }
+
+    // Płynne odliczanie błysku w dół co klatkę gry
+    if (comboGlowTimer > 0) {
+        comboGlowTimer--;
     }
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
@@ -98,20 +106,31 @@ export function updatePhysics() {
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 
+                // ODPAŁ: Świeci TYLKO przy wylosowaniu potężnego combo!
+                comboGlowTimer = 45;
+
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
                     boxerRed.punchQueue = []; 
+                    comboGlowTimer = 0;
                 }
             } else if (comboRoll < 0.06) {
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 
+                // ODPAŁ
+                comboGlowTimer = 45;
+                
                 if (isStunnedNow) {
                     boxerBlue.pendingKnockdown = true;
                     boxerRed.punchQueue = []; 
+                    comboGlowTimer = 0;
                 }
             } else if (comboRoll < 0.21) {
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+                
+                // ODPAŁ
+                comboGlowTimer = 45;
             }
         }
 
