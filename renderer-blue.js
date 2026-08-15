@@ -106,4 +106,3 @@ export function drawBlueBoxer() {
         ctx.restore();
     }
 }
-
