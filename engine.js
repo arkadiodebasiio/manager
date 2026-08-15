@@ -54,14 +54,15 @@ function rollInjury() {
 }
 
 export function updatePhysics() {
-    // Dynamiczne ustalanie dystansu do celu
-    let targetRadius = baseRadius;
+    // PRZYWRÓCONE KLASYCZNE WYLICZANIE ORBITY (Zabezpieczenie przed znikaniem pomarańczowej kropki)
+    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'hook' ? 54 : 62) : baseRadius;
+    
+    // Nadpisanie orbity tylko i wyłącznie na czas trwania superciosu
     if (boxerRed.isSuperPunching) {
-        targetRadius = 50; // Bardzo bliski doskok przy superciosie!
-    } else {
-        const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
-        targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
+        targetRadius = 55; // Doskok do bliskiego dystansu walki
     }
+    
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
@@ -87,12 +88,11 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // LOGIKA SUPER CIOSU
+    // OBSŁUGA SUPER CIOSU
     if (boxerRed.isSuperPunching) {
         if (!boxerRed.isSuperPunchStriking) {
             boxerRed.superPunchTimer++;
 
-            // Decyzja o bloku zapada tuż przed uderzeniem
             if (boxerRed.superPunchTimer === 170) {
                 boxerBlue.isBlockingNow = Math.random() < 0.50;
             }
@@ -105,7 +105,6 @@ export function updatePhysics() {
             boxerRed.superPunchProgress += 0.18; 
             const spVal = Math.sin(boxerRed.superPunchProgress);
 
-            // ZAKOŃCZENIE CIOSU (DETEKCJA TRAFIENIA)
             if (spVal > 0.75 && !boxerRed.hasHit) {
                 if (boxerBlue.isBlockingNow) {
                     boxerBlue.consecutiveSixes = 0;
@@ -142,7 +141,8 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 4000)) {
+        // Szansa na supercios raz na około minuty (częstsze losowanie ułatwiające testy!)
+        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 2500)) {
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
             boxerRed.isSuperPunchStriking = false;
