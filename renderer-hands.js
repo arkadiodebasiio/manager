@@ -8,7 +8,6 @@ export function drawRedBoxer() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const bounceOffset = boxerRed.isChargingSuper ? 0 : Math.sin(boxerRed.animTimer) * 4;
     const angleToBlue = Math.atan2(boxerBlue.y - boxerRed.y, boxerBlue.x - boxerRed.x);
-
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) activePunchHand = Math.random() < 0.5 ? 'left' : 'right';
@@ -32,24 +31,12 @@ export function drawRedBoxer() {
         gloveColor = '#f1c40f';
     } 
     else if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
-    else if (boxerRed.isPunching) {
-        let reach = boxerRed.punchType === 'super' ? 36 : 24; 
-        let currentReach = pVal * reach;
-
-        if (activePunchHand === 'left') {
-            leftY = (-boxerRed.radius + 4) - currentReach;
-            leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 15) : -12;
-            rightY = -boxerRed.radius + 6;
-        } else {
-            rightY = (-boxerRed.radius + 4) - currentReach;
-            rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 15) : 12;
-            leftY = -boxerRed.radius + 6;
-        }
-    }
+    else if (boxerRed.isPunching && activePunchHand === 'left') { let reach = boxerRed.punchType === 'super' ? 44 : 30; leftY = (-boxerRed.radius + 4) - (pVal * reach); leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : (-12 + pVal * 10); rightY = -boxerRed.radius + 6; } 
+    else if (boxerRed.isPunching && activePunchHand === 'right') { let reach = boxerRed.punchType === 'super' ? 44 : 30; rightY = (-boxerRed.radius + 4) - (pVal * reach); rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : (12 - pVal * 10); leftY = -boxerRed.radius + 6; }
 
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftX, leftY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
     ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightX, rightY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; strokeColor; ctx.strokeStyle = strokeColor;
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightX, rightY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
     ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
     ctx.save(); ctx.rotate(-(angleToBlue + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
