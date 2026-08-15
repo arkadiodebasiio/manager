@@ -1,5 +1,10 @@
-import { canvas, ctx, updatePhysics } from './engine.js';
+import { canvas, ctx, updatePhysics, boxerRed } from './engine.js';
 import { drawBlueBoxer, drawRedBoxer, drawBlockShield } from './renderer-hands.js';
+
+// Zabezpieczenie przed błędem braku zdefiniowanej ręki w pierwszej klatce gry
+if (!window.currentActivePunchHand) {
+    window.currentActivePunchHand = 'left';
+}
 
 function drawRing() {
     ctx.fillStyle = '#d4ac0d'; ctx.fillRect(50, 50, 400, 400);
