@@ -4,7 +4,6 @@ import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './
 
 let currentOrbitRadius = baseRadius; 
 
-// Funkcje pomocnicze dla plików graficznych (renderers)
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
 }
@@ -46,7 +45,7 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // DYNAMICZNY ODSKOK: Przywracamy oryginalną fizykę odskoku ciosów
+    // ORYGINALNY DYNAMICZNY ODSKOK - Bezpieczna matematyka
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
@@ -65,16 +64,12 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // Pobieranie kolejnego ciosu w serii
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
-            boxerRed.isComboExecuting = true; 
             shouldPunch = true;
         } 
-        // Wyprowadzanie pierwszego ciosu
         else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-            boxerRed.isComboExecuting = false; 
             shouldPunch = true;
 
             const comboRoll = Math.random();
@@ -173,12 +168,10 @@ export function updatePhysics() {
             if (boxerBlue.pendingKnockdown) {
                 boxerBlue.isKnockedDown = true;
                 boxerBlue.pendingKnockdown = false;
-                boxerRed.isComboExecuting = false; 
             } else if (boxerRed.punchQueue.length > 0) {
                 boxerRed.punchCooldown = 10;
             } else {
                 boxerRed.punchCooldown = 30;
-                boxerRed.isComboExecuting = false; 
             }
         }
     }
