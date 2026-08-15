@@ -38,6 +38,7 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
+    // Trwała przerwa w meczu po zaliczeniu nokdaunu
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
@@ -228,7 +229,6 @@ export function updatePhysics() {
     boxerBlue.ry += (targetRy - boxerBlue.ry) * 0.2;
 }
 
-// NOWA FUNKCJA DO PEWNEJ SYNCHRONIZACJI
 export function isBlueKnockedDown() {
     return boxerBlue.isKnockedDown;
 }
