@@ -1,113 +1,90 @@
-import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js';
-let blackPulseTimer = 0, blockVisualTimer = 0, starAngle = 0;
-
-export function handleBotAttackDecisions(baseRadius) {
-    if (boxerRed.isPunching || boxerRed.isChargingSuper) return;
-    let shouldPunch = false;
-    if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
-        boxerRed.punchType = boxerRed.punchQueue.shift(); shouldPunch = true;
-    } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
-        if (boxerRed.superCooldown <= 0 && Math.random() < 0.40) {
-            boxerRed.isChargingSuper = true; boxerRed.superChargeTimer = 180; boxerRed.superCooldown = 5400; boxerRed.punchTimer = 0; return; 
-        } 
-        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; shouldPunch = true;
-        const roll = Math.random(), isStun = boxerBlue.stunTimer > 0;
-        if (roll < 0.01) {
-            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook'); boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook'); boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-            if (isStun) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
-        } else if (roll < 0.06) {
-            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook'); boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-            if (isStun) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
-        } else if (roll < 0.21) { boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook'); }
+import { boxerRed, boxerBlue, strongHand, blueStrongHand, isBlueKnockedDown } from './engine.js';
+let bPT = 0, bVT = 0, sA = 0;
+export function handleBotAttackDecisions(bR) {
+    let r = boxerRed, b = boxerBlue;
+    if (!r.isPunching && !r.isChargingSuper) {
+        if (r.punchQueue.length > 0 && r.punchCooldown === 0) { r.punchType = r.punchQueue.shift(); r.isPunching = true; r.punchProgress = 0; r.punchTimer = 0; r.hasHit = false; b.isBlockingNow = b.stunTimer > 0 ? false : Math.random() < 0.5; }
+        else if (r.punchQueue.length === 0 && r.punchTimer > 60 && Math.random() < 0.03) {
+            if (r.superCooldown <= 0 && Math.random() < 0.4) { r.isChargingSuper = true; r.superChargeTimer = 180; r.superCooldown = 5400; r.punchTimer = 0; return; }
+            r.punchType = Math.random() < 0.7 ? 'straight' : 'hook'; r.isPunching = true; r.punchProgress = 0; r.punchTimer = 0; r.hasHit = false; b.isBlockingNow = b.stunTimer > 0 ? false : Math.random() < 0.5;
+            let roll = Math.random(); if (roll < 0.01) { r.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); r.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); r.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.06) { r.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); r.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.21) { r.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); }
+        }
     }
-    if (shouldPunch) {
-        boxerRed.isPunching = true; boxerRed.punchProgress = 0; boxerRed.punchTimer = 0; boxerRed.hasHit = false; 
-        boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
-        if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
-            boxerBlue.blockCount += 1;
-            if (boxerBlue.blockCount >= (boxerBlue.liverLevel >= 2 ? 5 : 10)) { boxerBlue.isBlockingNow = false; boxerBlue.blockCount = 0; }
+    if (!b.isKnockedDown && b.stunTimer <= 0 && !b.isPunching && !b.isChargingSuper) {
+        if (b.punchQueue && b.punchQueue.length > 0 && b.punchCooldown === 0) { b.punchType = b.punchQueue.shift(); b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false; r.isBlockingNow = Math.random() < 0.5; }
+        else if ((!b.punchQueue || b.punchQueue.length === 0) && b.punchTimer > 60 && Math.random() < 0.03) {
+            if (b.superCooldown <= 0 && Math.random() < 0.4) { b.isChargingSuper = true; b.superChargeTimer = 180; b.superCooldown = 5400; b.punchTimer = 0; return; }
+            b.punchType = Math.random() < 0.7 ? 'straight' : 'hook'; b.isPunching = true; b.punchProgress = 0; b.punchTimer = 0; b.hasHit = false; r.isBlockingNow = Math.random() < 0.5;
+            if (!b.punchQueue) b.punchQueue = []; let roll = Math.random(); if (roll < 0.01) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.06) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); } else if (roll < 0.21) { b.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook'); }
         }
     }
 }
-
 export function processPunchExecution() {
-    if (!boxerRed.isPunching) return;
-    boxerRed.punchProgress += boxerRed.punchType === 'straight' ? 0.155 : (boxerRed.punchType === 'super' ? 0.080 : 0.132); 
-    const pVal = Math.sin(boxerRed.punchProgress);
-    if (pVal > 0.75 && !boxerRed.hasHit) {
-        boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
-        if (boxerBlue.isBlockingNow) {
-            boxerBlue.consecutiveBigHits = 0; if (boxerRed.punchType === 'super') { boxerBlue.hp -= 15; if (boxerBlue.hp < 0) boxerBlue.hp = 0; }
-        } else {
-            if (boxerRed.punchType === 'super') {
-                boxerBlue.hp -= 30; if (boxerBlue.hp < 0) boxerBlue.hp = 0; boxerBlue.pendingKnockdown = true; 
-            } else {
-                let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
-                dmg *= boxerRed.punchRoll === 6 ? 2.0 : (boxerRed.punchRoll >= 3 ? 1.3 : 1.0);
-                dmg *= boxerBlue.lipLevel === 1 ? 1.10 : (boxerBlue.lipLevel >= 2 ? 1.20 : 1.0);
-                boxerBlue.hp -= dmg; if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
-                if (boxerRed.punchRoll >= 5) {
-                    boxerBlue.consecutiveBigHits += 1; if (boxerBlue.consecutiveBigHits >= 2) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
-                } else { boxerBlue.consecutiveBigHits = 0; }
-                if (boxerRed.punchRoll === 6 && !boxerBlue.pendingKnockdown) {
-                    boxerRed.totalSixes += 1; 
-                    if (boxerRed.totalSixes % 3 === 0) {
-                        const opt = ["eye", "lip", "liver"], chs = opt[Math.floor(Math.random() * opt.length)];
-                        if (chs === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
-                        if (chs === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
-                        if (chs === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
-                    }
+    let r = boxerRed, b = boxerBlue;
+    if (!r.isPunching && !r.isChargingSuper) r.punchTimer += 0.66;
+    if (!b.isPunching && !b.isKnockedDown) { if (!b.punchTimer) b.punchTimer = 0; b.punchTimer += 0.66; }
+    if (b.punchCooldown > 0) b.punchCooldown--;
+    if (r.isPunching) {
+        r.punchProgress += r.punchType === 'straight' ? 0.155 : (r.punchType === 'super' ? 0.080 : 0.132);
+        if (Math.sin(r.punchProgress) > 0.75 && !r.hasHit) {
+            r.punchRoll = Math.floor(Math.random() * 6) + 1;
+            if (b.isBlockingNow) { b.consecutiveBigHits = 0; if (r.punchType === 'super') b.hp = Math.max(0, b.hp - 15); }
+            else {
+                if (r.punchType === 'super') { b.hp = Math.max(0, b.hp - 30); b.pendingKnockdown = true; }
+                else {
+                    let d = r.punchType === 'hook' ? 5 : 3; d *= r.punchRoll === 6 ? 2 : (r.punchRoll >= 3 ? 1.3 : 1); b.hp = Math.max(0, b.hp - d);
+                    if (r.punchRoll >= 5) { b.consecutiveBigHits++; if (b.consecutiveBigHits >= 2) { b.pendingKnockdown = true; r.punchQueue = []; } } else b.consecutiveBigHits = 0;
+                    if (r.punchType === 'hook' && Math.random() < 0.2 && !b.pendingKnockdown) b.stunTimer = 300;
                 }
-                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0 && !boxerBlue.pendingKnockdown) boxerBlue.stunTimer = 300; 
             }
+            r.hasHit = true;
         }
-        boxerRed.hasHit = true;
+        if (r.punchProgress >= Math.PI) { r.isPunching = false; r.punchProgress = 0; r.punchCooldown = r.punchType === 'super' ? 45 : 14; }
     }
-    if (boxerRed.punchProgress >= Math.PI) {
-        boxerRed.isPunching = false; boxerRed.punchProgress = 0;
-        boxerRed.punchCooldown = boxerRed.punchType === 'super' ? 45 : (boxerRed.punchType === 'hook' ? 22 : 14);
+    if (b.isPunching) {
+        b.punchProgress += b.punchType === 'straight' ? 0.155 : (b.punchType === 'super' ? 0.080 : 0.132);
+        if (Math.sin(b.punchProgress) > 0.75 && !b.hasHit) {
+            b.punchRoll = Math.floor(Math.random() * 6) + 1;
+            if (r.isBlockingNow) { r.consecutiveBigHits = 0; if (b.punchType === 'super') r.hp = Math.max(0, r.hp - 15); }
+            else {
+                if (b.punchType === 'super') { r.hp = Math.max(0, r.hp - 30); /* tu knock dla red */ }
+                else {
+                    let d = b.punchType === 'hook' ? 5 : 3; d *= b.punchRoll === 6 ? 2 : (b.punchRoll >= 3 ? 1.3 : 1); r.hp = Math.max(0, r.hp - d);
+                    if (b.punchRoll >= 5) { r.consecutiveBigHits = (r.consecutiveBigHits || 0) + 1; } else r.consecutiveBigHits = 0;
+                    if (b.punchType === 'hook' && Math.random() < 0.2 && !r.isPunching) { /* stun dla red */ }
+                }
+            }
+            b.hasHit = true;
+        }
+        if (b.punchProgress >= Math.PI) { b.isPunching = false; b.punchProgress = 0; b.punchCooldown = b.punchType === 'super' ? 45 : 14; }
     }
 }
-
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas'); if (!canvas || !boxerBlue || !boxerRed) return;
-    const ctx = canvas.getContext('2d'), down = isBlueKnockedDown(); if (down) blackPulseTimer += 0.05;
-    const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3;
-    
-    // Zsynchronizowany, poprawny kąt patrzenia niebieskiego na czerwonego
-    const angleToRed = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x);
-    
-    if (boxerBlue.isBlockingNow && !down && blockVisualTimer <= 0 && boxerRed.isPunching) blockVisualTimer = 20; 
-    if (blockVisualTimer > 0) blockVisualTimer--;
-    const isBlk = boxerBlue.isBlockingNow && blockVisualTimer > 0 && !down, isStun = boxerBlue.stunTimer > 0 && !down;
-    let col = boxerBlue.color, gCol = '#d35400'; 
+    const ctx = canvas.getContext('2d'), down = isBlueKnockedDown(); if (down) bPT += 0.05;
+    const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3, angle = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x);
+    if (boxerBlue.isBlockingNow && !down && bVT <= 0 && boxerRed.isPunching) bVT = 20; if (bVT > 0) bVT--;
+    const isBlk = boxerBlue.isBlockingNow && bVT > 0 && !down, isStun = boxerBlue.stunTimer > 0 && !down;
+    let col = boxerBlue.color, gCol = '#d35400';
     if (boxerRed.isPunching && Math.sin(boxerRed.punchProgress) > 0.85) { if (isBlk) gCol = '#f1c40f'; else col = '#ffbebe'; }
     if (isStun && col === boxerBlue.color) col = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
     if (down) col = '#abc4d6';
     ctx.beginPath(); ctx.ellipse(boxerBlue.x, boxerBlue.y + (down ? boxerBlue.radius * 1.5 : boxerBlue.radius), boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
-    ctx.save(); 
-    ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); 
-    ctx.rotate(angleToRed + Math.PI / 2); // Korekta obrotu przodem do celu
-    
-    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); 
-    ctx.lineWidth = down ? 4 : 2; ctx.strokeStyle = down ? `rgba(0,0,0,${0.3 + Math.abs(Math.sin(blackPulseTimer)) * 0.7})` : '#fff'; ctx.stroke();
-    if (boxerBlue.eyeLevel > 0) { ctx.beginPath(); ctx.arc(-7, -8, boxerBlue.eyeLevel >= 2 ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.eyeLevel >= 2 ? 'rgba(100,30,130,0.95)' : 'rgba(125,60,152,0.85)'; ctx.fill(); }
-    if (boxerBlue.liverLevel > 0) { ctx.beginPath(); ctx.arc(10, 4, boxerBlue.liverLevel >= 2 ? 7.5 : 6, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.liverLevel >= 2 ? 'rgba(20,120,60,0.95)' : 'rgba(39,174,96,0.85)'; ctx.fill(); }
-    if (boxerBlue.lipLevel > 0) { ctx.beginPath(); ctx.ellipse(0, -14, boxerBlue.lipLevel >= 2 ? 7.5 : 6, boxerBlue.lipLevel >= 2 ? 4 : 3, 0, 0, Math.PI * 2); ctx.fillStyle = boxerBlue.lipLevel >= 2 ? 'rgba(150,30,30,0.98)' : 'rgba(192,57,43,0.95)'; ctx.fill(); }
-    let lX = down ? -boxerBlue.radius - 14 : (isBlk ? -3 : -12), rX = down ? boxerBlue.radius + 14 : (isBlk ? 3 : 12), gY = down ? 0 : (-boxerBlue.radius + (isBlk ? 1 : (isStun ? 12 : 4)));
-    ctx.beginPath(); ctx.moveTo(isBlk ? -3 : -12, 0); ctx.lineTo(lX, gY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(isBlk ? 3 : 12, 0); ctx.lineTo(rX, gY + (isBlk || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2)); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
-    ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
-    ctx.beginPath(); ctx.arc(lX, gY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(rX, gY + (isBlk || down ? 0 : Math.sin(boxerBlue.animTimer * 2) * 2), 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
-    ctx.save(); ctx.rotate(-(angleToRed + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore(); 
-    if (isStun) {
-        starAngle += 0.15; ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y - 38);
-        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(Math.cos(starAngle + i * (Math.PI * 2 / 3)) * 16, Math.sin(starAngle + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2); ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); }
-        ctx.restore();
+    ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); ctx.rotate(angle + Math.PI / 2);
+    ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+    ctx.lineWidth = down ? 4 : 2; ctx.strokeStyle = down ? `rgba(0,0,0,${0.3 + Math.abs(Math.sin(bPT)) * 0.7})` : '#fff'; ctx.stroke();
+    let lX = -12, rX = 12, gY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
+    if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { gY = -boxerBlue.radius - 2; }
+    else if (boxerBlue.isPunching) {
+        if (boxerBlue.punchRoll % 2 === 0) { let rch = boxerBlue.punchType === 'super' ? 44 : 30; gY = (-boxerBlue.radius + 4) - (pValB * rch); lX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); }
+        else { let rch = boxerBlue.punchType === 'super' ? 44 : 30; gY = (-boxerBlue.radius + 4) - (pValB * rch); rX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); }
     }
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
+    ctx.beginPath(); ctx.arc(lX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.rotate(-(angle + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
+    if (isStun) { sA += 0.15; ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y - 38); for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(Math.cos(sA + i * (Math.PI * 2 / 3)) * 16, Math.sin(sA + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2); ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); } ctx.restore(); }
 }
-export function interruptRedSuper() {
-    if (boxerRed.isChargingSuper) { boxerRed.isChargingSuper = false; boxerRed.superChargeTimer = 0; boxerRed.punchCooldown = 60; return true; }
-    return false;
-}
+export function interruptRedSuper() { if (boxerRed.isChargingSuper) { boxerRed.isChargingSuper = false; boxerRed.superChargeTimer = 0; boxerRed.punchCooldown = 60; return true; } return false; }
