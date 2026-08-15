@@ -13,7 +13,7 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    streakSixes: 0 // Twój oryginalny licznik serii ciosów
+    streakSixes: 0 
 };
 
 export const boxerBlue = { 
@@ -58,10 +58,18 @@ export function updatePhysics() {
     let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
+        // Sprawdzenie czy bokser ma JAKĄKOLWIEK kontuzję potrójną
+        const hasTripleInjury = boxerBlue.lightInjury === "triple_eye" || 
+                                boxerBlue.lightInjury === "triple_lip" || 
+                                boxerBlue.lightInjury === "triple_liver";
+
+        // Mnożnik prędkości: 1.0 (normalnie) lub 0.8 (zwolnienie o 20% przy potrójnej kontuzji)
+        const speedModifier = hasTripleInjury ? 0.80 : 1.0;
+
         if (boxerRed.punchType === 'straight') {
-            boxerRed.punchProgress += 0.155; 
+            boxerRed.punchProgress += 0.155 * speedModifier; 
         } else {
-            boxerRed.punchProgress += 0.132; 
+            boxerRed.punchProgress += 0.132 * speedModifier; 
         }
 
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -74,22 +82,25 @@ export function updatePhysics() {
             if (isCurrentlyBlockingGarda) {
                 boxerRed.streakSixes = 0;
             } else {
-                // Czyste trafienie
                 if (boxerRed.punchRoll === 6) {
                     boxerRed.streakSixes += 1; 
 
-                    // USTAWIONE NA 2: Dwa czyste trafienia z siłą 6 wywołują lekką kontuzję
                     if (boxerRed.streakSixes >= 2) {
                         if (boxerBlue.lightInjury === "none") {
-                            // LOSOWANIE KONTUZJI Z 3 ISTNIEJĄCYCH
                             const options = ["eye", "lip", "liver"];
                             boxerBlue.lightInjury = options[Math.floor(Math.random() * options.length)];
                         } else if (boxerBlue.lightInjury === "eye") {
                             boxerBlue.lightInjury = "double_eye";
+                        } else if (boxerBlue.lightInjury === "double_eye") {
+                            boxerBlue.lightInjury = "triple_eye"; // Przeskok na poziom potrójny
                         } else if (boxerBlue.lightInjury === "lip") {
                             boxerBlue.lightInjury = "double_lip";
+                        } else if (boxerBlue.lightInjury === "double_lip") {
+                            boxerBlue.lightInjury = "triple_lip"; // Przeskok na poziom potrójny
                         } else if (boxerBlue.lightInjury === "liver") {
                             boxerBlue.lightInjury = "double_liver";
+                        } else if (boxerBlue.lightInjury === "double_liver") {
+                            boxerBlue.lightInjury = "triple_liver"; // Przeskok na poziom potrójny
                         }
                         boxerRed.streakSixes = 0; 
                     }
@@ -119,17 +130,17 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI WARGI
+            // WPŁYW LEKKIEJ KONTUZJI WARGI (Zachowanie progresji)
             if (boxerBlue.lightInjury === "lip") {
                 calculatedImpact *= 0.90; 
-            } else if (boxerBlue.lightInjury === "double_lip") {
+            } else if (boxerBlue.lightInjury === "double_lip" || boxerBlue.lightInjury === "triple_lip") {
                 calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI OKA
+            // WPŁYW LEKKIEJ KONTUZJI OKA (Zachowanie progresji)
             if (boxerBlue.lightInjury === "eye") {
                 if (Math.random() < 0.10) calculatedImpact = 0;
-            } else if (boxerBlue.lightInjury === "double_eye") {
+            } else if (boxerBlue.lightInjury === "double_eye" || boxerBlue.lightInjury === "triple_eye") {
                 if (Math.random() < 0.20) calculatedImpact = 0;
             }
         }
