@@ -98,7 +98,7 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.rotate(-(angleToRed - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerBlue.number, 0, 0); 
     ctx.restore(); 
-    ctx.restore(); // Przywrócenie matrycy dla Blue gracza
+    ctx.restore(); 
 
     if (isStunned) {
         starAngle += 0.15; ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry - 38);
@@ -127,7 +127,8 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    if ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0) {
+    // --- POPRAWIONY WARUNEK: Świeci tylko gdy flaga combo w silniku jest aktywna! ---
+    if (boxerRed.isExecutingCombo) {
         comboGlowTimer = 35; 
     }
 
@@ -172,9 +173,9 @@ export function drawRedBoxer() {
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(boxerRed.number, 0, 0); 
     ctx.restore(); 
-    ctx.restore(); // Przywrócenie matrycy dla Red gracza
+    ctx.restore(); 
 }
 
 export function drawBlockShield() {
-    // Pusta funkcja zapobiegająca błędowi braku definicji
+    // Pusta funkcja zabezpieczająca przed błędem wywołania w renderer.js
 }
