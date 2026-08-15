@@ -57,16 +57,19 @@ export function updatePhysics() {
     let calculatedImpact = 0;
 
     if (boxerRed.isPunching) {
-        boxerRed.punchProgress += 0.146; 
+        // Zróżnicowanie prędkości: sierp jest o ok. 15% wolniejszy od prostego
+        if (boxerRed.punchType === 'straight') {
+            boxerRed.punchProgress += 0.155; 
+        } else {
+            boxerRed.punchProgress += 0.132; 
+        }
 
         const pVal = Math.sin(boxerRed.punchProgress);
         
         // MOMENT TRAFIENIA
         if (pVal > 0.75 && !boxerRed.hasHit) {
-            // Losowanie kością dla określenia siły odrzucenia
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            // OGŁUSZENIE: Przywrócone do starej zasady (tylko sierp, brak gardy, 20% szansy, niezależnie od kostki)
             if (boxerRed.punchType === 'hook') {
                 if (!window.isCurrentlyBlockingGarda && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
                     boxerBlue.stunTimer = 300; 
@@ -75,12 +78,12 @@ export function updatePhysics() {
             boxerRed.hasHit = true;
         }
 
-        // Kalkulacja odrzucenia na bazie rzutu kością
+        // Kalkulacja odrzucenia
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             const currentHand = window.currentActivePunchHand || 'left';
             if (currentHand === strongHand) {
-                boxerRed.punchType === 'hook' ? 60 : 50; 
+                basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
             }
 
             if (boxerRed.punchRoll === 6) {
