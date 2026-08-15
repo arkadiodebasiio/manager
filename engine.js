@@ -4,7 +4,6 @@ import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './
 
 let currentOrbitRadius = baseRadius; 
 
-// Funkcje pomocnicze dla plików graficznych (renderers)
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
 }
@@ -46,13 +45,8 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // PRZYWRÓCONA FIZYKA: Płynne, ale natychmiastowe (mnożnik 1.0) przechodzenie promieni walki
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
-    
-    // Klasyczne, oryginalne odległości ringu dla bicia i odskoku
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
-    
-    // Mnożnik 1.0 sprawia, że postać natychmiast i bez opóźnień wykonuje doskok i potężny odskok
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 1.0;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
@@ -71,10 +65,12 @@ export function updatePhysics() {
 
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
+            boxerRed.isComboExecuting = true; 
             shouldPunch = true;
         } 
         else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+            boxerRed.isComboExecuting = false; 
             shouldPunch = true;
 
             const comboRoll = Math.random();
