@@ -19,7 +19,8 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    const isRealComboActive = boxerRed.isComboExecuting === true;
+    // Bezpieczne sprawdzanie combo bez crashowania silnika
+    const isRealComboActive = boxerRed.isPunching && boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
 
     ctx.beginPath(); 
     ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
