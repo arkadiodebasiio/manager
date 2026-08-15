@@ -4,7 +4,6 @@ import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './
 
 let currentOrbitRadius = baseRadius; 
 
-// Funkcje pomocnicze dla plików graficznych (renderers)
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
 }
@@ -46,12 +45,10 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // NAPRAWIONY BŁĄD MATEMATYCZNY: Wartości doskoku obliczane proporcjonalnie do baseRadius (150)
     const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
     
-    // Zawodnik doskakuje zmniejszając promień orbity o stałą wartość (odpowiednio 38, 30 lub 46 pikseli od liny ringu)
+    // Prawidłowe proporcje promienia ringu ustawione pod baseRadius (150)
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? (baseRadius - 38) : (boxerRed.punchType === 'super' ? (baseRadius - 46) : (baseRadius - 30))) : baseRadius;
-    
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 1.0;
 
     boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
