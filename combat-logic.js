@@ -68,7 +68,10 @@ export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas'); if (!canvas || !boxerBlue || !boxerRed) return;
     const ctx = canvas.getContext('2d'), down = isBlueKnockedDown(); if (down) bPT += 0.05;
     const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3;
-    const angle = Math.atan2(boxerBlue.y - boxerRed.y, boxerBlue.x - boxerRed.x);
+    
+    // NAPRAWIONY KĄT PATRZENIA: Niebieski patrzy dokładnie na czerwonego
+    const angle = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x);
+    
     if (boxerBlue.isBlockingNow && !down && bVT <= 0 && boxerRed.isPunching) bVT = 20; if (bVT > 0) bVT--;
     const isBlk = boxerBlue.isBlockingNow && bVT > 0 && !down, isStun = boxerBlue.stunTimer > 0 && !down;
     let col = boxerBlue.color, gCol = '#d35400';
@@ -76,21 +79,21 @@ export function drawBlueBoxer() {
     if (isStun && col === boxerBlue.color) col = Math.floor(boxerBlue.stunTimer / 10) % 2 === 0 ? '#1f618d' : boxerBlue.color;
     if (down) col = '#abc4d6';
     ctx.beginPath(); ctx.ellipse(boxerBlue.x, boxerBlue.y + (down ? boxerBlue.radius * 1.5 : boxerBlue.radius), boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
-    ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); ctx.rotate(angle - Math.PI / 2);
+    ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); ctx.rotate(angle + Math.PI / 2);
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     ctx.lineWidth = down ? 4 : 2; ctx.strokeStyle = down ? `rgba(0,0,0,${0.3 + Math.abs(Math.sin(bPT)) * 0.7})` : '#fff'; ctx.stroke();
     
     let leftX = -12, leftY = -boxerBlue.radius + 4, rightX = 12, rightY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
     if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { leftY = -boxerBlue.radius - 2; rightY = -boxerBlue.radius - 2; }
     else if (boxerBlue.isPunching) {
-        let rch = boxerBlue.punchType === 'super' ? 44 : 30;
+        let rch = boxerBlue.punchType === 'super' ? 36 : 24; // Skrócony zasięg ręki do walki w klinczu
         if (boxerBlue.punchRoll % 2 === 0) { 
             leftY = (-boxerBlue.radius + 4) - (pValB * rch); 
-            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); 
+            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 15) : (-12 + pValB * 6); 
             rightY = -boxerBlue.radius + 6; 
         } else { 
             rightY = (-boxerBlue.radius + 4) - (pValB * rch); 
-            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); 
+            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 15) : (12 - pValB * 6); 
             leftY = -boxerBlue.radius + 6; 
         }
     }
@@ -99,7 +102,7 @@ export function drawBlueBoxer() {
     ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
     ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.arc(rightX, rightY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
-    ctx.save(); ctx.rotate(-(angle - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
+    ctx.save(); ctx.rotate(-(angle + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
     if (isStun) { sA += 0.15; ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y - 38); for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(Math.cos(sA + i * (Math.PI * 2 / 3)) * 16, Math.sin(sA + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2); ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); } ctx.restore(); }
 }
 export function interruptRedSuper() { if (boxerRed.isChargingSuper) { boxerRed.isChargingSuper = false; boxerRed.superChargeTimer = 0; boxerRed.punchCooldown = 60; return true; } return false; }
