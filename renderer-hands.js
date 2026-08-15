@@ -3,8 +3,6 @@ import { boxerRed, boxerBlue, strongHand, isBlueKnockedDown } from './engine.js'
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 let comboGlowTimer = 0; 
 let blackPulseTimer = 0; 
-// NOWA ZMIENNA ZABEZPIECZAJĄCA
-let wasInComboLastFrame = false; 
 
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
@@ -127,12 +125,9 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // NAPRAWIONY WARUNEK: Sprawdza, czy to jest NOWE combo
-    const checkCombo = (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
-    if (checkCombo && !wasInComboLastFrame) {
+    if ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0) {
         comboGlowTimer = 35; 
     }
-    wasInComboLastFrame = checkCombo;
 
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; 
@@ -177,5 +172,5 @@ export function drawRedBoxer() {
 }
 
 export function drawBlockShield() {
-    // Pusta funkcja bezpieczeństwa
+    // Pusta funkcja zabezpieczająca przed błędem wywołania w renderer.js
 }
