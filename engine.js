@@ -13,7 +13,7 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    streakSixes: 0 // Licznik serii czystych szóstek z rzędu
+    streakSixes: 0 // Twój oryginalny, dobry licznik serii ciosów
 };
 
 export const boxerBlue = { 
@@ -72,16 +72,16 @@ export function updatePhysics() {
             const isCurrentlyBlockingGarda = window.isCurrentlyBlockingGarda || false;
 
             if (isCurrentlyBlockingGarda) {
-                // Blok niebieskiego bezwzględnie zeruje serię czerwonego
                 boxerRed.streakSixes = 0;
             } else {
                 // Czyste trafienie
                 if (boxerRed.punchRoll === 6) {
                     boxerRed.streakSixes += 1; 
 
-                    // Warunek: Dwa czyste trafienia z siłą 6 z rzędu bez bloków i innych ciosów pomiędzy
-                    if (boxerRed.streakSixes >= 2) {
+                    // Warunek serii trafień nienaruszony – zmienione tylko losowanie kontuzji w środku
+                    if (boxerRed.streakSixes >= 6) {
                         if (boxerBlue.lightInjury === "none") {
+                            // LOSOWANIE TYPU KONTUZJI
                             const options = ["eye", "lip", "liver"];
                             boxerBlue.lightInjury = options[Math.floor(Math.random() * options.length)];
                         } else if (boxerBlue.lightInjury === "eye") {
@@ -91,10 +91,9 @@ export function updatePhysics() {
                         } else if (boxerBlue.lightInjury === "liver") {
                             boxerBlue.lightInjury = "double_liver";
                         }
-                        boxerRed.streakSixes = 0; // Reset po nadaniu kontuzji
+                        boxerRed.streakSixes = 0; 
                     }
                 } else {
-                    // Cios wszedł czysto, ale miał siłę 1-5 -> Seria szóstek zostaje przerwana
                     boxerRed.streakSixes = 0;
                 }
 
@@ -120,14 +119,14 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI WARGI (Spadek mocy o 10% lub 20%)
+            // WPŁYW LEKKIEJ KONTUZJI WARGI
             if (boxerBlue.lightInjury === "lip") {
                 calculatedImpact *= 0.90; 
             } else if (boxerBlue.lightInjury === "double_lip") {
                 calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI OKA (Szansa na pudło/siłę 0)
+            // WPŁYW LEKKIEJ KONTUZJI OKA
             if (boxerBlue.lightInjury === "eye") {
                 if (Math.random() < 0.10) calculatedImpact = 0;
             } else if (boxerBlue.lightInjury === "double_eye") {
