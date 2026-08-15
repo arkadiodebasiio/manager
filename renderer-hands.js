@@ -32,18 +32,18 @@ export function drawRedBoxer() {
     } 
     else if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
     else if (boxerRed.isPunching) {
-        // ZASIĘG DOKŁADNIE DO CIAŁA PRZECIWNIKA
+        // NAPRAWIONE: Identyczny, czysty matematycznie dystans do twarzy rywala
         const dx = boxerBlue.x - boxerRed.x, dy = boxerBlue.y - boxerRed.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        let dynamicReach = dist - boxerRed.radius;
+        let dynamicReach = dist - boxerRed.radius - boxerBlue.radius + 6;
 
         if (activePunchHand === 'left') {
             leftY = (-boxerRed.radius + 4) - (pVal * dynamicReach);
-            leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : (-12 + pVal * 10);
+            leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 15) : -12;
             rightY = -boxerRed.radius + 6;
         } else {
             rightY = (-boxerRed.radius + 4) - (pVal * dynamicReach);
-            rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : (12 - pVal * 10);
+            rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 15) : 12;
             leftY = -boxerRed.radius + 6;
         }
     }
