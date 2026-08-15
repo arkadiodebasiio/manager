@@ -10,7 +10,6 @@ export function drawBlueBoxer() {
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerBlue || !boxerRed) return;
 
-    // Pobranie pewnego stanu knockdownu z silnika fizyki
     const down = isBlueKnockedDown();
 
     if (down) {
@@ -116,15 +115,17 @@ export function drawRedBoxer() {
     if (!ctx || !boxerRed || !boxerBlue) return;
 
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
+    
+    const isPunchingAny = boxerRed.isPunching || boxerRed.isSuperPunching;
+    const pVal = isPunchingAny ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
-    if (boxerRed.isPunching && !wasPunchingLastFrame) {
+    if (isPunchingAny && !wasPunchingLastFrame) {
         activePunchHand = Math.random() < (boxerRed.orbitSpeed < 0 ? 0.30 : 0.70) ? 'left' : 'right';
         if (typeof window !== 'undefined') {
             window.currentActivePunchHand = activePunchHand;
         }
     }
-    wasPunchingLastFrame = boxerRed.isPunching;
+    wasPunchingLastFrame = isPunchingAny;
 
     if ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0) {
         comboGlowTimer = 35; 
@@ -133,22 +134,43 @@ export function drawRedBoxer() {
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; 
 
+    // Dynamiczne dopasowanie barw pod ładowanie superciosu
+    let dynamicColor = boxerRed.color;
+    let dynamicBorder = isCurrentlyInCombo ? '#2ecc71' : '#fff';
+    let borderSize = isCurrentlyInCombo ? 4 : 2;
+
+    if (boxerRed.isChargingSuper) {
+        dynamicColor = Math.floor(boxerRed.superChargeProgress / 8) % 2 === 0 ? '#f39c12' : '#d35400';
+        dynamicBorder = '#f1c40f';
+        borderSize = 4;
+    } else if (boxerRed.isSuperPunching) {
+        dynamicColor = '#9b59b6'; 
+        dynamicBorder = '#8e44ad';
+        borderSize = 5;
+    }
+
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
     const currentY = -bodyLean * 0.2;
-    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
+    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = dynamicColor; ctx.fill(); 
     
-    ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
-    ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
+    ctx.lineWidth = borderSize; 
+    ctx.strokeStyle = dynamicBorder; 
     ctx.stroke();
 
     let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
-    const leftReach = strongHand === 'left' ? 32 : 24, rightReach = strongHand === 'right' ? 32 : 24;
+    let leftReach = strongHand === 'left' ? 32 : 24;
+    let rightReach = strongHand === 'right' ? 32 : 24;
+    
+    if (boxerRed.isSuperPunching) {
+        leftReach += 15;
+        rightReach += 15;
+    }
 
-    if (boxerRed.isPunching) {
+    if (isPunchingAny) {
         gloveY -= pVal * (activePunchHand === 'left' ? (boxerRed.punchType === 'straight' ? leftReach : leftReach - 4) : (boxerRed.punchType === 'straight' ? rightReach : rightReach - 4));
         if (boxerRed.punchType !== 'straight') {
             if (activePunchHand === 'left') leftGloveX = -12 + Math.sin(boxerRed.punchProgress) * 22;
@@ -159,27 +181,31 @@ export function drawRedBoxer() {
         }
     }
 
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
-    ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, isPunchingAny && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = dynamicBorder;
+    ctx.beginPath(); ctx.arc(leftGloveX, isPunchingAny && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
-    const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
-    ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
-
+    const rightPulse = isPunchingAny && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, isPunchingAny && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = dynamicBorder;
+    ctx.beginPath(); ctx.arc(rightGloveX, isPunchingAny && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
+    
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(boxerRed.number, 0, currentY); ctx.restore(); ctx.restore(); 
+    ctx.fillText(boxerRed.number, 0, currentY); ctx.restore(); ctx.restore();
 }
 
 export function drawBlockShield() {
     const canvas = document.getElementById('ringCanvas');
-    if (!canvas) return;
+    if (!canvas || !boxerBlue || isBlueKnockedDown()) return;
     const ctx = canvas.getContext('2d');
-    if (!ctx || !boxerRed || !boxerBlue) return;
+    if (!ctx || !boxerBlue.isBlockingNow) return;
 
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    if (boxerBlue.isBlockingNow && pVal > 0) {
-        // Tarcza
-    }
+    ctx.save();
+    ctx.translate(boxerBlue.rx, boxerBlue.ry);
+    ctx.beginPath();
+    ctx.arc(0, 0, boxerBlue.radius + 8, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(241, 196, 15, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
 }
