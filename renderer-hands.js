@@ -1,7 +1,7 @@
 import { boxerRed, boxerBlue, strongHand } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
-let comboGlowTimer = 0; // Gwarantowany licznik świecenia zielonej obwódki
+let comboGlowTimer = 0; // Licznik świecenia zielonej obwódki dla CZERWONEGO
 
 export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas');
@@ -23,6 +23,8 @@ export function drawBlueBoxer() {
     ctx.beginPath(); ctx.ellipse(boxerBlue.rx, boxerBlue.ry + boxerBlue.radius, boxerBlue.radius - Math.abs(bounce), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
+    
+    // Niebieski MA ZAWSZE białą obwódkę (#fff) i stałą grubość (2)
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
     if (boxerBlue.eyeLevel > 0) {
@@ -89,16 +91,17 @@ export function drawRedBoxer() {
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; // Zmniejszamy licznik klatek świecenia
 
-    // CIEŃ
+    // CIEŃ CZERWONEGO (Zielony neon przy combo, szary standardowo)
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
-    // OBWÓDKA NEONOWA
+    // RYSOWANIE CZERWONEGO Z ZIELONĄ OBWÓDKĄ COMBO
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
+    // ZIELONY NEON: Pogrubiona, jaskrawa obwódka przy combo, biała na co dzień
     ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
     ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
     ctx.stroke();
