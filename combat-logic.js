@@ -68,8 +68,6 @@ export function drawBlueBoxer() {
     const canvas = document.getElementById('ringCanvas'); if (!canvas || !boxerBlue || !boxerRed) return;
     const ctx = canvas.getContext('2d'), down = isBlueKnockedDown(); if (down) bPT += 0.05;
     const bounce = down ? 0 : Math.sin(boxerBlue.animTimer) * 3;
-    
-    // NAPRAWIONY KĄT PATRZENIA: Niebieski patrzy dokładnie na czerwonego
     const angle = Math.atan2(boxerRed.y - boxerBlue.y, boxerRed.x - boxerBlue.x);
     
     if (boxerBlue.isBlockingNow && !down && bVT <= 0 && boxerRed.isPunching) bVT = 20; if (bVT > 0) bVT--;
@@ -86,14 +84,19 @@ export function drawBlueBoxer() {
     let leftX = -12, leftY = -boxerBlue.radius + 4, rightX = 12, rightY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
     if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { leftY = -boxerBlue.radius - 2; rightY = -boxerBlue.radius - 2; }
     else if (boxerBlue.isPunching) {
-        let rch = boxerBlue.punchType === 'super' ? 36 : 24; // Skrócony zasięg ręki do walki w klinczu
+        // NAPRAWIONY DYNAMICZNY ZASIĘG NIEBIESKIEGO: Liczy odległość i wydłuża ręce prosto do czerwonego
+        const dx = boxerRed.x - boxerBlue.x, dy = boxerRed.y - boxerBlue.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        let reach = dist - boxerBlue.radius - 10;
+        let currentReach = pValB * reach;
+
         if (boxerBlue.punchRoll % 2 === 0) { 
-            leftY = (-boxerBlue.radius + 4) - (pValB * rch); 
-            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 15) : (-12 + pValB * 6); 
+            leftY = (-boxerBlue.radius + 4) - currentReach; 
+            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : -12; 
             rightY = -boxerBlue.radius + 6; 
         } else { 
-            rightY = (-boxerBlue.radius + 4) - (pValB * rch); 
-            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 15) : (12 - pValB * 6); 
+            rightY = (-boxerBlue.radius + 4) - currentReach; 
+            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : 12; 
             leftY = -boxerBlue.radius + 6; 
         }
     }
