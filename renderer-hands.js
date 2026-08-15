@@ -79,7 +79,6 @@ export function drawRedBoxer() {
     const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
-    // Obliczanie wysunięcia super ciosu w fazie uderzenia
     const spVal = boxerRed.isSuperPunchStriking ? Math.sin(boxerRed.superPunchProgress) : 0;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
@@ -103,37 +102,34 @@ export function drawRedBoxer() {
     let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
     let leftGloveColor = '#d35400', rightGloveColor = '#d35400';
 
-    // Pozycja rąk przy zwykłym uderzeniu
     if (boxerRed.isPunching) {
         gloveY -= pVal * 28;
         if (activePunchHand === 'left') leftGloveX = -12 + pVal * 12;
         else rightGloveX = 12 - pVal * 12;
     }
 
-    // FIZYCZNY WYSTRZAŁ RĘKAWICY W KIERUNKU PRZECIWNIKA PRZY SUPER PUNCHU
     if (boxerRed.isSuperPunching) {
         if (strongHand === 'right') {
             rightGloveColor = '#f1c40f';
             if (boxerRed.isSuperPunchStriking) {
-                gloveY -= spVal * 32;       // Ręka wystrzeliwuje głęboko w przód do głowy rywala
-                rightGloveX = 12 - spVal * 12; // Zbiega się do środka w stronę celu
+                gloveY -= spVal * 32;       
+                rightGloveX = 12 - spVal * 12; 
             } else {
-                rightGloveX = 16;            // Faza ładowania: ręka wycofana w tył
+                rightGloveX = 16;            
                 gloveY = -boxerRed.radius + 12;
             }
         } else {
             leftGloveColor = '#f1c40f';
             if (boxerRed.isSuperPunchStriking) {
-                gloveY -= spVal * 32;       // Ręka wystrzeliwuje głęboko w przód do głowy rywala
-                leftGloveX = -12 + spVal * 12; // Zbiega się do środka w stronę celu
+                gloveY -= spVal * 32;       
+                leftGloveX = -12 + spVal * 12; 
             } else {
-                leftGloveX = -16;            // Faza ładowania: ręka wycofana w tył
+                leftGloveX = -16;            
                 gloveY = -boxerRed.radius + 12;
             }
         }
     }
 
-    // Ramiona czerwonego boksera
     ctx.beginPath(); 
     ctx.moveTo(-12, 0); 
     ctx.lineTo(leftGloveX, (boxerRed.isPunching && activePunchHand === 'left') || boxerRed.isSuperPunching ? gloveY : -boxerRed.radius + 4);
@@ -144,7 +140,6 @@ export function drawRedBoxer() {
     ctx.lineTo(rightGloveX, (boxerRed.isPunching && activePunchHand === 'right') || boxerRed.isSuperPunching ? gloveY : -boxerRed.radius + 4);
     ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke();
 
-    // Sam wygląd rękawic
     ctx.lineWidth = 2; 
     ctx.strokeStyle = boxerRed.isSuperPunching ? '#f1c40f' : (isCurrentlyInCombo ? '#2ecc71' : '#fff');
     
@@ -155,24 +150,21 @@ export function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
+// NAPRAWIONY WARUNEK: Tarcza pojawia się zawsze, gdy niebieski trzyma aktywny blok!
 export function drawBlockShield() {
     const canvas = document.getElementById('ringCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerRed || !boxerBlue) return;
 
-    // Tarcza sprawdza stan zwykłego uderzenia lub wystrzału super uderzenia
-    const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    const spVal = boxerRed.isSuperPunchStriking ? Math.sin(boxerRed.superPunchProgress) : 0;
-    
-    const isStrikingNow = (boxerRed.isPunching && pVal > 0.85) || (boxerRed.isSuperPunchStriking && spVal > 0.85);
-
-    if (isStrikingNow && boxerBlue.isBlockingNow) {
+    if (boxerBlue.isBlockingNow) {
         ctx.save();
+        
         const shieldX = boxerBlue.rx;
         const shieldY = boxerBlue.ry - 38;
-        const currentProgress = boxerRed.isSuperPunchStriking ? spVal : pVal;
-        const pulse = Math.sin(currentProgress * 10) * 3;
+        
+        // Płynna mikro-animacja falowania tarczy w czasie
+        const pulse = Math.sin(Date.now() * 0.01) * 2;
         const shieldRadius = 16 + pulse;
 
         ctx.globalAlpha = 0.9;
