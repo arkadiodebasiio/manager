@@ -1,5 +1,5 @@
 // renderer-blue.js
-import { boxerRed, boxerBlue } from './engine.js';
+import { boxerRed, boxerBlue } from './boxer-stats.js'; // ZMIANA TUTAJ
 
 let blackPulseTimer = 0;
 let starAngle = 0;
