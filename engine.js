@@ -46,10 +46,8 @@ export function updatePhysics() {
         r.superChargeTimer--; currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
         if (r.superChargeTimer <= 0) { r.isChargingSuper = false; r.punchType = 'super'; r.isPunching = true; r.punchProgress = 0; r.hasHit = false; b.isBlockingNow = b.stunTimer > 0 ? false : Math.random() < 0.50; }
     } else {
-        // NAPRAWIONY DOSKOK CZERWONEGO: Im głębszy cios, tym bliżej czerwony podchodzi do niebieskiego
-        let pValRed = r.isPunching ? Math.sin(r.punchProgress) : 0;
-        let targetRadius = baseRadius - (pValRed * 28); // Fizyczne skrócenie promienia (doskok) podczas uderzenia
-        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.25;
+        let targetRadius = (r.isPunching || r.punchQueue.length > 0) ? (r.punchType === 'straight' ? 62 : 54) : baseRadius;
+        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
     }
     if (b.isChargingSuper) {
         b.superChargeTimer--;
@@ -58,11 +56,8 @@ export function updatePhysics() {
     const redSin = Math.sin(r.animTimer); if (redSin > 0 && !r.wasAboveZero && !r.isChargingSuper) r.isMovingThisJump = Math.random() < 0.30; r.wasAboveZero = (redSin > 0); if (r.isMovingThisJump && redSin > 0 && !r.isChargingSuper) r.angle -= r.orbitSpeed * redSin;
     const blueSin = Math.sin(b.animTimer); if (blueSin > 0 && !b.wasAboveZero && b.stunTimer <= 0) b.isMovingThisJump = Math.random() < 0.30; b.wasAboveZero = (blueSin > 0); if (b.isMovingThisJump && blueSin > 0 && b.stunTimer <= 0) b.angle -= b.orbitSpeed * blueSin;
 
-    // Pozycjonowanie na ringu z uwzględnieniem doskoku czerwonego
     r.x = ringCenter + Math.cos(r.angle) * currentOrbitRadius; 
     r.y = ringCenter + Math.sin(r.angle) * currentOrbitRadius;
-    
-    // Niebieski zachowuje swój stabilny, krótki dystans, z którego bije prawidłowo
     b.x = ringCenter + Math.cos(r.angle + Math.PI) * baseRadius; 
     b.y = ringCenter + Math.sin(r.angle + Math.PI) * baseRadius;
 
