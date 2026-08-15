@@ -132,13 +132,19 @@ export function drawRedBoxer() {
     const isCurrentlyInCombo = comboGlowTimer > 0;
     if (comboGlowTimer > 0) comboGlowTimer--; 
 
+    // Zmiana koloru na pulsujący pomarańczowy tylko podczas ładowania superciosu
+    let finalColor = boxerRed.color;
+    if (boxerRed.isSuperCharging) {
+        finalColor = Math.floor(Date.now() / 150) % 2 === 0 ? '#f39c12' : '#e67e22';
+    }
+
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
     
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
     const currentY = -bodyLean * 0.2;
-    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
+    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = finalColor; ctx.fill(); 
     
     ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
     ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
