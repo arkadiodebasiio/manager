@@ -32,15 +32,12 @@ export const boxerBlue = {
     lipLevel: 0,
     liverLevel: 0,
     hp: 100,
-    
-    // ZSYNCHRONIZOWANY SYSTEM NOKDAUNU
     isKnockedDown: false,
-    pendingKnockdown: false, // Flaga oczekiwania na zakończenie ciosu
+    pendingKnockdown: false,
     consecutiveBigHits: 0 
 };
 
 export function updatePhysics() {
-    // Trwała przerwa w meczu po zaliczeniu nokdaunu
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
         boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
@@ -152,11 +149,8 @@ export function updatePhysics() {
                 boxerBlue.hp -= dmg;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
 
-                // NATYCHMIASTOWE NALICZANIE TRAFIEŃ 5 LUB 6
                 if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
                     boxerBlue.consecutiveBigHits += 1;
-                    
-                    // Jeśli to drugi taki cios z rzędu – zakleszczamy rundę i czyścimy plany czerwonego
                     if (boxerBlue.consecutiveBigHits >= 2) {
                         boxerBlue.pendingKnockdown = true;
                         boxerRed.punchQueue = [];
@@ -165,7 +159,6 @@ export function updatePhysics() {
                     boxerBlue.consecutiveBigHits = 0; 
                 }
 
-                // System kontuzji co trzecią szóstkę
                 if (boxerRed.punchRoll === 6 && !boxerBlue.pendingKnockdown) {
                     boxerRed.totalSixes += 1; 
 
@@ -188,9 +181,7 @@ export function updatePhysics() {
 
         if (pVal > 0.75) {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
-            
             const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
-            
             if (currentHand === strongHand) {
                 basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
             }
@@ -203,11 +194,8 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            if (boxerBlue.lipLevel === 1) {
-                calculatedImpact *= 0.90; 
-            } else if (boxerBlue.lipLevel >= 2) {
-                calculatedImpact *= 0.80; 
-            }
+            if (boxerBlue.lipLevel === 1) calculatedImpact *= 0.90; 
+            else if (boxerBlue.lipLevel >= 2) calculatedImpact *= 0.80; 
 
             if (boxerBlue.eyeLevel === 1) {
                 if (Math.random() < 0.10) calculatedImpact = 0;
@@ -220,7 +208,6 @@ export function updatePhysics() {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
             
-            // JEŚLI TRWAŁO OCZEKIWANIE NA NOKDAUN – TERAZ OFICJALNIE ZATRZYMUJEMY MECZ
             if (boxerBlue.pendingKnockdown) {
                 boxerBlue.isKnockedDown = true;
                 boxerBlue.pendingKnockdown = false;
@@ -239,4 +226,9 @@ export function updatePhysics() {
 
     boxerBlue.rx += (targetRx - boxerBlue.rx) * 0.2;
     boxerBlue.ry += (targetRy - boxerBlue.ry) * 0.2;
+}
+
+// NOWA FUNKCJA DO PEWNEJ SYNCHRONIZACJI
+export function isBlueKnockedDown() {
+    return boxerBlue.isKnockedDown;
 }
