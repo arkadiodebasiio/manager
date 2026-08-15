@@ -93,7 +93,7 @@ export function drawBlueBoxer() {
             leftY = -boxerBlue.radius + 6; 
         }
     }
-    // POPRAWIONE RĘCE: Zmiana starego gY na prawidłowe lY oraz rY!
+    // BEZBŁĘDNE RYSOWANIE: lX zamienione na leftX, rX zamienione na rightX
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftX, leftY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightX, rightY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
