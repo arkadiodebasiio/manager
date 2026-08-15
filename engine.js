@@ -6,6 +6,12 @@ export { strongHand, boxerRed, boxerBlue };
 
 let currentOrbitRadius = baseRadius; 
 
+// Funkcje pomocnicze dla rendererów, by zapobiec błędom "undefined"
+export function isBlueKnockedDown() { return boxerBlue.isKnockedDown; }
+export function getSuperChargeState() { 
+    return { isCharging: boxerRed.isChargingSuper, frames: boxerRed.superChargeFrames }; 
+}
+
 export function updatePhysics() {
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
