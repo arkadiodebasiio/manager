@@ -18,7 +18,7 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
     
-    // NOWE ZMIENNE DLA SUPER PUNCH
+    // ZMIENNE SUPER PUNCH
     isSuperPunching: false,
     superPunchTimer: 0
 };
@@ -31,7 +31,12 @@ export const boxerBlue = {
 };
 
 export function updatePhysics() {
-    if (boxerBlue.isKnockedDown) return; 
+    // Jeśli niebieski leży, zamrażamy akcje
+    if (boxerBlue.isKnockedDown) {
+        boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
+        boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
+        return;
+    }
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
@@ -49,64 +54,63 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // LOGIKA ŁADOWANIA SUPER PUNCH (OK. 3 SEKUNDY = 180 KLATEK)
+    // OBSŁUGA AKTYWNEGO ŁADOWANIA SUPER PUNCH
     if (boxerRed.isSuperPunching) {
         boxerRed.superPunchTimer++;
         
-        // W trakcie ładowania (np. w połowie), niebieski decyduje czy blokuje
+        // W połowie ładowania niebieski decyduje o bloku
         if (boxerRed.superPunchTimer === 90) {
             boxerBlue.isBlockingNow = Math.random() < 0.50; 
         }
 
-        // Koniec ładowania - uderzenie!
+        // Koniec ładowania (3 sekundy = 180 klatek) -> Odpalenie ciosu!
         if (boxerRed.superPunchTimer >= 180) {
             if (boxerBlue.isBlockingNow) {
-                // Zablokowane! Brak nokdaunu, brak obrażeń, reset serii
                 boxerBlue.consecutiveSixes = 0;
             } else {
-                // TRAFIENIE! 70% szans na knockdown, 30% na potężne obrażenia
                 if (Math.random() < 0.70) {
                     boxerBlue.isKnockedDown = true;
                     boxerRed.punchQueue = [];
                 } else {
-                    boxerBlue.hp = Math.max(0, boxerBlue.hp - 40); // Bardzo wysokie obrażenia (40 HP!)
+                    boxerBlue.hp = Math.max(0, boxerBlue.hp - 40); 
                 }
             }
-            // Reset stanu super ciosu
             boxerRed.isSuperPunching = false;
             boxerRed.superPunchTimer = 0;
             boxerBlue.isBlockingNow = false;
         }
-        return; // Blokujemy standardowe poruszanie się podczas ładowania super ciosu
     }
 
-    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
-    let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
-    currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
+    // Poruszanie się i orbita działają normalnie (chyba że trwa Super Punch, wtedy czerwony zastyga w zamachu)
+    if (!boxerRed.isSuperPunching) {
+        const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+        let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : 54) : baseRadius;
+        currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
-    boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
-    boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
+        boxerRed.x = ringCenter + Math.cos(boxerRed.angle) * currentOrbitRadius;
+        boxerRed.y = ringCenter + Math.sin(boxerRed.angle) * currentOrbitRadius;
 
-    const currentSin = Math.sin(boxerRed.animTimer);
-    if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
-    boxerRed.wasAboveZero = (currentSin > 0);
+        const currentSin = Math.sin(boxerRed.animTimer);
+        if (currentSin > 0 && !boxerRed.wasAboveZero) boxerRed.isMovingThisJump = Math.random() < 0.30;
+        boxerRed.wasAboveZero = (currentSin > 0);
 
-    if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
+        if (boxerRed.isMovingThisJump && currentSin > 0) boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
+    }
 
-    if (!boxerRed.isPunching) {
+    // Inicjacja zwykłych ciosów lub losowanie Super Puncha
+    if (!boxerRed.isPunching && !boxerRed.isSuperPunching) {
         let shouldPunch = false;
 
-        // SZANSA NA SUPER PUNCH: Raz na ok. 2 minuty walki (szansa 1 do 7200 na klatkę)
-        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 4500)) { 
+        // Szansa na Super Punch (raz na ok. 2 minuty walki przy 60fps)
+        if (boxerRed.punchQueue.length === 0 && Math.random() < (1 / 4500)) { 
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
-            return;
-        }
-
-        if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
+        } 
+        else if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
             shouldPunch = true;
-        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+        } 
+        else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
@@ -121,6 +125,7 @@ export function updatePhysics() {
         }
 
         if (shouldPunch) {
+            // Nokdaun z przemęczenia, jeśli wróg jest ogłuszony, a wchodzi seria 3 lub 4 ciosów
             if (boxerBlue.stunTimer > 0 && boxerRed.punchQueue.length >= 2) {
                 boxerBlue.isKnockedDown = true; 
                 boxerRed.punchQueue = [];
@@ -139,6 +144,7 @@ export function updatePhysics() {
 
     let calculatedImpact = 0;
 
+    // Obsługa zwykłego uderzenia
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.155 : 0.132);
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -183,6 +189,7 @@ export function updatePhysics() {
         }
     }
 
+    // Płynny powrót i reakcja na ciosy niebieskiego boksera
     boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
     boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
 }
