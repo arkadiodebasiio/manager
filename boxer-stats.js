@@ -1,12 +1,10 @@
 // boxer-stats.js
 
-// Usunęliśmy stąd pobieranie canvas i ctx – tym zarządza teraz renderer.js
-
 export const ringCenter = 250;
 export const baseRadius = 100;
 
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
-export const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023; // Dodano export
+export const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
 
 export const boxerRed = {
     angle: Math.PI / 2, 
@@ -28,7 +26,11 @@ export const boxerRed = {
     totalSixes: 0,
     punchQueue: [],    
     punchCooldown: 0,
-    hp: 100 
+    hp: 100,
+    currentHand: 'left',
+    isChargingSuper: false,
+    superChargeFrames: 0,
+    superPunchTimer: 0
 };
 
 export const boxerBlue = { 
