@@ -21,9 +21,6 @@ export function handleBotAttackDecisions(bR) {
 }
 export function processPunchExecution() {
     let r = boxerRed, b = boxerBlue;
-    if (!r.isPunching && !r.isChargingSuper) r.punchTimer += 0.66;
-    if (!b.isPunching && !b.isKnockedDown) { if (!b.punchTimer) b.punchTimer = 0; b.punchTimer += 0.66; }
-    if (b.punchCooldown > 0) b.punchCooldown--;
     if (r.isPunching) {
         r.punchProgress += r.punchType === 'straight' ? 0.155 : (r.punchType === 'super' ? 0.080 : 0.132);
         if (Math.sin(r.punchProgress) > 0.75 && !r.hasHit) {
@@ -34,6 +31,7 @@ export function processPunchExecution() {
                 else {
                     let d = r.punchType === 'hook' ? 5 : 3; d *= r.punchRoll === 6 ? 2 : (r.punchRoll >= 3 ? 1.3 : 1); b.hp = Math.max(0, b.hp - d);
                     if (r.punchRoll >= 5) { b.consecutiveBigHits++; if (b.consecutiveBigHits >= 2) { b.pendingKnockdown = true; r.punchQueue = []; } } else b.consecutiveBigHits = 0;
+                    if (r.punchRoll === 6 && !b.pendingKnockdown) { r.totalSixes++; if (r.totalSixes % 3 === 0) { let o = ["eye", "lip", "liver"], c = o[Math.floor(Math.random() * o.length)]; if (c === "eye" && b.eyeLevel < 3) b.eyeLevel++; if (c === "lip" && b.lipLevel < 3) b.lipLevel++; if (c === "liver" && b.liverLevel < 3) b.liverLevel++; } }
                     if (r.punchType === 'hook' && Math.random() < 0.2 && !b.pendingKnockdown) b.stunTimer = 300;
                 }
             }
@@ -47,11 +45,10 @@ export function processPunchExecution() {
             b.punchRoll = Math.floor(Math.random() * 6) + 1;
             if (r.isBlockingNow) { r.consecutiveBigHits = 0; if (b.punchType === 'super') r.hp = Math.max(0, r.hp - 15); }
             else {
-                if (b.punchType === 'super') { r.hp = Math.max(0, r.hp - 30); /* tu knock dla red */ }
+                if (b.punchType === 'super') { r.hp = Math.max(0, r.hp - 30); }
                 else {
                     let d = b.punchType === 'hook' ? 5 : 3; d *= b.punchRoll === 6 ? 2 : (b.punchRoll >= 3 ? 1.3 : 1); r.hp = Math.max(0, r.hp - d);
-                    if (b.punchRoll >= 5) { r.consecutiveBigHits = (r.consecutiveBigHits || 0) + 1; } else r.consecutiveBigHits = 0;
-                    if (b.punchType === 'hook' && Math.random() < 0.2 && !r.isPunching) { /* stun dla red */ }
+                    if (b.punchRoll === 6) { b.totalSixes = (b.totalSixes || 0) + 1; }
                 }
             }
             b.hasHit = true;
@@ -73,17 +70,18 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y + bounce + (down ? 15 : 0)); ctx.rotate(angle + Math.PI / 2);
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     ctx.lineWidth = down ? 4 : 2; ctx.strokeStyle = down ? `rgba(0,0,0,${0.3 + Math.abs(Math.sin(bPT)) * 0.7})` : '#fff'; ctx.stroke();
-    let lX = -12, rX = 12, gY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
-    if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { gY = -boxerBlue.radius - 2; }
+    let lX = -12, lY = -boxerBlue.radius + 4, rX = 12, rY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
+    if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { lY = -boxerBlue.radius - 2; rY = -boxerBlue.radius - 2; }
     else if (boxerBlue.isPunching) {
-        if (boxerBlue.punchRoll % 2 === 0) { let rch = boxerBlue.punchType === 'super' ? 44 : 30; gY = (-boxerBlue.radius + 4) - (pValB * rch); lX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); }
-        else { let rch = boxerBlue.punchType === 'super' ? 44 : 30; gY = (-boxerBlue.radius + 4) - (pValB * rch); rX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); }
+        let rch = boxerBlue.punchType === 'super' ? 44 : 30;
+        if (boxerBlue.punchRoll % 2 === 0) { lY = (-boxerBlue.radius + 4) - (pValB * rch); lX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); rY = -boxerBlue.radius + 6; }
+        else { rY = (-boxerBlue.radius + 4) - (pValB * rch); rX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); lY = -boxerBlue.radius + 6; }
     }
-    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(lX, lY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rX, rY); ctx.strokeStyle = boxerBlue.color; ctx.lineWidth = 5; ctx.stroke();
     ctx.lineWidth = down ? 3 : 2; ctx.strokeStyle = down ? '#000' : '#fff';
-    ctx.beginPath(); ctx.arc(lX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(rX, boxerBlue.isPunching ? gY : -boxerBlue.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(lX, lY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rX, rY, 7, 0, Math.PI * 2); ctx.fillStyle = gCol; ctx.fill(); ctx.stroke();
     ctx.save(); ctx.rotate(-(angle + Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(boxerBlue.number, 0, 0); ctx.restore(); ctx.restore();
     if (isStun) { sA += 0.15; ctx.save(); ctx.translate(boxerBlue.x, boxerBlue.y - 38); for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(Math.cos(sA + i * (Math.PI * 2 / 3)) * 16, Math.sin(sA + i * (Math.PI * 2 / 3)) * 5, 3, 0, Math.PI * 2); ctx.fillStyle = '#f1c40f'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); } ctx.restore(); }
 }
