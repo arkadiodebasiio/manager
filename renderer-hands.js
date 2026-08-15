@@ -76,7 +76,7 @@ export function drawRedBoxer() {
     if (!ctx || !boxerRed || !boxerBlue) return;
 
     const bounceOffset = boxerRed.isSuperPunching ? 0 : Math.sin(boxerRed.animTimer) * 4;
-    const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
+    const angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerRed.x - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     
     const spVal = boxerRed.isSuperPunchStriking ? Math.sin(boxerRed.superPunchProgress) : 0;
@@ -150,34 +150,37 @@ export function drawRedBoxer() {
     ctx.fillText(boxerRed.number, 0, 0); ctx.restore(); ctx.restore(); 
 }
 
-// 🛡️ PANCERNA, GWARANTOWANA REAKCJA TARCZY
+// 🛡️ KLASYCZNA, PANCERNA METODA RYSOWANIA TARCZY (Zgodna ze starą wersją)
 export function drawBlockShield() {
     const canvas = document.getElementById('ringCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx || !boxerRed || !boxerBlue) return;
 
-    // Tarcza rysuje się ZAWSZE, gdy niebieski ma aktywną flagę bloku
+    // Rysujemy ZAWSZE, gdy flaga jest aktywna – bez żadnych udziwnień
     if (boxerBlue.isBlockingNow) {
         ctx.save();
         
-        // Dynamiczne wyliczanie kierunku – tarcza obraca się zawsze przodem do czerwonego boksera
-        const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx);
-        
-        ctx.translate(boxerBlue.rx, boxerBlue.ry);
-        ctx.rotate(angleToRed);
+        // Klasyczny punkt tarczy nad głową niebieskiego
+        const shieldX = boxerBlue.rx;
+        const shieldY = boxerBlue.ry - 36;
 
-        // Parametry neonowego wyglądu
-        ctx.globalAlpha = 0.9;
-        ctx.lineWidth = 4; 
-        ctx.strokeStyle = '#fff'; 
-        ctx.fillStyle = 'rgba(241, 196, 15, 0.35)'; 
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#f1c40f'; 
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#fff'; // Biała obwódka
+        ctx.fillStyle = '#f1c40f'; // Żółta tarcza
 
-        // Łuk tarczy idealnie dopasowany przed niebieskim bokserem
+        // Dodatkowy neonowy glow (jeśli canvas go obsługuje)
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#f1c40f';
+
+        // Stary, sprawdzony kształt daszku ochronnego
         ctx.beginPath();
-        ctx.arc(0, 0, 36, -Math.PI / 3, Math.PI / 3, false);
+        ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true);
+        ctx.lineTo(shieldX, shieldY + 16);
+        ctx.closePath();
+        
+        ctx.fill();
         ctx.stroke();
         
         ctx.restore();
