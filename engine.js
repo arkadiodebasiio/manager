@@ -22,8 +22,8 @@ export const boxerRed = {
     totalSixes: 0,
     punchQueue: [],    
     punchCooldown: 0,
+    comboGlowTimer: 0, // Zabezpieczenie przed błędem koloru combo w nowej walce
     hp: 100,
-    // Pola niezbędne do wizualizacji stanów superciosu w rendererze
     isChargingSuper: false,
     superChargeProgress: 0,
     isSuperPunching: false
