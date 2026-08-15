@@ -10,10 +10,11 @@ export function drawBlueBoxer() {
     
     if (boxerRed.isPunching && !blockDecisionMade) {
         isBlocking = isStunned ? false : Math.random() < 0.50; 
-        // Obsługa zmęczenia gardy dla liver, double_liver oraz triple_liver
-        if (isBlocking && (boxerBlue.lightInjury === "liver" || boxerBlue.lightInjury === "double_liver" || boxerBlue.lightInjury === "triple_liver")) {
+        
+        // Obsługa pękania gardy na bazie liverLevel
+        if (isBlocking && boxerBlue.liverLevel > 0) {
             boxerBlue.blockCount += 1;
-            const breakLimit = (boxerBlue.lightInjury === "double_liver" || boxerBlue.lightInjury === "triple_liver") ? 5 : 10;
+            const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
             if (boxerBlue.blockCount >= breakLimit) { isBlocking = false; boxerBlue.blockCount = 0; }
         }
         blockDecisionMade = true; window.isCurrentlyBlockingGarda = isBlocking;
@@ -29,15 +30,17 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Rysowanie lekkich kontuzji (uwzględnienie poziomów triple)
-    if (boxerBlue.lightInjury === "eye" || boxerBlue.lightInjury === "double_eye" || boxerBlue.lightInjury === "triple_eye") {
-        const isMax = boxerBlue.lightInjury === "double_eye" || boxerBlue.lightInjury === "triple_eye";
+    // RYSOWANIE WIELU KONTUZJI JEDNOCZEŚNIE
+    if (boxerBlue.eyeLevel > 0) {
+        const isMax = boxerBlue.eyeLevel >= 2;
         ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); ctx.fillStyle = isMax ? 'rgba(100, 30, 130, 0.95)' : 'rgba(125, 60, 152, 0.85)'; ctx.fill();
-    } else if (boxerBlue.lightInjury === "liver" || boxerBlue.lightInjury === "double_liver" || boxerBlue.lightInjury === "triple_liver") {
-        const isMax = boxerBlue.lightInjury === "double_liver" || boxerBlue.lightInjury === "triple_liver";
+    }
+    if (boxerBlue.liverLevel > 0) {
+        const isMax = boxerBlue.liverLevel >= 2;
         ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); ctx.fillStyle = isMax ? 'rgba(20, 120, 60, 0.95)' : 'rgba(39, 174, 96, 0.85)'; ctx.fill();
-    } else if (boxerBlue.lightInjury === "lip" || boxerBlue.lightInjury === "double_lip" || boxerBlue.lightInjury === "triple_lip") {
-        const isMax = boxerBlue.lightInjury === "double_lip" || boxerBlue.lightInjury === "triple_lip";
+    }
+    if (boxerBlue.lipLevel > 0) {
+        const isMax = boxerBlue.lipLevel >= 2;
         ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); ctx.fillStyle = isMax ? 'rgba(150, 30, 30, 0.98)' : 'rgba(192, 57, 43, 0.95)'; ctx.fill();
     }
 
@@ -60,6 +63,13 @@ export function drawBlueBoxer() {
 
 export function drawRedBoxer() {
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
+    
+    // SPRAWDZENIE KONTUZJI POTRÓJNEJ (Czy którykolwiek poziom to 3)
+    const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
+    
+    // Mnożnik postępu animacji ciosu czerwonego: zwolnienie o 20% przy potrójnej kontuzji niebieskiego
+    const punchSpeedMultiplier = hasTriple ? 0.80 : 1.0;
+    
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
