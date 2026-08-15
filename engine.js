@@ -96,8 +96,6 @@ export function updatePhysics() {
         }
     }
 
-    let calculatedImpact = 0;
-
     if (boxerRed.isPunching) {
         boxerRed.punchProgress += boxerRed.punchType === 'straight' ? 0.155 : (boxerRed.punchType === 'super' ? 0.100 : 0.132);
         const pVal = Math.sin(boxerRed.punchProgress);
@@ -151,19 +149,8 @@ export function updatePhysics() {
             let basePower = boxerRed.punchType === 'hook' ? 54 : 45; 
             if (boxerRed.punchType === 'super') basePower = 75; 
 
-            const currentHand = (typeof window !== 'undefined' && window.currentActivePunchHand) ? window.currentActivePunchHand : 'left';
+            const currentHand = boxerRed.currentHand || 'left';
             if (currentHand === strongHand && boxerRed.punchType !== 'super') basePower = boxerRed.punchType === 'hook' ? 60 : 50; 
-
-            if (boxerRed.punchType === 'super') calculatedImpact = (pVal - 0.75) * basePower * 0.9;
-            else if (boxerRed.punchRoll === 6) calculatedImpact = (pVal - 0.75) * basePower * 0.7;  
-            else if (boxerRed.punchRoll >= 3 && boxerRed.punchRoll <= 5) calculatedImpact = (pVal - 0.75) * basePower * 0.4;  
-            else calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
-
-            if (boxerBlue.lipLevel === 1) calculatedImpact *= 0.90; 
-            else if (boxerBlue.lipLevel >= 2) calculatedImpact *= 0.80; 
-
-            if (boxerBlue.eyeLevel === 1 && Math.random() < 0.10) calculatedImpact = 0;
-            else if (boxerBlue.eyeLevel >= 2 && Math.random() < 0.20) calculatedImpact = 0;
         }
 
         if (boxerRed.punchProgress >= Math.PI) {
@@ -177,17 +164,9 @@ export function updatePhysics() {
                 boxerBlue.pendingKnockdown = false;
             } else if (boxerRed.punchQueue.length > 0) {
                 boxerRed.punchCooldown = 10;
+            } else {
+                boxerRed.punchCooldown = 30;
             }
         }
     }
-
-    const dx = ringCenter - boxerRed.x;
-    const dy = ringCenter - boxerRed.y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-
-    boxerBlue.rx += (ringCenter + (dx / dist) * calculatedImpact - boxerBlue.rx) * 0.2;
-    boxerBlue.ry += (ringCenter + (dy / dist) * calculatedImpact - boxerBlue.ry) * 0.2;
 }
-
-export function isBlueKnockedDown() { return boxerBlue.isKnockedDown; }
-export function getSuperChargeState() { return { isCharging: boxerRed.isChargingSuper, frames: boxerRed.superChargeFrames }; }
