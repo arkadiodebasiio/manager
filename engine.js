@@ -146,4 +146,3 @@ export function updatePhysics() {
     boxerBlue.rx = ringCenter + (dx / dist) * calculatedImpact;
     boxerBlue.ry = ringCenter + (dy / dist) * calculatedImpact;
 }
-
