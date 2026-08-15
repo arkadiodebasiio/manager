@@ -20,7 +20,8 @@ export const boxerRed = {
     totalSixes: 0,
     punchQueue: [],    
     punchCooldown: 0,
-    hp: 100 
+    hp: 100,
+    isSuperCharging: false // Flaga dla renderera do zmiany koloru na pomarańczowy
 };
 
 export const boxerBlue = { 
@@ -42,7 +43,6 @@ export function isBlueKnockedDown() {
 }
 
 export function updatePhysics() {
-    // Trwała przerwa w meczu po zaliczeniu nokdaunu
     if (boxerBlue.isKnockedDown || boxerBlue.pendingKnockdown) {
         boxerBlue.isKnockedDown = true;
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
