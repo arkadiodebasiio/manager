@@ -3,10 +3,7 @@ import { handleBotAttackDecisions, processPunchExecution } from './combat-logic.
 export const canvas = document.getElementById('ringCanvas');
 export const ctx = canvas ? canvas.getContext('2d') : null;
 
-if (canvas) {
-    canvas.width = 500;
-    canvas.height = 500;
-}
+if (canvas) { canvas.width = 500; canvas.height = 500; }
 
 const ringCenter = 250, baseRadius = 100;      
 let currentOrbitRadius = baseRadius; 
@@ -19,8 +16,7 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    isChargingSuper: false, superChargeTimer: 0,
-    superCooldown: 0 // Zaczyna od 0, więc odpali się od razu na początku rundy do testów!
+    isChargingSuper: false, superChargeTimer: 0, superCooldown: 0 
 };
 
 export const boxerBlue = { 
@@ -37,17 +33,12 @@ export function updatePhysics() {
         return; 
     }
 
-    if (!boxerRed.isPunching) {
-        boxerBlue.isBlockingNow = false;
-    }
+    if (!boxerRed.isPunching) boxerBlue.isBlockingNow = false;
 
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
-    if (!boxerRed.isChargingSuper) {
-        boxerRed.animTimer += 0.133;
-    }
-    
+    if (!boxerRed.isChargingSuper) boxerRed.animTimer += 0.133;
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
     if (boxerRed.superCooldown > 0) boxerRed.superCooldown--; 
 
@@ -64,7 +55,7 @@ export function updatePhysics() {
 
     if (boxerRed.isChargingSuper) {
         boxerRed.superChargeTimer--;
-        currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; // Płynne, powolne podejście do walki w zwarciu
+        currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
 
         if (boxerRed.superChargeTimer <= 0) {
             boxerRed.isChargingSuper = false;
@@ -100,6 +91,4 @@ export function updatePhysics() {
     }
 }
 
-export function isBlueKnockedDown() {
-    return boxerBlue.isKnockedDown;
-}
+export function isBlueKnockedDown() { return boxerBlue.isKnockedDown; }
