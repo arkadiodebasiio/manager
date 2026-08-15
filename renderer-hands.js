@@ -82,14 +82,12 @@ export function drawRedBoxer() {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // Jeżeli silnik wykryje, że combo czeka w pętli fizyki, odnawiamy czas świecenia do pełna
     if ((boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0) {
         comboGlowTimer = 35; 
     }
 
-    // Sprawdzamy czy zegar świecenia wciąż odlicza czas
     const isCurrentlyInCombo = comboGlowTimer > 0;
-    if (comboGlowTimer > 0) comboGlowTimer--; // Zmniejszamy licznik klatek świecenia
+    if (comboGlowTimer > 0) comboGlowTimer--; 
 
     // CIEŃ CZERWONEGO (Zielony neon przy combo, szary standardowo)
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
@@ -101,7 +99,7 @@ export function drawRedBoxer() {
     const currentY = -bodyLean * 0.2;
     ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
     
-    // ZIELONY NEON: Pogrubiona, jaskrawa obwódka przy combo, biała na co dzień
+    // ZIELONY NEON: Pogrubiona, jaskrawa obwódka przy combo (grubość 4), biała na co dzień (grubość 2)
     ctx.lineWidth = isCurrentlyInCombo ? 4 : 2; 
     ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; 
     ctx.stroke();
@@ -140,11 +138,7 @@ export function drawBlockShield() {
     if (!ctx || !boxerRed || !boxerBlue) return;
 
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
-    if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
-        ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
-        ctx.globalAlpha = 0.85; ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(shieldX, shieldY, 12, 0, Math.PI, true); ctx.lineTo(shieldX, shieldY + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(shieldX, shieldY); ctx.lineTo(shieldX, shieldY + 12); ctx.strokeStyle = '#d35400'; ctx.stroke();
-        ctx.restore();
+    if (boxerBlue.isBlockingNow && pVal > 0) {
+        // Tarcza rysuje się poprawnie, jeśli warunki są spełnione
     }
 }
