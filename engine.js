@@ -13,13 +13,17 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
-    totalSixes: 0 // ZMIANA: Globalny licznik zsumowanych czystych ciosów o sile 6 podczas walki
+    totalSixes: 0 
 };
 
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
     animTimer: 0, rx: ringCenter, ry: ringCenter, stunTimer: 0,
-    lightInjury: "none", blockCount: 0 
+    blockCount: 0,
+    // Trzy niezależne poziomy kontuzji (0=brak, 1=lekka, 2=double, 3=triple)
+    eyeLevel: 0,
+    lipLevel: 0,
+    liverLevel: 0
 };
 
 export function updatePhysics() {
@@ -71,31 +75,19 @@ export function updatePhysics() {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
             const isCurrentlyBlockingGarda = window.isCurrentlyBlockingGarda || false;
 
-            // ZMIANA: Blok ani inne ciosy NIE zerują już licznika totalSixes
             if (!isCurrentlyBlockingGarda) {
-                // Czyste trafienie
                 if (boxerRed.punchRoll === 6) {
-                    boxerRed.totalSixes += 1; // Dodajemy do ogólnej sumy trafionych szóstek
+                    boxerRed.totalSixes += 1; 
 
-                    // ZMIANA: Warunek odpala się przy każdym 3 zsumowanym ciosie o sile 6 (3, 6, 9 itd.)
+                    // Wywołanie co 3 trafione szóstki (3, 6, 9, 12, 15...)
                     if (boxerRed.totalSixes % 3 === 0) {
-                        if (boxerBlue.lightInjury === "none") {
-                            // Losowanie typu lekkiej kontuzji z 3 istniejących
-                            const options = ["eye", "lip", "liver"];
-                            boxerBlue.lightInjury = options[Math.floor(Math.random() * options.length)];
-                        } else if (boxerBlue.lightInjury === "eye") {
-                            boxerBlue.lightInjury = "double_eye";
-                        } else if (boxerBlue.lightInjury === "double_eye") {
-                            boxerBlue.lightInjury = "triple_eye";
-                        } else if (boxerBlue.lightInjury === "lip") {
-                            boxerBlue.lightInjury = "double_lip";
-                        } else if (boxerBlue.lightInjury === "double_lip") {
-                            boxerBlue.lightInjury = "triple_lip";
-                        } else if (boxerBlue.lightInjury === "liver") {
-                            boxerBlue.lightInjury = "double_liver";
-                        } else if (boxerBlue.lightInjury === "double_liver") {
-                            boxerBlue.lightInjury = "triple_liver";
-                        }
+                        // CIĄGŁE LOSOWANIE: Losujemy kategorię za każdym razem od nowa
+                        const options = ["eye", "lip", "liver"];
+                        const chosen = options[Math.floor(Math.random() * options.length)];
+
+                        if (chosen === "eye" && boxerBlue.eyeLevel < 3) boxerBlue.eyeLevel++;
+                        if (chosen === "lip" && boxerBlue.lipLevel < 3) boxerBlue.lipLevel++;
+                        if (chosen === "liver" && boxerBlue.liverLevel < 3) boxerBlue.liverLevel++;
                     }
                 }
 
@@ -121,17 +113,17 @@ export function updatePhysics() {
                 calculatedImpact = (pVal - 0.75) * basePower * 0.15; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI WARGI
-            if (boxerBlue.lightInjury === "lip") {
+            // WPŁYW KONTUZJI WARGI (Zależny od lipLevel)
+            if (boxerBlue.lipLevel === 1) {
                 calculatedImpact *= 0.90; 
-            } else if (boxerBlue.lightInjury === "double_lip" || boxerBlue.lightInjury === "triple_lip") {
+            } else if (boxerBlue.lipLevel >= 2) {
                 calculatedImpact *= 0.80; 
             }
 
-            // WPŁYW LEKKIEJ KONTUZJI OKA
-            if (boxerBlue.lightInjury === "eye") {
+            // WPŁYW KONTUZJI OKA (Zależny od eyeLevel)
+            if (boxerBlue.eyeLevel === 1) {
                 if (Math.random() < 0.10) calculatedImpact = 0;
-            } else if (boxerBlue.lightInjury === "double_eye" || boxerBlue.lightInjury === "triple_eye") {
+            } else if (boxerBlue.eyeLevel >= 2) {
                 if (Math.random() < 0.20) calculatedImpact = 0;
             }
         }
