@@ -19,7 +19,8 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    isChargingSuper: false, superChargeTimer: 0 // Bezpieczne zmienne superciosu
+    isChargingSuper: false, superChargeTimer: 0,
+    superCooldown: 0 // Licznik blokady superciosu na 1,5 minuty
 };
 
 export const boxerBlue = { 
@@ -49,6 +50,7 @@ export function updatePhysics() {
     }
     
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
+    if (boxerRed.superCooldown > 0) boxerRed.superCooldown--; // Odliczanie blokady superataku
 
     if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0 && !boxerRed.isChargingSuper) {
         boxerRed.punchTimer += 0.66; 
@@ -91,7 +93,7 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // --- IMPORTOWANE WYWOŁANIA Z COMBAT-LOGIC.JS ---
+    // Wywołania zewnętrznych modułów walki
     handleBotAttackDecisions(baseRadius);
     processPunchExecution();
 
