@@ -46,6 +46,7 @@ export function updatePhysics() {
         r.superChargeTimer--; currentOrbitRadius += (48 - currentOrbitRadius) * 0.03; 
         if (r.superChargeTimer <= 0) { r.isChargingSuper = false; r.punchType = 'super'; r.isPunching = true; r.punchProgress = 0; r.hasHit = false; b.isBlockingNow = b.stunTimer > 0 ? false : Math.random() < 0.50; }
     } else {
+        // POPRAWKA ODLEGŁOŚCI: Czerwony skraca dystans dynamicznie w osi okręgu
         let targetRadius = (r.isPunching || r.punchQueue.length > 0) ? (r.punchType === 'straight' ? 62 : 54) : baseRadius;
         currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
     }
@@ -56,8 +57,11 @@ export function updatePhysics() {
     const redSin = Math.sin(r.animTimer); if (redSin > 0 && !r.wasAboveZero && !r.isChargingSuper) r.isMovingThisJump = Math.random() < 0.30; r.wasAboveZero = (redSin > 0); if (r.isMovingThisJump && redSin > 0 && !r.isChargingSuper) r.angle -= r.orbitSpeed * redSin;
     const blueSin = Math.sin(b.animTimer); if (blueSin > 0 && !b.wasAboveZero && b.stunTimer <= 0) b.isMovingThisJump = Math.random() < 0.30; b.wasAboveZero = (blueSin > 0); if (b.isMovingThisJump && blueSin > 0 && b.stunTimer <= 0) b.angle -= b.orbitSpeed * blueSin;
 
-    r.x = ringCenter + Math.cos(r.angle) * currentOrbitRadius; r.y = ringCenter + Math.sin(r.angle) * currentOrbitRadius;
-    b.x = ringCenter + Math.cos(b.angle) * baseRadius; b.y = ringCenter + Math.sin(b.angle) * baseRadius;
+    // IDEALNIE ZSYNCHRONIZOWANE OSI POZYCJI DLA OBU STRON
+    r.x = ringCenter + Math.cos(r.angle) * currentOrbitRadius; 
+    r.y = ringCenter + Math.sin(r.angle) * currentOrbitRadius;
+    b.x = ringCenter + Math.cos(b.angle) * baseRadius; 
+    b.y = ringCenter + Math.sin(b.angle) * baseRadius;
 
     handleBotAttackDecisions(baseRadius); processPunchExecution();
     if (b.pendingKnockdown) { b.isKnockedDown = true; b.pendingKnockdown = false; }
