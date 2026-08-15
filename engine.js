@@ -46,7 +46,8 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    const isInComboInFight = boxerRed.isPunching || boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+    // DYNAMICZNY ODSKOK: Przywracamy oryginalną fizykę odskoku ciosów
+    const isInComboInFight = boxerRed.isPunching || (boxerRed.punchQueue && boxerRed.punchQueue.length > 0) || boxerRed.punchCooldown > 0;
     let targetRadius = isInComboInFight ? (boxerRed.punchType === 'straight' ? 62 : (boxerRed.punchType === 'super' ? 70 : 54)) : baseRadius;
     currentOrbitRadius += (targetRadius - currentOrbitRadius) * 0.16;
 
@@ -64,16 +65,16 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        // Jeśli pobieramy cios z kolejki, to znaczy że to już kolejny strzał w serii!
+        // Pobieranie kolejnego ciosu w serii
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift(); 
-            boxerRed.isComboExecuting = true; // Aktywujemy zielone światło
+            boxerRed.isComboExecuting = true; 
             shouldPunch = true;
         } 
-        // Pierwszy cios z serii lub zwykły, pojedynczy atak
+        // Wyprowadzanie pierwszego ciosu
         else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-            boxerRed.isComboExecuting = false; // Pojedynczy cios – brak zielonego światła
+            boxerRed.isComboExecuting = false; 
             shouldPunch = true;
 
             const comboRoll = Math.random();
@@ -177,7 +178,7 @@ export function updatePhysics() {
                 boxerRed.punchCooldown = 10;
             } else {
                 boxerRed.punchCooldown = 30;
-                boxerRed.isComboExecuting = false; // Gasimy po zakończeniu combo
+                boxerRed.isComboExecuting = false; 
             }
         }
     }
