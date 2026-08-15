@@ -83,18 +83,17 @@ export function drawBlueBoxer() {
     let leftX = -12, leftY = -boxerBlue.radius + 4, rightX = 12, rightY = -boxerBlue.radius + 4, pValB = boxerBlue.isPunching ? Math.sin(boxerBlue.punchProgress) : 0;
     if (boxerBlue.isChargingSuper && !boxerBlue.isPunching) { leftY = -boxerBlue.radius - 2; rightY = -boxerBlue.radius - 2; }
     else if (boxerBlue.isPunching) {
-        // ZASIĘG DOKŁADNIE DO CIAŁA PRZECIWNIKA
         const dx = boxerRed.x - boxerBlue.x, dy = boxerRed.y - boxerBlue.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        let dynamicReach = dist - boxerBlue.radius; 
+        let dynamicReach = dist - boxerBlue.radius - boxerRed.radius + 6; 
 
         if (boxerBlue.punchRoll % 2 === 0) { 
             leftY = (-boxerBlue.radius + 4) - (pValB * dynamicReach); 
-            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 20) : (-12 + pValB * 10); 
+            leftX = boxerBlue.punchType === 'hook' ? (-12 + Math.sin(boxerBlue.punchProgress) * 15) : -12; 
             rightY = -boxerBlue.radius + 6; 
         } else { 
             rightY = (-boxerBlue.radius + 4) - (pValB * dynamicReach); 
-            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 20) : (12 - pValB * 10); 
+            rightX = boxerBlue.punchType === 'hook' ? (12 - Math.sin(boxerBlue.punchProgress) * 15) : 12; 
             leftY = -boxerBlue.radius + 6; 
         }
     }
