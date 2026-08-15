@@ -63,7 +63,7 @@ function drawRing() {
     ctx.beginPath(); ctx.moveTo(450, 50); ctx.lineTo(390, 50); ctx.lineTo(450, 110); ctx.fill();
     ctx.beginPath(); ctx.moveTo(50, 450); ctx.lineTo(110, 450); ctx.lineTo(50, 390); ctx.fill();
 
-    // 10. POTRÓJNE RETRO LINY (Naprawione i kompletne)
+    // 10. POTRÓJNE RETRO LINY (Naprawione liczby w tablicy)
     const ropeColors = ['#ff4b4b', '#ffffff', '#4b7bff']; 
     const offsets =;
 
