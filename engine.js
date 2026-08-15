@@ -39,7 +39,6 @@ export function updatePhysics() {
     if (b.punchCooldown > 0) b.punchCooldown--; if (b.superCooldown > 0) b.superCooldown--; 
     if (b.stunTimer > 0) { b.stunTimer -= (1 * blueSpeedModifier); if (b.stunTimer < 0) b.stunTimer = 0; }
     
-    // PANCERNY I PROSTY LICZNIK: Ładowanie energii ciosu bez zbędnych i blokujących warunków!
     if (!r.isPunching && !r.isChargingSuper) r.punchTimer += 0.66;
     if (!b.isPunching && !b.isChargingSuper && b.stunTimer <= 0) b.punchTimer += 0.66;
 
