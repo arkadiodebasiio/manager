@@ -13,7 +13,8 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1,
     totalSixes: 0,
-    comboLeft: 0 // Licznik serii: 1 = podwójny cios, 2 = potrójny cios
+    comboLeft: 0,      // Ile ciosów zostało w serii combo
+    comboDelay: 0      // Odliczanie krótkiej przerwy między ciosami w serii, aby pięść wróciła!
 };
 
 export const boxerBlue = { 
@@ -31,7 +32,11 @@ export function updatePhysics() {
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
     boxerRed.animTimer += 0.133;
-    boxerRed.punchTimer += 0.66; 
+    
+    // Zwiększamy licznik standardowego czasu między niezależnymi atakami
+    if (!boxerRed.isPunching && boxerRed.comboLeft === 0) {
+        boxerRed.punchTimer += 0.66; 
+    }
     
     boxerBlue.animTimer += 0.133 * blueSpeedModifier;
 
@@ -54,22 +59,36 @@ export function updatePhysics() {
         boxerRed.angle -= boxerRed.orbitSpeed * currentSin; 
     }
 
-    // ROZPOCZĘCIE CIOSU: Standardowe lub natychmiastowe, jeśli trwa seria combo
-    const canPunchStandard = !boxerRed.isPunching && boxerRed.punchTimer > 60 && Math.random() < 0.03;
-    const canPunchCombo = !boxerRed.isPunching && boxerRed.comboLeft > 0;
+    // Obsługa krótkiej przerwy w serii combo (pięść musi na chwilę wrócić do tułowia)
+    if (boxerRed.comboLeft > 0 && !boxerRed.isPunching) {
+        boxerRed.comboDelay--;
+        if (boxerRed.comboDelay <= 0) {
+            // Odpalamy kolejny cios z serii combo!
+            boxerRed.isPunching = true;
+            boxerRed.punchProgress = 0;
+            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
+            boxerRed.hasHit = false; 
+            boxerRed.comboLeft--; // Zmniejszamy kolejkę combo
 
-    if (canPunchStandard || canPunchCombo) {
+            boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
+            if (boxerBlue.isBlockingNow && boxerBlue.liverLevel > 0) {
+                boxerBlue.blockCount += 1;
+                const breakLimit = (boxerBlue.liverLevel >= 2) ? 5 : 10;
+                if (boxerBlue.blockCount >= breakLimit) {
+                    boxerBlue.isBlockingNow = false; 
+                    boxerBlue.blockCount = 0;
+                }
+            }
+        }
+    }
+
+    // Standardowe rozpoczęcie ataku (gdy nie ma aktywnej serii combo)
+    if (!boxerRed.isPunching && boxerRed.comboLeft === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         boxerRed.isPunching = true;
         boxerRed.punchProgress = 0;
         boxerRed.punchTimer = 0;
-        
-        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook'; 
+        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
         boxerRed.hasHit = false; 
-
-        // Jeśli to był cios z serii combo, zmniejszamy licznik pozostałych uderzeń
-        if (canPunchCombo) {
-            boxerRed.comboLeft--;
-        }
 
         boxerBlue.isBlockingNow = (boxerBlue.stunTimer > 0) ? false : Math.random() < 0.50;
 
@@ -146,17 +165,20 @@ export function updatePhysics() {
             }
         }
 
+        // KONIEC ANIMACJI CIOSU
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerBlue.isBlockingNow = false; 
 
-            // Losowanie nowej serii combo tylko na samym końcu całej akcji (gdy licznik serii jest pusty)
+            // Losowanie nowej serii combo aktywuje się tylko przy standardowym, pojedynczym ciosie bazowym
             if (boxerRed.comboLeft === 0) {
                 const rand = Math.random();
-                if (rand < 0.01) {
-                    boxerRed.comboLeft = 2; // Szansa 1% na potrójny cios (dorzuca 2 dodatkowe ataki)
-                } else if (rand < 0.11) { // 0.01 + 0.10 = 0.11
-                    boxerRed.comboLeft = 1; // Szansa 10% na podwójny cios (dorzuca 1 dodatkowy atak)
+                if (rand < 0.05) {
+                    boxerRed.comboLeft = 2;   // Szansa 5% na SERIĘ POTRÓJNĄ (2 dodatkowe ciosy)
+                    boxerRed.comboDelay = 8;  // 8 klatek przerwy na powrót gardy
+                } else if (rand < 0.35) {     // 0.05 + 0.30 = 0.35 -> Szansa 30% na SERIĘ PODWÓJNĄ (1 dodatkowy cios)
+                    boxerRed.comboLeft = 1;   
+                    boxerRed.comboDelay = 8;  
                 }
             }
         }
