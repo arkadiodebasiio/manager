@@ -1,8 +1,13 @@
-import { ctx, boxerRed, boxerBlue, strongHand } from './engine.js';
+import { boxerRed, boxerBlue, strongHand } from './engine.js';
 
 let activePunchHand = 'left', wasPunchingLastFrame = false, starAngle = 0;
 
 export function drawBlueBoxer() {
+    const canvas = document.getElementById('ringCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !boxerBlue || !boxerRed) return;
+
     const bounce = Math.sin(boxerBlue.animTimer) * 3;
     const angleToRed = Math.atan2(boxerRed.y - boxerBlue.ry, boxerRed.x - boxerBlue.rx) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
@@ -19,7 +24,6 @@ export function drawBlueBoxer() {
     ctx.save(); ctx.translate(boxerBlue.rx, boxerBlue.ry + bounce); ctx.rotate(angleToRed - Math.PI / 2); 
     ctx.beginPath(); ctx.arc(0, 0, boxerBlue.radius, 0, Math.PI * 2); ctx.fillStyle = currentColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // RYSOWANIE KONTUZJI OKA
     if (boxerBlue.eyeLevel > 0) {
         const isMax = boxerBlue.eyeLevel >= 2;
         ctx.beginPath(); ctx.arc(-7, -8, isMax ? 6.5 : 5, 0, Math.PI * 2); 
@@ -27,7 +31,6 @@ export function drawBlueBoxer() {
         ctx.fill();
     }
     
-    // RYSOWANIE KONTUZJI WĄTROBY
     if (boxerBlue.liverLevel > 0) {
         const isMax = boxerBlue.liverLevel >= 2;
         ctx.beginPath(); ctx.arc(10, 4, isMax ? 7.5 : 6, 0, Math.PI * 2); 
@@ -35,7 +38,6 @@ export function drawBlueBoxer() {
         ctx.fill();
     }
     
-    // RYSOWANIE KONTUZJI WARGI (NAPRAWIONE: Dodany brakujący parametr rotacji '0')
     if (boxerBlue.lipLevel > 0) {
         const isMax = boxerBlue.lipLevel >= 2;
         ctx.beginPath(); ctx.ellipse(0, -14, isMax ? 7.5 : 6, isMax ? 4 : 3, 0, 0, Math.PI * 2); 
@@ -61,21 +63,38 @@ export function drawBlueBoxer() {
 }
 
 export function drawRedBoxer() {
+    const canvas = document.getElementById('ringCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !boxerRed || !boxerBlue) return;
+
     const bounceOffset = Math.sin(boxerRed.animTimer) * 4, angleToBlue = Math.atan2(boxerBlue.ry - boxerRed.y, boxerBlue.rx - boxerRed.x) + Math.PI;
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0, bodyLean = pVal * 15;
 
     if (boxerRed.isPunching && !wasPunchingLastFrame) {
         activePunchHand = Math.random() < (boxerRed.orbitSpeed < 0 ? 0.30 : 0.70) ? 'left' : 'right';
-        window.currentActivePunchHand = activePunchHand;
+        if (typeof window !== 'undefined') {
+            window.currentActivePunchHand = activePunchHand;
+        }
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
+    // Sprawdzamy czy czerwony wykonuje lub zaraz wykona serię combo
+    const isCurrentlyInCombo = boxerRed.punchQueue.length > 0 || boxerRed.punchCooldown > 0;
+
+    // RYSOWANIE CIENIA (Zielony neon jeśli trwa combo, szary standardowo)
     ctx.beginPath(); ctx.ellipse(boxerRed.x, boxerRed.y + boxerRed.radius, boxerRed.radius - Math.abs(bounceOffset), 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fill();
+    ctx.fillStyle = isCurrentlyInCombo ? 'rgba(46, 204, 113, 0.45)' : 'rgba(0, 0, 0, 0.35)'; ctx.fill();
+    
     ctx.save(); ctx.translate(boxerRed.x, boxerRed.y + bounceOffset); ctx.rotate(angleToBlue - Math.PI / 2); 
 
+    // RYSOWANIE CIAŁA Z KOLOROWĄ OBWÓDKĄ COMBO
     const currentY = -bodyLean * 0.2;
-    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, currentY, boxerRed.radius, 0, Math.PI * 2); ctx.fillStyle = boxerRed.color; ctx.fill(); 
+    
+    ctx.lineWidth = isCurrentlyInCombo ? 3.5 : 2; 
+    ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff'; // Zmiana obwódki na zieloną
+    ctx.stroke();
 
     let leftGloveX = -12, rightGloveX = 12, gloveY = -boxerRed.radius + 4;
     const leftReach = strongHand === 'left' ? 32 : 24, rightReach = strongHand === 'right' ? 32 : 24;
@@ -92,12 +111,12 @@ export function drawRedBoxer() {
     }
 
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
     ctx.beginPath(); ctx.arc(leftGloveX, boxerRed.isPunching && activePunchHand === 'left' ? gloveY : -boxerRed.radius + 4, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     const rightPulse = boxerRed.isPunching && activePunchHand === 'right' ? 0 : Math.sin(boxerRed.animTimer * 2) * 2;
     ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse);
-    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = isCurrentlyInCombo ? '#2ecc71' : '#fff';
     ctx.beginPath(); ctx.arc(rightGloveX, boxerRed.isPunching && activePunchHand === 'right' ? gloveY : -boxerRed.radius + 4 + rightPulse, 7, 0, Math.PI * 2); ctx.fillStyle = '#d35400'; ctx.fill(); ctx.stroke();
 
     ctx.save(); ctx.rotate(-(angleToBlue - Math.PI / 2)); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -105,6 +124,11 @@ export function drawRedBoxer() {
 }
 
 export function drawBlockShield() {
+    const canvas = document.getElementById('ringCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !boxerRed || !boxerBlue) return;
+
     const pVal = boxerRed.isPunching ? Math.sin(boxerRed.punchProgress) : 0;
     if (boxerRed.isPunching && pVal > 0.85 && boxerBlue.isBlockingNow) {
         ctx.save(); const shieldX = boxerBlue.rx, shieldY = boxerBlue.ry - 36;
