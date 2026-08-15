@@ -19,7 +19,8 @@ export function drawRedBoxer(ctx) {
     }
     wasPunchingLastFrame = boxerRed.isPunching;
 
-    // Bezpieczne sprawdzanie combo bez crashowania silnika
+    // BEZPIECZNE WYKRYWANIE COMBO: Świeci na zielono tylko podczas wyprowadzania ciosu, 
+    // jeśli w kolejce czekają już kolejne uderzenia (czyli od drugiego ciosu wzwyż)
     const isRealComboActive = boxerRed.isPunching && boxerRed.punchQueue && boxerRed.punchQueue.length > 0;
 
     ctx.beginPath(); 
