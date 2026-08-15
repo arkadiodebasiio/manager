@@ -7,15 +7,14 @@ let currentOrbitRadius = baseRadius;
 export const strongHand = Math.random() < 0.5 ? 'left' : 'right';
 const chosenOrbitSpeed = strongHand === 'left' ? 0.023 : -0.023;
 
-// Globalny licznik czasu - zabezpieczenie przed błędami edytora i cache
-let globalRingTimer = 0; 
-
 export const boxerRed = {
     angle: Math.PI / 2, orbitSpeed: chosenOrbitSpeed, radius: 24, color: '#e74c3c', number: '1',
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    isChargingSuper: false, superChargeTimer: 0, superCooldown: 5400 
+    isChargingSuper: false, superChargeTimer: 0,
+    // POPRAWKA: Na starcie losujemy moment aktywacji (od 0 do 1.5 minuty) - nie będzie odpalał zawsze!
+    superCooldown: Math.floor(Math.random() * 5400) 
 };
 export const boxerBlue = { 
     x: ringCenter, y: ringCenter, radius: 24, color: '#2980b9', number: '2', 
@@ -27,18 +26,6 @@ export function updatePhysics() {
     if (boxerBlue.isKnockedDown) {
         boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2; boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2; return; 
     }
-    
-    // ZWIĘKSZAMY CZAS GRY CO KLATKĘ
-    globalRingTimer++; 
-
-    // ABSOLUTNA BLOKADA: Przez pierwsze 5400 klatek (1,5 minuty) bot MA ZAKAZ używania superciosu!
-    if (globalRingTimer < 5400) {
-        boxerRed.isChargingSuper = false;
-        boxerRed.superChargeTimer = 0;
-        boxerRed.superCooldown = 5400; 
-        if (boxerRed.punchType === 'super') boxerRed.punchType = 'straight';
-    }
-
     if (!boxerRed.isPunching) boxerBlue.isBlockingNow = false;
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
