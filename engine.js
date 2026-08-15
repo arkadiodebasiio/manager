@@ -13,7 +13,10 @@ export const boxerRed = {
     animTimer: 0, punchTimer: 0, isPunching: false, punchProgress: 0, punchType: 'straight',
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, punchRoll: 1, 
     totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
-    jumpSpeed: 4.5 // Prędkość / siła dynamicznego doskoku
+    
+    // PARAMETRY REAKTYWNEGO SKOKU:
+    jumpSpeed: 16.5,       // Ekstremalna prędkość fazy wybicia (w przód i w tył)
+    directionSign: 1,      // 1 = doskok do przodu, -1 = błyskawiczny odskok w tył
 };
 
 export const boxerBlue = { 
@@ -21,7 +24,7 @@ export const boxerBlue = {
     animTimer: 0, stunTimer: 0, blockCount: 0, isBlockingNow: false, 
     eyeLevel: 0, lipLevel: 0, liverLevel: 0, hp: 100,
     isKnockedDown: false, pendingKnockdown: false, consecutiveBigHits: 0,
-    escapeAngle: 0, speed: 1.2
+    escapeAngle: 0, speed: 2.2
 };
 
 export function isBlueKnockedDown() {
@@ -34,13 +37,13 @@ export function updatePhysics() {
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.70 : 1.0;
 
-    // Szybka animacja timera Czerwonego dla dynamicznych skoków
-    boxerRed.animTimer += 0.133;
-    boxerBlue.animTimer += 0.133 * blueSpeedModifier;
+    // Przyspieszony licznik animacji dla zachowania szarpanego tempa
+    boxerRed.animTimer += 0.22; 
+    boxerBlue.animTimer += 0.15 * blueSpeedModifier;
 
     if (boxerRed.punchCooldown > 0) boxerRed.punchCooldown--;
     if (!boxerRed.isPunching && boxerRed.punchQueue.length === 0 && boxerRed.punchCooldown === 0) {
-        boxerRed.punchTimer += 0.66;
+        boxerRed.punchTimer += 1.2;
     }
     if (boxerBlue.stunTimer > 0) {
         boxerBlue.stunTimer -= blueSpeedModifier;
@@ -51,35 +54,45 @@ export function updatePhysics() {
     const dy = boxerBlue.y - boxerRed.y;
     const distance = Math.hypot(dx, dy);
 
-    // --- ORYGINALNA LOGIKA SKOKU CZERWONEGO (Dostosowana do pogoni) ---
+    // --- PRZEBUDOWANA MATEMATYKA BŁYSKAWICZNYCH SKOKÓW ---
     const currentSin = Math.sin(boxerRed.animTimer);
     
-    // Sprawdzamy moment przejścia przez zero (początek nowego skoku)
+    // Reset i losowanie nowej fazy w punkcie zero sinusa
     if (currentSin > 0 && !boxerRed.wasAboveZero) {
-        // 30% szans na to, że ten konkretny skok będzie doskokiem do rywala
-        boxerRed.isMovingThisJump = Math.random() < 0.30;
+        boxerRed.isMovingThisJump = Math.random() < 0.65; // Częstsze próby ataku
+        
+        // Decyzja: jeśli jest blisko, odskakuje. Jeśli daleko, doskakuje.
+        if (distance < 70) {
+            boxerRed.directionSign = -1.5; // Agresywny, ultraszybki odskok wsteczny po walce
+        } else {
+            boxerRed.directionSign = 1.0;  // Błyskawiczna szarża do przodu
+        }
     }
     boxerRed.wasAboveZero = (currentSin > 0);
 
-    // Dynamiczny skok następuje tylko w fazie dodatniej sinusa i gdy wylosowano ruch
-    if (!boxerRed.isPunching && boxerRed.isMovingThisJump && currentSin > 0 && distance > 52) {
-        // Czerwony gwałtownie przyśpiesza w locie w stronę Niebieskiego
-        boxerRed.x += (dx / distance) * boxerRed.jumpSpeed * currentSin;
-        boxerRed.y += (dy / distance) * boxerRed.jumpSpeed * currentSin;
+    // Wykorzystanie kwadratu sinusa gwarantuje ostry, dynamiczny start i hamowanie skoku (styl retro-zryw)
+    if (!boxerRed.isPunching && boxerRed.isMovingThisJump && currentSin > 0) {
+        const jumpForce = boxerRed.jumpSpeed * (currentSin * currentSin) * boxerRed.directionSign;
+        
+        // Wykonaj przesunięcie tylko jeśli nie spowoduje to zbytniego oddalenia przy doskoku
+        if (boxerRed.directionSign < 0 || distance > 48) {
+            boxerRed.x += (dx / distance) * jumpForce;
+            boxerRed.y += (dy / distance) * jumpForce;
+        }
     }
 
-    // Niebieski krąży i ucieka powoli
+    // Niebieski krąży defensywnie i próbuje utrzymać dystans
     if (boxerBlue.stunTimer === 0) {
-        if (Math.random() < 0.015) {
+        if (Math.random() < 0.03) {
             boxerBlue.escapeAngle = Math.atan2(dy, dx) + (Math.random() - 0.5) * Math.PI;
         }
-        if (distance < 90) {
+        if (distance < 110) {
             boxerBlue.x += Math.cos(boxerBlue.escapeAngle) * boxerBlue.speed * blueSpeedModifier;
             boxerBlue.y += Math.sin(boxerBlue.escapeAngle) * boxerBlue.speed * blueSpeedModifier;
         }
     }
 
-    // Granice ringu
+    // Sztywne granice ringu bokserskiego
     const padding = 75;
     boxerRed.x = Math.max(padding, Math.min(500 - padding, boxerRed.x));
     boxerRed.y = Math.max(padding, Math.min(500 - padding, boxerRed.y));
@@ -89,26 +102,26 @@ export function updatePhysics() {
     boxerBlue.rx = boxerBlue.x;
     boxerBlue.ry = boxerBlue.y;
 
-    // --- LOGIKA ATAKU ---
-    if (!boxerRed.isPunching && distance <= 62) {
+    // --- LOGIKA WYPROWADZANIA CIOSÓW ---
+    if (!boxerRed.isPunching && distance <= 68) {
         let shouldPunch = false;
 
         if (boxerRed.punchQueue.length > 0 && boxerRed.punchCooldown === 0) {
             boxerRed.punchType = boxerRed.punchQueue.shift();
             shouldPunch = true;
-        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
+        } else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 45 && Math.random() < 0.06) {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
             const comboRoll = Math.random();
-            if (comboRoll < 0.01) {
+            if (comboRoll < 0.02) {
                 boxerRed.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook');
-            } else if (comboRoll < 0.06) {
+            } else if (comboRoll < 0.08) {
                 boxerRed.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook');
-            } else if (comboRoll < 0.21) {
+            } else if (comboRoll < 0.25) {
                 boxerRed.punchQueue.push(Math.random() < 0.7 ? 'straight' : 'hook');
             }
         }
@@ -122,9 +135,9 @@ export function updatePhysics() {
         }
     }
 
-    // --- REALIZACJA CIOSU ---
+    // --- REALIZACJA HITBOXÓW ---
     if (boxerRed.isPunching) {
-        boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.155 : 0.132);
+        boxerRed.punchProgress += (boxerRed.punchType === 'straight' ? 0.185 : 0.155);
         const pVal = Math.sin(boxerRed.punchProgress);
 
         if (pVal > 0.75 && !boxerRed.hasHit) {
@@ -161,7 +174,7 @@ export function updatePhysics() {
         if (boxerRed.punchProgress >= Math.PI) {
             boxerRed.isPunching = false;
             boxerRed.punchProgress = 0;
-            boxerRed.punchCooldown = 12;
+            boxerRed.punchCooldown = 8; // Szybsza gotowość do następnego ataku
 
             if (boxerBlue.hp <= 0) {
                 boxerBlue.isKnockedDown = true;
