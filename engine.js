@@ -18,11 +18,11 @@ export const boxerRed = {
     isMovingThisJump: false, wasAboveZero: true, hasHit: false, x: 250, y: 350,
     punchRoll: 1, totalSixes: 0, punchQueue: [], punchCooldown: 0, hp: 100,
     
-    // ZMIENNE SUPER PUNCH
+    // STAN SUPER CIOSU
     isSuperPunching: false,
     superPunchTimer: 0,
-    superPunchProgress: 0,    // Odpowiada za wysunięcie żółtej rękawicy do przodu
-    isSuperPunchStriking: false // Informuje rysownik, że żółta ręka właśnie leci w cel
+    superPunchProgress: 0,
+    isSuperPunchStriking: false
 };
 
 export const boxerBlue = { 
@@ -58,28 +58,25 @@ export function updatePhysics() {
         if (boxerBlue.stunTimer < 0) boxerBlue.stunTimer = 0;
     }
 
-    // OBSŁUGA ŁADOWANIA I WYPROWADZENIA SUPER CIOSU
+    // FIZYKA SUPER CIOSU
     if (boxerRed.isSuperPunching) {
         if (!boxerRed.isSuperPunchStriking) {
             boxerRed.superPunchTimer++;
 
-            // POPRAWKA: Blok odpala się dopiero w ostatniej chwili przed uderzeniem (179 klatka)!
-            if (boxerRed.superPunchTimer === 179) {
+            // Blokowanie decyduje się na ułamek sekundy przed końcem ładowania
+            if (boxerRed.superPunchTimer === 175) {
                 boxerBlue.isBlockingNow = Math.random() < 0.50;
             }
 
-            // Koniec 3 sekund odliczania -> ruszamy z fizycznym uderzeniem ręki
             if (boxerRed.superPunchTimer >= 180) {
                 boxerRed.isSuperPunchStriking = true;
                 boxerRed.superPunchProgress = 0;
             }
         } else {
-            // Ruch wyciągniętej żółtej ręki (sinusoidalny skok w przód i powrót)
-            boxerRed.superPunchProgress += 0.20; // Szybkie uderzenie
+            boxerRed.superPunchProgress += 0.18; 
             const spVal = Math.sin(boxerRed.superPunchProgress);
 
-            // Moment maksymalnego wyciągnięcia ręki (szczyt ciosu)
-            if (spVal > 0.95 && !boxerRed.hasHit) {
+            if (spVal > 0.75 && !boxerRed.hasHit) {
                 if (boxerBlue.isBlockingNow) {
                     boxerBlue.consecutiveSixes = 0;
                 } else {
@@ -93,14 +90,14 @@ export function updatePhysics() {
                 boxerRed.hasHit = true;
             }
 
-            // Koniec animacji uderzenia -> pełne czyszczenie stanów
+            // Blok wyłącza się DOPIERO gdy cios całkowicie wróci!
             if (boxerRed.superPunchProgress >= Math.PI) {
                 boxerRed.isSuperPunching = false;
                 boxerRed.isSuperPunchStriking = false;
                 boxerRed.superPunchTimer = 0;
                 boxerRed.superPunchProgress = 0;
                 boxerRed.hasHit = false;
-                boxerBlue.isBlockingNow = false;
+                boxerBlue.isBlockingNow = false; // Tu zdejmujemy blok
             }
         }
         return; 
@@ -119,7 +116,7 @@ export function updatePhysics() {
     if (!boxerRed.isPunching) {
         let shouldPunch = false;
 
-        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 5000)) {
+        if (boxerRed.punchQueue.length === 0 && !boxerRed.isSuperPunching && Math.random() < (1 / 4000)) {
             boxerRed.isSuperPunching = true;
             boxerRed.superPunchTimer = 0;
             boxerRed.isSuperPunchStriking = false;
