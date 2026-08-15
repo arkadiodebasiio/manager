@@ -31,10 +31,21 @@ export const boxerBlue = {
     eyeLevel: 0,
     lipLevel: 0,
     liverLevel: 0,
-    hp: 100 
+    hp: 100,
+    
+    // STAN NOKDAUNU (TRWAŁA PRZERWA W MECZU)
+    isKnockedDown: false,
+    consecutiveBigHits: 0 // Licznik ciosów 5 lub 6 pod rząd bez bloku
 };
 
 export function updatePhysics() {
+    // PRZERWA W MECZU: Jeśli niebieski leży, gra zostaje zatrzymana na stałe
+    if (boxerBlue.isKnockedDown) {
+        boxerBlue.rx += (ringCenter - boxerBlue.rx) * 0.2;
+        boxerBlue.ry += (ringCenter - boxerBlue.ry) * 0.2;
+        return; 
+    }
+
     const hasTriple = boxerBlue.eyeLevel === 3 || boxerBlue.lipLevel === 3 || boxerBlue.liverLevel === 3;
     const blueSpeedModifier = hasTriple ? 0.80 : 1.0;
 
@@ -81,19 +92,15 @@ export function updatePhysics() {
             boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
             shouldPunch = true;
 
-            // POWRÓT DO TWOICH PROPORCJI
             const comboRoll = Math.random();
             if (comboRoll < 0.01) {
-                // 1% na serię POCZWÓRNĄ (3 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.06) {
-                // 5% na serię POTRÓJNĄ (2 dodatkowe ciosy)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             } else if (comboRoll < 0.21) {
-                // 15% na serię PODWÓJNĄ (1 dodatkowy cios)
                 boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
             }
         }
@@ -131,7 +138,9 @@ export function updatePhysics() {
         if (pVal > 0.75 && !boxerRed.hasHit) {
             boxerRed.punchRoll = Math.floor(Math.random() * 6) + 1; 
 
-            if (!boxerBlue.isBlockingNow) {
+            if (boxerBlue.isBlockingNow) {
+                boxerBlue.consecutiveBigHits = 0; // Blok resetuje serię potężnych ciosów
+            } else {
                 let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
                 if (boxerRed.punchRoll === 6) dmg *= 2.0;       
                 else if (boxerRed.punchRoll >= 3) dmg *= 1.3;   
@@ -142,7 +151,22 @@ export function updatePhysics() {
                 boxerBlue.hp -= dmg;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0; 
 
-                if (boxerRed.punchRoll === 6) {
+                // REGUŁA NOKDAUNU: Cios z siłą 5 lub 6 bez bloku
+                if (boxerRed.punchRoll === 5 || boxerRed.punchRoll === 6) {
+                    boxerBlue.consecutiveBigHits += 1;
+                    
+                    // 2 mocne ciosy pod rząd bez bloku = knockdown i stop meczu
+                    if (boxerBlue.consecutiveBigHits >= 2) {
+                        boxerBlue.isKnockedDown = true;
+                        boxerRed.isPunching = false;
+                        boxerRed.punchQueue = [];
+                    }
+                } else {
+                    boxerBlue.consecutiveBigHits = 0; // Słabszy rzut (1-4) przerywa passę
+                }
+
+                // SYSTEM KONTUZJI CO TRZECIĄ SZÓSTKĘ
+                if (boxerRed.punchRoll === 6 && !boxerBlue.isKnockedDown) {
                     boxerRed.totalSixes += 1; 
 
                     if (boxerRed.totalSixes % 3 === 0) {
@@ -155,7 +179,7 @@ export function updatePhysics() {
                     }
                 }
 
-                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0) {
+                if (boxerRed.punchType === 'hook' && Math.random() < 0.20 && boxerBlue.stunTimer === 0 && !boxerBlue.isKnockedDown) {
                     boxerBlue.stunTimer = 300; 
                 }
             }
