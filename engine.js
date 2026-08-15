@@ -4,7 +4,7 @@ import { initSuperPunch, handleSuperPunchTiming, executeSuperPunchHit } from './
 
 let currentOrbitRadius = baseRadius; 
 
-// Funkcje pomocnicze, które bezpiecznie przekazują stany do rendererów
+// Funkcje statusu bezpiecznie eksportowane dla rendererów
 export function isBlueKnockedDown() { 
     return boxerBlue.isKnockedDown; 
 }
