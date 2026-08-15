@@ -11,31 +11,33 @@ export function handleBotAttackDecisions(baseRadius) {
     } 
     else if (boxerRed.punchQueue.length === 0 && boxerRed.punchTimer > 60 && Math.random() < 0.03) {
         
-        // Supercios odpala się losowo, ale maksymalnie RAZ na 1.5 minuty (5400 klatek)
-        if (boxerRed.superCooldown === 0 && Math.random() < 0.03) {
+        // POPRAWKA: Jeśli minęło 1.5 minuty, dajemy aż 40% szans, żeby bot NA PEWNO zaczął ładować supercios
+        if (boxerRed.superCooldown === 0 && Math.random() < 0.40) {
             boxerRed.isChargingSuper = true;
             boxerRed.superChargeTimer = 180; // 3 sekundy ładowania
-            boxerRed.superCooldown = 5400;   // Blokada ponownego użycia na 90 sekund
+            boxerRed.superCooldown = 5400;   // Blokada ponownego użycia na kolejne 1,5 minuty
             boxerRed.punchTimer = 0;
-        } else {
-            boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
-            shouldPunch = true;
+            return; // Przerywamy, żeby nie wylosować zwykłego ciosu w tej samej klatce
+        } 
+        
+        // Zwykły cios (wykona się tylko, gdy supercios ma cooldown)
+        boxerRed.punchType = Math.random() < 0.70 ? 'straight' : 'hook';
+        shouldPunch = true;
 
-            const comboRoll = Math.random();
-            const isStunnedNow = boxerBlue.stunTimer > 0;
+        const comboRoll = Math.random();
+        const isStunnedNow = boxerBlue.stunTimer > 0;
 
-            if (comboRoll < 0.01) {
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-                if (isStunnedNow) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
-            } else if (comboRoll < 0.06) {
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-                if (isStunnedNow) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
-            } else if (comboRoll < 0.21) {
-                boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
-            }
+        if (comboRoll < 0.01) {
+            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            if (isStunnedNow) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
+        } else if (comboRoll < 0.06) {
+            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
+            if (isStunnedNow) { boxerBlue.pendingKnockdown = true; boxerRed.punchQueue = []; }
+        } else if (comboRoll < 0.21) {
+            boxerRed.punchQueue.push(Math.random() < 0.70 ? 'straight' : 'hook');
         }
     }
 
@@ -62,7 +64,7 @@ export function processPunchExecution() {
     if (!boxerRed.isPunching) return;
 
     if (boxerRed.punchType === 'straight') boxerRed.punchProgress += 0.155; 
-    else if (boxerRed.punchType === 'super') boxerRed.punchProgress += 0.100; // Wolniejszy, potężny cios
+    else if (boxerRed.punchType === 'super') boxerRed.punchProgress += 0.080; // Cios leci ciut wolniej i potężniej
     else boxerRed.punchProgress += 0.132; 
 
     const pVal = Math.sin(boxerRed.punchProgress);
@@ -73,14 +75,14 @@ export function processPunchExecution() {
         if (boxerBlue.isBlockingNow) {
             boxerBlue.consecutiveBigHits = 0; 
             if (boxerRed.punchType === 'super') {
-                boxerBlue.hp -= 15; // Zablokowany supercios zabiera spore HP, ale nie wywraca
+                boxerBlue.hp -= 15; 
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0;
             }
         } else {
             if (boxerRed.punchType === 'super') {
                 boxerBlue.hp -= 30;
                 if (boxerBlue.hp < 0) boxerBlue.hp = 0;
-                boxerBlue.pendingKnockdown = true; // Czyste trafienie = natychmiastowe K.O.!
+                boxerBlue.pendingKnockdown = true; 
             } else {
                 let dmg = boxerRed.punchType === 'hook' ? 5 : 3; 
                 if (boxerRed.punchRoll === 6) dmg *= 2.0;       
@@ -128,12 +130,11 @@ export function processPunchExecution() {
     }
 }
 
-// Funkcja eksportowa do wywołania przez niebieskiego gracza, by przerwać atak bota
 export function interruptRedSuper() {
     if (boxerRed.isChargingSuper) {
         boxerRed.isChargingSuper = false;
         boxerRed.superChargeTimer = 0;
-        boxerRed.punchCooldown = 60; // Bot zastyga ukarany na sekundę
+        boxerRed.punchCooldown = 60; 
         return true;
     }
     return false;
