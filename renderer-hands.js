@@ -31,8 +31,22 @@ export function drawRedBoxer() {
         gloveColor = '#f1c40f';
     } 
     else if (boxerRed.isChargingSuper && !boxerRed.isPunching) { leftY = -boxerRed.radius - 2; rightY = -boxerRed.radius - 2; } 
-    else if (boxerRed.isPunching && activePunchHand === 'left') { let reach = boxerRed.punchType === 'super' ? 44 : 30; leftY = (-boxerRed.radius + 4) - (pVal * reach); leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : (-12 + pVal * 10); rightY = -boxerRed.radius + 6; } 
-    else if (boxerRed.isPunching && activePunchHand === 'right') { let reach = boxerRed.punchType === 'super' ? 44 : 30; rightY = (-boxerRed.radius + 4) - (pVal * reach); rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : (12 - pVal * 10); leftY = -boxerRed.radius + 6; }
+    else if (boxerRed.isPunching) {
+        // ZASIĘG DOKŁADNIE DO CIAŁA PRZECIWNIKA
+        const dx = boxerBlue.x - boxerRed.x, dy = boxerBlue.y - boxerRed.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        let dynamicReach = dist - boxerRed.radius;
+
+        if (activePunchHand === 'left') {
+            leftY = (-boxerRed.radius + 4) - (pVal * dynamicReach);
+            leftX = boxerRed.punchType === 'hook' ? (-12 + Math.sin(boxerRed.punchProgress) * 20) : (-12 + pVal * 10);
+            rightY = -boxerRed.radius + 6;
+        } else {
+            rightY = (-boxerRed.radius + 4) - (pVal * dynamicReach);
+            rightX = boxerRed.punchType === 'hook' ? (12 - Math.sin(boxerRed.punchProgress) * 20) : (12 - pVal * 10);
+            leftY = -boxerRed.radius + 6;
+        }
+    }
 
     ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(leftX, leftY); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = strokeColor;
     ctx.beginPath(); ctx.arc(leftX, leftY, 7, 0, Math.PI * 2); ctx.fillStyle = gloveColor; ctx.fill(); ctx.stroke();
